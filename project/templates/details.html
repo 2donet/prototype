@@ -1,0 +1,57 @@
+<h4>{{content.name}}</h4>
+{% if needs %}
+	<br>
+	Needs:
+	{% for need in needs %}
+		<br>
+		<a href="/n/{{need.id}}"><b>{{need.name}}</b></a>
+		<details>
+			<summary>
+				summary
+			</summary>
+			{{need.desc}}
+		</details>
+	{% endfor %}
+{% endif %}
+{% comment %}
+tasks {% endcomment %}
+{% if tasks %}
+	<br>
+	Tasks:
+	{% for task in tasks  %}
+		<b>{{task.name}}</b> added by {{task.created_by}}
+		<br>
+		<i>{{task.desc}}</i>
+		<br><br>
+	{% endfor %}
+{% endif %}
+<br>
+
+Comments:
+{% if comments %}
+{% include "comments.html" with comments=comments %}
+	{% else   %}
+	no comments
+{% endif %}
+
+<!-- backup -->
+	<!-- {% for comment in comments %}
+			<div style="margin-bottom: 20px;">
+					<strong>by:</strong><a href="/u/{{user.id}}"><i> {{ comment.user }}</i></a>
+					<br>
+					<p>{{ comment.content }}</p>
+
+					{% if comment.replies.all %}
+							<div style="margin-left: 20px; border-left: 1px solid #ccc; padding-left: 10px;">
+									<strong>Replies:</strong>
+									{% for reply in comment.replies.all %}
+											<div>
+													<strong>Reply by:</strong> {{ reply.user }}
+													<br>
+													<p>{{ reply.content }}</p>
+											</div>
+									{% endfor %}
+							</div>
+					{% endif %}
+			</div>
+	{% endfor %} -->

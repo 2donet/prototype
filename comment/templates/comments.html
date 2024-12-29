@@ -1,0 +1,69 @@
+{% for comment in comments %}
+<div class="comment" data-comment-id="{{ comment.id }}">
+    <strong>{{ comment.user.name }}</strong>: {{ comment.content }}
+    <br>
+    <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
+    <span>{{ comment.total_replies }} replies</span>
+    <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
+    <div class="replies-container" data-comment-id="{{ comment.id }}"></div>
+</div>
+{% endfor %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Handle viewing replies dynamically
+    document.querySelectorAll(".view-replies-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            const commentId = button.getAttribute("data-comment-id");
+            const container = document.querySelector(`.replies-container[data-comment-id="${commentId}"]`);
+            
+            if (container.innerHTML === "") {  // Load only if not already loaded
+                fetch(`/comments/load-replies/${commentId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.replies.forEach(reply => {
+                            const replyHTML = `
+                                <div class="comment" data-comment-id="${reply.id}">
+                                    <strong>${reply.user}</strong>: ${reply.content}
+                                    <button class="reply-btn" data-comment-id="${reply.id}">Reply</button>
+                                    <span>${reply.total_replies} replies</span>
+                                    <div class="replies-container" data-comment-id="${reply.id}"></div>
+                                </div>`;
+                            container.innerHTML += replyHTML;
+                        });
+                    });
+            }
+        });
+    });
+
+    // Handle adding a new comment or reply
+    document.addEventListener("click", function (e) {
+        if (e.target.classList.contains("reply-btn")) {
+            const commentId = e.target.getAttribute("data-comment-id");
+            const container = document.querySelector(`.replies-container[data-comment-id="${commentId}"]`);
+            if (!container.querySelector("textarea")) {  // Avoid duplicate inputs
+                const formHTML = `
+                    <textarea></textarea>
+                    <button class="submit-reply-btn" data-comment-id="${commentId}">Submit</button>`;
+                container.innerHTML += formHTML;
+            }
+        } else if (e.target.classList.contains("submit-reply-btn")) {
+            const commentId = e.target.getAttribute("data-comment-id");
+            const content = e.target.previousElementSibling.value;
+            fetch("/comments/add/", {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                body: new URLSearchParams({ parent_id: commentId, content: content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const container = document.querySelector(`.replies-container[data-comment-id="${commentId}"]`);
+                container.innerHTML += `
+                    <div class="comment" data-comment-id="${data.id}">
+                        <strong>${data.user}</strong>: ${data.content}
+                    </div>`;
+            });
+        }
+    });
+});
+</script>

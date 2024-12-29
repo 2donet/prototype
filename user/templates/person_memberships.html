@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ person.name }}'s Memberships</title>
+</head>
+<body>
+    <h1>{{ person.name }}'s Memberships</h1>
+
+    {% if memberships %}
+        <ul>
+        {% for membership in memberships %}
+            <li>
+                <strong>Group:</strong> {{ membership.group.name }}<br>
+                <strong>Date Joined:</strong> {{ membership.date_joined }}<br>
+                <strong>Invite Reason:</strong> {{ membership.invite_reason }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No memberships found for {{ person.name }}.</p>
+    {% endif %}
+</body>
+</html>

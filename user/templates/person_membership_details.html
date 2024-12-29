@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membership Details</title>
+</head>
+<body>
+    <h1>Membership Details</h1>
+    <h2>{{ membership.person.name }} - {{ membership.group.name }}</h2>
+    <p><strong>Date Joined:</strong> {{ membership.date_joined }}</p>
+    <p><strong>Invite Reason:</strong> {{ membership.invite_reason }}</p>
+
+    <h3>Comments</h3>
+    {% if comments %}
+        <ul>
+        {% for comment in comments %}
+            <li>{{ comment.content }} - <em>by {{ comment.user }}</em></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No comments yet.</p>
+    {% endif %}
+
+    <h3>Decisions</h3>
+    {% if decisions %}
+        <ul>
+        {% for decision in decisions %}
+            <li>
+                <a href="{% url 'decisions:decision_details' decision.id %}">{{ decision.title }}</a>                ({{ decision.get_source_display }}) - {{ decision.date_made }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No decisions found.</p>
+    {% endif %}
+</body>
+</html>
