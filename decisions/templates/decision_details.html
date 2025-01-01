@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Details</title>
+</head>
+<body>
+    <h1>Decision: {{ decision.title }}</h1>
+    <p><strong>Description:</strong> {{ decision.description }}</p>
+    <p><strong>Source:</strong> {{ decision.get_source_display }}</p>
+    <p><strong>Date Made:</strong> {{ decision.date_made }}</p>
+
+    <h3>Comments</h3>
+    {% if comments %}
+        <ul>
+        {% for comment in comments %}
+            <li>{{ comment.content }} - <em>by {{ comment.user }}</em></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No comments yet.</p>
+    {% endif %}
+</body>
+</html>
