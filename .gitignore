@@ -10,3 +10,4 @@ env/
 
 # Pliki konfiguracyjne
 *.env
+.idea/
