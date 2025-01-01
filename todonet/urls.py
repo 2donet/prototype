@@ -27,4 +27,6 @@ urlpatterns = [
     path("t/", include("task.urls")),
     path("n/", include("need.urls")),
 
+    path("project_constructor/", include("project_constructor.urls")),
+
 ]

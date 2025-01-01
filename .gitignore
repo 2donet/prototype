@@ -1,0 +1,12 @@
+# Pliki i foldery Pythona
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Wirtualne środowisko
+.venv/
+env/
+
+# Pliki konfiguracyjne
+*.env

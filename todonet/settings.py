@@ -47,6 +47,8 @@ INSTALLED_APPS = [
 
     'decisions.apps.DecisionsConfig',
 
+    'project_constructor',
+
 ]
 
 MIDDLEWARE = [
