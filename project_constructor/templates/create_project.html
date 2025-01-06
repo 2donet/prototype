@@ -7,8 +7,8 @@
 </head>
 <body>
     <h1>Create a New Project</h1>
-    <form method="post">
-        {% csrf_token %}
+   <form method="post">
+       {% csrf_token %}
         <label for="name">Project Name:</label>
         <input type="text" id="name" name="name" required><br><br>
 
@@ -43,7 +43,61 @@
         <label for="published">Publish Now:</label>
         <input type="checkbox" id="published" name="published" value="1"><br><br>
 
-        <button type="submit">Create Project</button>
+        <hr>
+
+        <h2>Add Needs to This Project</h2>
+        <div id="needs-container">
+            <!-- Dynamic fields for needs will be added here -->
+        </div>
+        <button type="button" id="add-need-btn">Add Another Need</button><br><br>
+
+        <button type="submit">Create Project with Needs</button>
     </form>
+
+<script>
+
+
+    function addNeed() {
+        const container = document.getElementById('needs-container');
+
+        // Create a new div for the need fields
+        const needDiv = document.createElement('div');
+        needDiv.classList.add('need-item');
+        needDiv.style.marginBottom = '10px';
+
+        // Add input for need name
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Need Name:';
+        needDiv.appendChild(nameLabel);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.name = 'need_name[]';  // Array format
+        nameInput.required = true;
+        needDiv.appendChild(nameInput);
+
+        needDiv.appendChild(document.createElement('br'));
+
+        // Add textarea for need description
+        const descLabel = document.createElement('label');
+        descLabel.textContent = 'Need Description:';
+        needDiv.appendChild(descLabel);
+
+        const descInput = document.createElement('textarea');
+        descInput.name = 'need_desc[]';  // Array format
+        descInput.required = true;
+        needDiv.appendChild(descInput);
+
+        needDiv.appendChild(document.createElement('br'));
+
+        // Append the new div to the container
+        container.appendChild(needDiv);
+    };
+    // JavaScript to dynamically add need fields
+    document.getElementById('add-need-btn').addEventListener('click', addNeed);
+    addNeed();  // Add the first need field by default
+</script>
+
+
 </body>
 </html>

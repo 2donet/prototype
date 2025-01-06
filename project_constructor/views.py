@@ -2,12 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from project.models import Project
 from user.models import User
+from need.models import Need
 
 from django.contrib.auth import get_user_model
 
 @login_required
 def create_project(request):
     if request.method == 'POST':
+        # Dane projektu
         name = request.POST.get('name')
         visibility = request.POST.get('visibility')
         status = request.POST.get('status')
@@ -17,12 +19,9 @@ def create_project(request):
         desc = request.POST.get('desc')
         published = request.POST.get('published') == '1'  # Checkbox or select input
 
-        # Upewnij się, że `request.user` jest instancją `User`
-        # User = get_user_model()
-        # user = "tester-1"
+        # Utwórz projekt
+        # user = User.objects.get(name=request.user.name)
         user = User.objects.get(name='tester-1')
-
-        # Tworzenie projektu
         project = Project.objects.create(
             name=name,
             visibility=visibility,
@@ -32,12 +31,59 @@ def create_project(request):
             tags=tags,
             summary=summary,
             desc=desc,
-            created_by=user,  # Użycie instancji User
+            created_by=user,
             published=published,
         )
+
+        # Dane potrzeb
+        need_names = request.POST.getlist('need_name[]')  # Lista nazw potrzeb
+        need_descs = request.POST.getlist('need_desc[]')  # Lista opisów potrzeb
+
+        # Tworzenie każdej potrzeby
+        for name, desc in zip(need_names, need_descs):
+            Need.objects.create(
+                name=name,
+                desc=desc,
+                created_by=user,
+                to_project=project,
+            )
+
         return redirect('project_constructor:project_details', project_id=project.id)
 
     return render(request, 'create_project.html')
+
+# def create_project(request):
+#     if request.method == 'POST':
+#         name = request.POST.get('name')
+#         visibility = request.POST.get('visibility')
+#         status = request.POST.get('status')
+#         area = request.POST.get('area')
+#         tags = request.POST.get('tags')
+#         summary = request.POST.get('summary')
+#         desc = request.POST.get('desc')
+#         published = request.POST.get('published') == '1'  # Checkbox or select input
+#
+#         # Upewnij się, że `request.user` jest instancją `User`
+#         # User = get_user_model()
+#         # user = "tester-1"
+#         user = User.objects.get(name='tester-1')
+#
+#         # Tworzenie projektu
+#         project = Project.objects.create(
+#             name=name,
+#             visibility=visibility,
+#             collaboration_mode='volunteering',
+#             status=status,
+#             area=area,
+#             tags=tags,
+#             summary=summary,
+#             desc=desc,
+#             created_by=user,  # Użycie instancji User
+#             published=published,
+#         )
+#         return redirect('project_constructor:project_details', project_id=project.id)
+#
+#     return render(request, 'create_project.html')
 
 
 
