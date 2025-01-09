@@ -1,8 +1,15 @@
-hello world !
-<a href="/project_constructor">Create project</a>
-<br>
-
-{% for project in latest_projects_list %}
-<a href="/{{project.id}}">{{project.name}}</a>
-<br>
-{% endfor %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Page</title>
+</head>
+<body>
+    <h3>Hello world</h3>
+    {% for project in latest_projects_list %}
+    <a href="/{{project.id}}">{{project.name}}</a>	
+    <br>
+    {%endfor%}
+</body>
+</html>

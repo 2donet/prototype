@@ -1,16 +1,19 @@
 from django.shortcuts import render
 
-# Create your views here.
+# Functions used to generate project related pages (remember to declare them in urls.py)
 
 from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib.auth.decorators import login_required
 from project.models import Project
 from comment.models import Comment
 from task.models import Task
 from need.models import Need
+from user.models import User
 from django.urls import path, reverse
 from django.db.models import Prefetch
 
 
+from django.contrib.auth import get_user_model
 
 def index(request):
     latest_projects_list = Project.objects.order_by('id')
@@ -20,21 +23,7 @@ def index(request):
 def project(request, project_id):
     content = get_object_or_404(Project, pk=project_id)
     tasks = Task.objects.filter(to_project=project_id)
-
     needs = Need.objects.filter(to_project=project_id)
-
-    # part_of_project = Project.objects.filter(subprojects=project_id).order_by('-importance')
-    # subprojects = project.subprojects.order_by('-importance')
-    # goals = Goal.objects.filter(project=project_id).order_by('-importance')
-    # introductions = Introduction.objects.filter(project=project_id).order_by('-importance')
-    # requirements = Requirement.objects.filter(project=project_id).order_by('-importance')
-    # last_status = Status.objects.filter(project=project_id).order_by('-pub_date')[:1]
-    # old_status = Status.objects.filter(project=project_id).order_by('-pub_date')[1:]
-    # comments = Comment.objects.filter(project=project_id).order_by('-pub_date')
-    # needs = Need.objects.filter(project=project_id).order_by('-importance')
-    # assumptions = Assumption.objects.filter(project=project_id).order_by('-importance')
-    # communities = Community.objects.filter(project=project_id).order_by('-importance')
-    # problems = Problem.objects.filter(project=project_id).order_by('-importance')
 
     comments = Comment.objects.filter(to_project=project_id)
     # comments = Comment.objects.filter(to_project=project_id).prefetch_related(
@@ -45,18 +34,67 @@ def project(request, project_id):
     "comments":comments,
     "tasks": tasks,
     "needs":needs,
-            #    "part_of_project": part_of_project,
-            #    "subprojects": subprojects,
-            #    "tasks": tasks,
-            #    "goals": goals,
-            #    "problems": problems,
-            #    "introductions": introductions,
-            #    "last_status": last_status,
-            #    "old_status": old_status,
-            #    "requirements": requirements,
-            #    "comments": comments,
-            #    "assumptions": assumptions,
-            #    "needs": needs,
-            #    "communities": communities,
                }
     return render(request, "details.html", context=context)
+
+
+# @login_required
+def project_details(request, project_id):
+    # Pobierz instancję użytkownika na podstawie request.user
+    # user = User.objects.get(name=request.user.name)
+    user = User.objects.get(name='tester-1')
+    project = get_object_or_404(Project, id=project_id, created_by=user)
+    return render(request, 'project_details.html', {'project': project})
+
+
+
+# @login_required
+def create_project(request):
+    if request.method == 'POST':
+        # Dane projektu
+        name = request.POST.get('name')
+        visibility = request.POST.get('visibility')
+        status = request.POST.get('status')
+        area = request.POST.get('area')
+        tags = request.POST.get('tags')
+        summary = request.POST.get('summary')
+        desc = request.POST.get('desc')
+        published = request.POST.get('published') == '1'  # Checkbox or select input
+
+        # Utwórz projekt
+        # user = User.objects.get(name=request.user.name)
+        user = User.objects.get(name='tester-1')
+        project = Project.objects.create(
+            name=name,
+            visibility=visibility,
+            collaboration_mode='volunteering',
+            status=status,
+            area=area,
+            tags=tags,
+            summary=summary,
+            desc=desc,
+            created_by=user,
+            published=published,
+        )
+
+        # Dane potrzeb
+        need_names = request.POST.getlist('need_name[]')  # Lista nazw potrzeb
+        need_descs = request.POST.getlist('need_desc[]')  # Lista opisów potrzeb
+
+        # Tworzenie każdej potrzeby
+        for name, desc in zip(need_names, need_descs):
+            Need.objects.create(
+                name=name,
+                desc=desc,
+                created_by=user,
+                to_project=project,
+            )
+
+        return redirect('project:project', project_id=project.id)
+
+    return render(request, 'create_project.html')
+
+
+
+
+
