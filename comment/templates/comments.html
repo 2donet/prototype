@@ -1,18 +1,87 @@
+{% load humanize %}
+{% load static %}
 {% for comment in comments %}
 <div class="comment" data-comment-id="{{ comment.id }}">
-    <strong>
-        {% if comment.user %}
-            {{ comment.user.username }}
-        {% else %}
-            Anonymous
-        {% endif %}
-    </strong>: {{ comment.content }}
+    <img class="miniavatar" src="{{ comment.author.avatar }}">
+    <span>
+    <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
+    </span>
+    <h4>
+        {{ comment.user }}
+    </h4>
+    <i>
+        {{ comment.author.bio }}
+    </i>
+
+    <p>
+        {{ comment.content }}
+    </p>
+
     <br>
     <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
     <span>{{ comment.total_replies }} replies</span>
+    <br>
     <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
+    <br>
     <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
         {% include "comments.html" with comments=comment.replies.all %}
     </div>
+
+    <br>
 </div>
 {% endfor %}
+
+
+
+
+{% comment %}
+{% for comment in comments %}
+<div class="comment">
+    <img class="miniavatar" src="{{ comment.author.avatar }}">
+    <span>
+    <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
+    </span>
+    <h4>
+        {{ comment.user }}
+    </h4>
+
+    <i>
+        {{ comment.author.bio }}
+    </i>
+
+    <p>
+        {{ comment.content }}
+    </p>
+    {% for comment in comment.reply.all %}
+        <div class="commentreply">
+            <img class="miniavatar" src="{{ comment.author.avatar }}">
+            <div class="iconbar">
+                <i title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</i>
+                <a href="/comment/{{ comment.id }}">details</a>
+                <a class="iconbaricon" href="/comment/{{ comment.id }}">
+                    <img src="{% static 'idea.svg' %}" alt="idea">
+                </a>
+                <a class="iconbaricon" href="#">
+                    <img src="{% static 'plan.svg' %}" alt="idea">
+                </a>
+                <a class="iconbaricon" href="#">
+                    <img src="{% static 'task.svg' %}" alt="idea">
+                </a>
+            </div>
+
+            <h4>
+                {{ comment.author }}
+            </h4>
+
+            <i>
+                {{ comment.author.bio }}
+            </i>
+
+            <p>
+                {{ comment.summary }}
+            </p>
+        </div>
+    {% endfor %}
+</div>
+{% endfor %}
+{% endcomment %}

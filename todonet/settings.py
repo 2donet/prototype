@@ -130,6 +130,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# Opcjonalnie: Dodaj globalne katalogi static (jeśli są)
+STATICFILES_DIRS = [
+    # Możesz dodać globalne foldery statyczne, jeśli istnieją
+    BASE_DIR / "static",
+]
 STATIC_ROOT = 'staticfiles'
 
 

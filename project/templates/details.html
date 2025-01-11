@@ -6,6 +6,7 @@
 {% block content %}
     {% load static %}
     {% load humanize %}
+<!--    <script src="{% static 'project/js/script.js' %}"></script>-->
 
     <div class="grid12">
         {% comment %} showing parent turned off, as parent content/projects has not been developed yet {% if part_of_project %} {% include "components/content/parentcard.html" %}{% endif %}{% endcomment %}
@@ -21,10 +22,10 @@
 								{% include "components/content/administrationcard.html" %}
 
 
-								{% comment %} 
+								{% comment %}
 								status module not ready yet
 									{% for status in last_status %}
-										{% include "components/content/statuscard.html" %} 
+										{% include "components/content/statuscard.html" %}
 									{% endfor %}
 								{% endcomment %}
 
@@ -37,7 +38,7 @@
 					{% endcomment %}
 
 
-{% comment %} 
+{% comment %}
             {% for author in project.author.all %}
                 <details>
                     <summary>
@@ -79,9 +80,9 @@
 
         </div>
 
-        
+
 <!-- Edycja danej treści -->
-        <div class="g12author"> 
+        <div class="g12author">
 
 
             <div class="dropdown">
@@ -101,7 +102,7 @@
             </div>
             <br>
 	<!--
-        todonet/templates/components/content/topcontributors.html 
+        todonet/templates/components/content/topcontributors.html
             -->
 
             {% include "components/content/topcontributors.html" %}
@@ -404,7 +405,7 @@
                                 {% include "components/content/actionsdropdown.html" %}
                             <h3><a href="#"><span
                                     style="font-weight: 400">{{ task.get_progress_display }}</span> {{ task.name }}</a>
-                            </h3> 
+                            </h3>
                             <ul>
                                 <li>
                                     Budget: {{ task.budget }}$ <a href="#" style="font-weight: 800">+</a>
@@ -562,77 +563,56 @@
             </div>
         {% endif %}
 
+
+
+<!------------- COMMENT SECTION ---------------->
+
+
         {% if comments %}
             <div class="g12com">
+
+
                 <h2>
                     Comments
                 </h2>
                 <div>
-                    {% for comment in comments %}
-                        <div class="comment">
-                            <img class="miniavatar" src="{{ comment.author.avatar }}">
-                            <span>
-                <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
-            		</span>
-                            <h4>
-                                {{ comment.user }}
-                            </h4>
+                    {% if comments %}
+                        {% include "comments.html" with comments=comments %}
+                    {% else %}
+                        <p>No comments</p>
+                    {% endif %}
 
-                            <i>
-                                {{ comment.author.bio }}
-                            </i>
-
-                            <p>
-                                {{ comment.content }}
-                            </p>
-                            {% for comment in comment.reply.all %}
-                                <div class="commentreply">
-                                    <img class="miniavatar" src="{{ comment.author.avatar }}">
-                                    <div class="iconbar">
-                                        <i title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</i>
-                                        <a href="/comment/{{ comment.id }}">details</a>
-                                        <a class="iconbaricon" href="/comment/{{ comment.id }}">
-                                            <img src="{% static 'idea.svg' %}" alt="idea">
-                                        </a>
-                                        <a class="iconbaricon" href="#">
-                                            <img src="{% static 'plan.svg' %}" alt="idea">
-                                        </a>
-                                        <a class="iconbaricon" href="#">
-                                            <img src="{% static 'task.svg' %}" alt="idea">
-                                        </a>
-                                    </div>
-
-                                    <h4>
-                                        {{ comment.author }}
-                                    </h4>
-
-                                    <i>
-                                        {{ comment.author.bio }}
-                                    </i>
-
-                                    <p>
-                                        {{ comment.summary }}
-                                    </p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
                 </div>
 
+                <br>
+                <h3>Add comment</h3>
+
+                <form id="add-comment-form" method="post">
+                    {% csrf_token %}
+                    <textarea name="content" placeholder="Add a comment..."></textarea>
+                    <input type="hidden" name="to_project_id" value="{{ content.id }}">
+                    <button type="submit">Submit</button>
+                </form>
 
 
-								
+
+
             </div>
         {% endif %}
 
     </div>
 
 
-
-
+<script src="{% static 'js/project/comments.js' %}"></script>
 
 
 {% endblock %}
+
+
+
+
+
+
 
 {% comment %} <h4>{{content.name}}</h4>
 {% if needs %}
@@ -650,7 +630,7 @@
 	{% endfor %}
 {% endif %}
 
-tasks 
+tasks
 {% if tasks %}
 	<br>
 	Tasks:
