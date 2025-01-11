@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import path, reverse
 from django.db.models import Prefetch
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from comment.models import Comment
 from decisions.models import Decision
 from user.models import Membership
@@ -82,3 +82,7 @@ def signin_view(request):
     else:
         form = SignInForm()
     return render(request, 'signin.html', {'form': form})
+
+def custom_logout(request):
+    logout(request)  # Log out the user
+    return redirect('/')  # Redirect to a specific page (e.g., home page)

@@ -19,7 +19,11 @@
 <body>
     <div class="contentBASE">
 
-        
+        {% if user.is_authenticated %}
+            <div class="desktop-item">
+                <button onclick="window.location.href='/create/'">Create project</button>
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </div>
 {% include "footer.html" %}

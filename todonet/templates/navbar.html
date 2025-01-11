@@ -172,8 +172,12 @@
             </div>
           </li>
         <li><a href="#">Feedback</a></li>
+      {% if user.is_authenticated %}
+        <li><a href="u/logout">Logout</a></li>
+      {% else %}
         <li><a href="u/signin">Sign In</a></li>
         <li><a href="u/signup">Sign Up</a></li>
+      {% endif %}
       </ul>
       <label for="menu-btn" class="btn menu-btn">
         <a class="iconbaricon">
