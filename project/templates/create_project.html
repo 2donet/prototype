@@ -1,85 +1,99 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Project</title>
-    <style>
-        /* Hide needs section by default */
-        #needs-section {
-            display: none;
-            margin-top: 20px;
-        }
-        .need-item {
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 10px;
-            position: relative;
-        }
-        .remove-need-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #f44336;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            padding: 3px 6px;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <h1>Create a New Project</h1>
-    <form method="post">
-        {% csrf_token %}
-        <label for="name">Project Name:</label>
-        <input type="text" id="name" name="name" required><br><br>
+{% extends "base.html" %}
+<style>
+    .need-item {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+    .remove-need-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: #f44336;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 3px 6px;
+        cursor: pointer;
+    }
+</style>
 
-        <label for="visibility">Visibility:</label>
-        <select id="visibility" name="visibility" required>
-            <option value="public">Public</option>
-            <option value="logged_in">Only Logged-In Users</option>
-            <option value="restricted">Restricted</option>
-            <option value="private">Private</option>
-        </select><br><br>
+{% block title %}
+    2do.net - Create a New Project
+{% endblock %}
 
-        <label for="status">Status:</label>
-        <select id="status" name="status">
-            <option value="">-- Select Status --</option>
-            <option value="to_do">To Do</option>
-            <option value="doing">Doing</option>
-            <option value="done">Done</option>
-        </select><br><br>
+{% block content %}
+    <div class="grid12">
+        <div class="g12hero box">
+            <h1>Create a New Project</h1>
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="name">Project Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
 
-        <label for="area">Area:</label>
-        <input type="text" id="area" name="area"><br><br>
+                <div class="form-group">
+                    <label for="visibility">Visibility:</label>
+                    <select id="visibility" name="visibility" required>
+                        <option value="public">Public</option>
+                        <option value="logged_in">Only Logged-In Users</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="private">Private</option>
+                    </select>
+                </div>
 
-        <label for="tags">Tags (comma-separated):</label>
-        <input type="text" id="tags" name="tags"><br><br>
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <select id="status" name="status">
+                        <option value="">-- Select Status --</option>
+                        <option value="to_do">To Do</option>
+                        <option value="doing">Doing</option>
+                        <option value="done">Done</option>
+                    </select>
+                </div>
 
-        <label for="summary">Summary:</label>
-        <textarea id="summary" name="summary"></textarea><br><br>
+                <div class="form-group">
+                    <label for="area">Area:</label>
+                    <input type="text" id="area" name="area">
+                </div>
 
-        <label for="desc">Description:</label>
-        <textarea id="desc" name="desc"></textarea><br><br>
+                <div class="form-group">
+                    <label for="tags">Tags (comma-separated):</label>
+                    <input type="text" id="tags" name="tags">
+                </div>
 
-        <label for="published">Publish Now:</label>
-        <input type="checkbox" id="published" name="published" value="1"><br><br>
+                <div class="form-group">
+                    <label for="summary">Summary:</label>
+                    <textarea id="summary" name="summary"></textarea>
+                </div>
 
-        <button type="button" id="toggle-needs-btn">Add Needs</button>
+                <div class="form-group">
+                    <label for="desc">Description:</label>
+                    <textarea id="desc" name="desc"></textarea>
+                </div>
 
-        <div id="needs-section">
-            <h2>Needs for This Project</h2>
-            <div id="needs-container">
-                <!-- Dynamic fields for needs will be added here -->
-            </div>
-            <button type="button" id="add-need-btn">Add Another Need</button><br><br>
+                <div class="form-group">
+                    <label for="published">Publish Now:</label>
+                    <input type="checkbox" id="published" name="published" value="1">
+                </div>
+
+                <button type="button" id="toggle-needs-btn">Add Needs</button>
+
+                <div id="needs-section" class="needs-section" style="display: none;">
+                    <h2>Needs for This Project</h2>
+                    <div id="needs-container">
+                        <!-- Dynamic fields for needs will be added here -->
+                    </div>
+                    <button type="button" id="add-need-btn">Add Another Need</button>
+                </div>
+
+                <hr>
+                <button type="submit" class="btn-primary">Create Project</button>
+            </form>
         </div>
-
-        <hr>
-        <button type="submit">Create Project</button>
-    </form>
+    </div>
 
     <script>
         const toggleNeedsBtn = document.getElementById('toggle-needs-btn');
@@ -144,5 +158,4 @@
         // Attach event listener for adding needs
         addNeedBtn.addEventListener('click', addNeed);
     </script>
-</body>
-</html>
+{% endblock %}
