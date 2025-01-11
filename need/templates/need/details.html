@@ -1,1 +1,24 @@
-<p>!</p>
+<h4>{{ content.name }}</h4>
+{% if needs %}
+    <br>
+    <strong>Needs:</strong>
+    {% for need in needs %}
+        <div>
+            <h5>{{ need.name }}</h5>
+            <p>{{ need.desc }}</p>
+            <strong>Comments:</strong>
+            <ul>
+                {% for comment in need.comment_list %}
+                    <li>
+                        <strong>{{ comment.user.username }}</strong>: {{ comment.content }}
+                    </li>
+                {% empty %}
+                    <li>No comments for this need.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <br>
+    {% endfor %}
+{% else %}
+    <p>No needs available.</p>
+{% endif %}

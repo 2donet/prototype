@@ -1,0 +1,21 @@
+<h2>Task Details</h2>
+<p>{{ task.name }}</p>
+<h3>Comments</h3>
+<div id="comments">
+    {% for comment in comments %}
+        <div class="comment">
+            <p>{{ comment.user.username }}: {{ comment.content }}</p>
+            <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
+            <div class="replies">
+                {% for reply in comment.replies.all %}
+                    <p>{{ reply.user.username }}: {{ reply.content }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+<form id="add-comment-form">
+    <textarea name="content" placeholder="Add a comment..."></textarea>
+    <input type="hidden" name="to_task_id" value="{{ task.id }}">
+    <button type="submit">Submit</button>
+</form>

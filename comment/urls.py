@@ -1,11 +1,12 @@
 from django.urls import path
-from .views import load_replies, add_comment
+from .views import load_replies, add_comment, comment_list_view
 
 app_name = "comments"
 
 urlpatterns = [
     path("load-replies/<int:comment_id>/", load_replies, name="load_replies"),
     path("add/", add_comment, name="add_comment"),
+    path("show/", comment_list_view, name="show_comment")
 ]
 
 

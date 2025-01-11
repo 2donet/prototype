@@ -1,56 +1,44 @@
 from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.conf import settings
+
 
 class Comment(models.Model):
     content = models.TextField("description")
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies"
     )  # Self-referential ForeignKey for replies
-    user = models.ForeignKey("user.User", on_delete=models.CASCADE, db_index=True)
-    to_comment = models.ForeignKey("self", blank=True, null=True, on_delete=models.CASCADE, related_name="related_comments", db_index=True)
-    to_project = models.ForeignKey("project.Project", blank=True, null=True, on_delete=models.CASCADE, related_name="comments", db_index=True)
-    to_task = models.ForeignKey("task.Task", blank=True, null=True, on_delete=models.CASCADE, related_name="comments", db_index=True)
-    to_need = models.ForeignKey("need.Need", blank=True, null=True, on_delete=models.CASCADE, related_name="comments", db_index=True)
-    to_report = models.ForeignKey("moderation.Report", blank=True, null=True, on_delete=models.CASCADE, related_name="comments", db_index=True)
-    to_membership = models.ForeignKey("user.Membership", blank=True, null=True, on_delete=models.CASCADE, related_name="comments", db_index=True)
-    to_decision = models.ForeignKey("decisions.Decision", blank=True, null=True, on_delete=models.CASCADE, related_name="comments", db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, db_index=True
+    )  # Allow null for anonymous users
+    to_project = models.ForeignKey(
+        "project.Project", null=True, blank=True, on_delete=models.CASCADE, related_name="comments"
+    )
+    total_replies = models.PositiveIntegerField(default=0)  # Cache for replies count
 
     def __str__(self):
-        return self.content[:20]
+        return f"{self.content[:20]} by {self.user.username if self.user else 'Anonymous'}"
 
-    @staticmethod
-    def update_reply_count(comment):
+    def update_reply_count(self):
         """
-        Recursively update the total_replies count of all parent comments.
+        Recursively update the total_replies count for parent comments.
         """
+        comment = self
         while comment:
             comment.total_replies = comment.replies.count()
-            comment.save()
+            comment.save(update_fields=["total_replies"])
             comment = comment.parent
+
 
 # Signals to update `total_replies` automatically
 @receiver(post_save, sender=Comment)
-def update_replies_on_save(sender, instance, **kwargs):
-    if instance.parent:
-        Comment.update_reply_count(instance.parent)
+def update_replies_on_save(sender, instance, created, **kwargs):
+    if created and instance.parent:
+        instance.parent.update_reply_count()
+
 
 @receiver(post_delete, sender=Comment)
 def update_replies_on_delete(sender, instance, **kwargs):
     if instance.parent:
-        Comment.update_reply_count(instance.parent)
-
-
-
-    # def __str__(self):
-    #     return self.name
-
-# Validation: Consider adding validation to ensure a comment is associated with at least one of the target models (to_project, to_task, etc.).
-#     For example, you can override the save method or use a custom validator.
-# def save(self, *args, **kwargs):
-#     if not any([self.to_project, self.to_task, self.to_need, self.to_report, self.to_membership]):
-#         raise ValueError("A comment must be associated with at least one target.")
-#     super().save(*args, **kwargs)
-
-
-
+        instance.parent.update_reply_count()

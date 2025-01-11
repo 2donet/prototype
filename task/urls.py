@@ -4,4 +4,6 @@ from . import views
 # from .views import UpdateTaskView
 
 app_name = "task"
-urlpatterns = []
+urlpatterns = [
+    path("<int:task_id>/", views.task_detail, name="task_detail"),
+]
