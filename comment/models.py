@@ -17,6 +17,19 @@ class Comment(models.Model):
     )
     total_replies = models.PositiveIntegerField(default=0)  # Cache for replies count
 
+    to_comment = models.ForeignKey("self", blank=True, null=True, on_delete=models.CASCADE,
+                                   related_name="related_comments", db_index=True)
+    to_task = models.ForeignKey("task.Task", blank=True, null=True, on_delete=models.CASCADE, related_name="comments",
+                                db_index=True)
+    to_need = models.ForeignKey("need.Need", blank=True, null=True, on_delete=models.CASCADE, related_name="comments",
+                                db_index=True)
+    to_report = models.ForeignKey("moderation.Report", blank=True, null=True, on_delete=models.CASCADE,
+                                  related_name="comments", db_index=True)
+    to_membership = models.ForeignKey("user.Membership", blank=True, null=True, on_delete=models.CASCADE,
+                                      related_name="comments", db_index=True)
+    to_decision = models.ForeignKey("decisions.Decision", blank=True, null=True, on_delete=models.CASCADE,
+                                    related_name="comments", db_index=True)
+
     def __str__(self):
         return f"{self.content[:20]} by {self.user.username if self.user else 'Anonymous'}"
 

@@ -16,6 +16,9 @@ from django.db.models import Prefetch
 from django.contrib.auth import get_user_model
 
 def index(request):
+    """
+        Display a list of the latest projects.
+        """
     latest_projects_list = Project.objects.order_by('id')
     context = {"latest_projects_list": latest_projects_list,}
     return render(request, "index.html", context=context)
