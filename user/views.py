@@ -1,15 +1,13 @@
-from django.shortcuts import render
-
-# Create your views here.
-
 from django.shortcuts import get_object_or_404, render, redirect
-from comment.models import Comment
-
-from user.models import Person
 from django.urls import path, reverse
 from django.db.models import Prefetch
-from user.models import Membership
+from django.contrib.auth import authenticate, login
+from comment.models import Comment
 from decisions.models import Decision
+from user.models import Membership
+from user.models import Person
+from user.signup import SignupForm
+from user.signin import SignInForm
 
 
 def userprofile(request, person_id):
@@ -64,3 +62,23 @@ def membership_details(request, membership_id):
     }
     return render(request, 'person_membership_details.html', context)
 
+def signup(request):
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')  # Redirect to login or another page after signup
+    else:
+        form = SignupForm()
+    return render(request, 'signup.html', {'form': form})
+
+def signin_view(request):
+    if request.method == 'POST':
+        form = SignInForm(data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('/')
+    else:
+        form = SignInForm()
+    return render(request, 'signin.html', {'form': form})
