@@ -53,7 +53,7 @@ def project_details(request, project_id):
 
 # @login_required
 def create_project(request):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
         # Dane projektu
         name = request.POST.get('name')
         visibility = request.POST.get('visibility')

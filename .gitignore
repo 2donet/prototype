@@ -11,3 +11,4 @@ env/
 # Pliki konfiguracyjne
 *.env
 .idea/
+db.sqlite3
