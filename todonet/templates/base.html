@@ -1,0 +1,30 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  
+<head>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'navbar.css' %}">
+
+    <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
+
+    <script src="{% static 'javascript/actionsmenu.js' %}"></script>
+          {% comment %} nie wykorzystywany w tej template {% endcomment %}
+
+    <title>{% block title %}2do.net{% endblock %}</title>
+</head>
+
+{% include "navbar.html" %}
+
+<body>
+    <div class="contentBASE">
+
+        
+        {% block content %}{% endblock %}
+    </div>
+{% include "footer.html" %}
+
+</body>
+</html>
+
+

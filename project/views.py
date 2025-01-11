@@ -62,8 +62,7 @@ def create_project(request):
         published = request.POST.get('published') == '1'  # Checkbox or select input
 
         # Utwórz projekt
-        # user = User.objects.get(name=request.user.name)
-        user = User.objects.get(name='tester-1')
+        user = User.objects.get(name='tester-1')  # Replace with dynamic user retrieval in production
         project = Project.objects.create(
             name=name,
             visibility=visibility,
@@ -81,14 +80,16 @@ def create_project(request):
         need_names = request.POST.getlist('need_name[]')  # Lista nazw potrzeb
         need_descs = request.POST.getlist('need_desc[]')  # Lista opisów potrzeb
 
-        # Tworzenie każdej potrzeby
-        for name, desc in zip(need_names, need_descs):
-            Need.objects.create(
-                name=name,
-                desc=desc,
-                created_by=user,
-                to_project=project,
-            )
+        # Tworzenie każdej potrzeby (only if data exists)
+        if need_names and need_descs:
+            for name, desc in zip(need_names, need_descs):
+                if name.strip():  # Ensure name is not empty
+                    Need.objects.create(
+                        name=name,
+                        desc=desc,
+                        created_by=user,
+                        to_project=project,
+                    )
 
         return redirect('project:project', project_id=project.id)
 

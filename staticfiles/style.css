@@ -1,0 +1,1318 @@
+:root {
+    --bg-color: #272b41;
+    --bg-color2: #343851;
+    --bg-color3: #30344a;
+    --bgpopup: #414459;
+    --highlight: #e5c129;
+    --highlight-dark: #d5d370;
+    --text: #f1f1f5;
+    --text2ndary: #d1d1d1;
+    --bg-light: #383c57;
+    --highlightdark: #3B4139;
+    --highlightmenu: #4B4E5F;
+    --status-green: rgb(83, 173, 9);
+    --status-red: rgb(173, 9, 9);
+    --status-red-dark: rgb(170, 21, 63);
+    --status-yellow: rgb(232, 186, 78);
+    --status-blue: rgb(68, 112, 215);
+    --status-orange: rgb(170, 140, 21);
+    --status-pink: rgb(198, 43, 174);
+    --status-purple: rgb(105, 31, 138);
+
+}
+/* --bg-light: #474B60; */
+
+body {
+    background-color: var(--bg-color);
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 0;
+    margin: 0;
+}
+
+p {
+    color: var(--text);
+}
+span {
+    color: var(--text2ndary);
+}
+li {
+    color: var(--text2ndary);
+}
+h1, h2, h3, h4, h5 {
+    color: #e5c129;
+}
+div{
+    color: var(--text);
+}
+a {
+    color: var(--highlight);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration-line: underline;
+}
+i {
+    color: var(--text2ndary);
+}
+code
+{
+    color: var(--text2ndary);
+}
+
+/* CONTENT */
+/* base template's div, inside which subpages are put */
+.contentBASE {
+    padding: 100px 20px;
+}
+
+
+/* box is used as an additional class for adding background for the contents (e.g., for Project Ingredients on single Project Page */
+.box {
+    height: fit-content;
+    padding: 10px 20px;
+    background-color: var(--bg-light);
+    border-radius: 10px;
+    /*width: 100%;*/
+}
+
+
+li::marker {
+    font-size: 1em;
+    color: var(--highlight);
+}
+
+/* Working on making a list consiting of different markers  */
+
+.task li {
+    list-style-image: url(/static/task.svg) !important;
+}
+.idea li {
+    list-style-image: url(/static/idea.svg);
+}
+.idea .plan {
+    list-style-image: url(/static/plan.svg);
+}
+.task li::marker, .idea li::marker, .plan li::marker {
+    font-size: 2em !important;
+}
+
+
+.homehero {
+    text-align: center;
+    margin: 80px 0;
+    justify-content: center;
+}
+
+.homehero h1 {
+    font-size: 48px;
+}
+
+.homehero h3 {
+    color: var(--text2ndary);
+}
+
+
+/* change name to card contentsingle or just content/subcontent */
+.stickynote {
+    
+  width: 500px;
+    height: auto;
+    background-color: var(--bg-light);
+    border-radius: 30px 30px 120px 30px;
+    padding: 5px 10px;
+    margin: 20px;
+    justify-content: center;
+    align-content: center;
+
+
+}
+.stickynote button {
+    margin: 10px;
+}
+.stickynote h3 {
+    font-size: 22px;
+    /* text-align: center; */
+    margin-left: 1rem;
+}
+.stickynote details[open]{
+    margin-bottom: 24px;
+}
+.stickynote details summary {
+    width: auto;
+}
+
+.stickynote .iconbaricon {
+    width: 15px;
+}
+
+.SMicons {
+    padding: 5px;
+    display: block;
+    justify-items: end;
+}
+
+.SMicons img {
+    max-width: 20px;
+    margin: 5px 3px 0px;
+}
+
+.SMicons a:hover {
+    text-decoration: none;
+}
+
+/* TYPE */
+.type 
+ {
+    color: var(--text2ndary);
+    background-color: var(--bg-color);
+    border: none;
+    margin: 5px;
+    border-radius: 10px;
+    padding: 5px;
+    font-weight: 600;
+}
+
+.type button:hover {
+    color: var(--highlight);
+    cursor: pointer;
+    background-color: var(--highlightdark);
+    border: var(--highlight) 2px;
+}
+
+/* Content's verification status
+    <button 
+        class="{{content.verification | e.g. vertrue }}"
+        href="{{contentsVerificationsPage.link | e.g., /project/{{project.id}}/verifications">
+            {{content.get_verification_display | e.g. Verified}}
+    </button>
+
+Currently only verified
+To add
+    * unverified
+    * Verification by Users
+    * some kind of warnings
+        - e.g., current version unverified (e.g., 
+*/
+.vertrue {
+    background-color: rgb(83, 173, 9) !important;
+    color: black !important;
+}
+
+
+
+
+
+/* need */
+/* change name to need-box */
+.needCards {
+    background-color: var(--bg-color);
+    padding: 8px;
+    margin: 4px 16px 16px 4px;
+    border-radius: 10px;
+    width: fit-content;
+}
+.needCards button {
+    color: var(--text2ndary);
+    background-color: var(--bg-light);
+    border: none;
+    margin: 5px;
+    border-radius: 5px;
+}
+.needCards button:hover {
+    color: var(--highlight);
+    cursor: pointer;
+    background-color: var(--highlightdark);
+    border: var(--highlight) 2px;
+}
+
+
+/* contents icon bars with a link (iconbartext) to their own page and some icons. working on displaying count of their childer (sth like for a project: X tasks Y problems Z comments) */
+.iconbar {
+    background: var(--bg-light);
+    width: fit-content;
+    border: 1px solid var(--highlightmenu);
+  color: var(--highlightmenu);
+    margin: 5px 5px 5px 5px;
+    gap: 6px;
+    float: right;
+    border-radius: 10px;
+}
+
+.iconbartext{
+    margin: 2px 1px 1px 6px !important;
+    display: inline-block;
+    color: var(--highlightmenu);
+}
+
+.iconbaricon {
+    width: 15px;
+}
+.iconbaricon img {
+    width: 15px;
+}
+
+.iconbar i{
+    color: var(--highlight);
+    border-right: solid var(--highlight) 1px;
+    padding: 1px 3px;
+
+}
+
+.iconbar img {
+    object-fit: cover;
+    max-width: 100%;
+    margin: 3px 2px 0 0;
+}
+.iconbar i{
+    margin: 0 0 2px;
+}
+
+/* DETAILS */
+details {
+    /* margin: 2px 10px; */
+    padding: 4px 0px 4px 6px;
+    border-radius: 20px;
+}
+
+details summary::-webkit-details-marker {
+    background: var(--bg-light);
+    text-decoration: none !important;
+}
+details summary::marker {
+    background: var(--bg-light);
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+}
+details[open] {
+    border: solid #272b41 4px;
+    padding-left: 0px;
+    margin: 0px 13px 10px 13px;
+    padding-top: 0px;
+    border-radius: 10px;
+    margin: 5px 0px;
+    background-color: var(--bg-color2);
+}
+
+details[open] p, details[open] a, details[open] h4, details[open] i{
+    padding-left: 0.5rem;
+}
+details summary {
+
+    cursor: pointer;
+    padding: 2px 6px;
+    width: auto;
+    border: none;
+    padding: 3px 4px;
+    color: var(--text);
+}
+details[open] summary {
+    background-color: var(--bg-color);
+    /* font-weight: 800; */
+    padding: 0px;
+    border: solid #272b41 3px;
+    padding-left: 0px;
+    font-weight: 800;
+    padding-left: 0px !important;
+}
+details[open] summary:hover {
+    text-decoration: none;
+}
+details summary>* {
+    display: inline;
+}
+details[open] summary b {
+    color: var(--highlight);
+}
+details i {
+    color: var(--text2ndary);
+}
+details p {
+    padding: 4px 9px;
+    margin: 0;
+}
+
+details[open] .subdet summary {
+    cursor: pointer;
+    padding: 2px 6px;
+    width: auto;
+    border: none;
+    padding: 3px 4px;
+    color: var(--text2ndary);
+    background-color: transparent;
+}
+
+details[open] .subdet[open] {
+    border: solid #272b41 4px;
+    padding-left: 0px;
+    margin: 0px 13px 10px 13px;
+    padding-top: 0px;
+    border-radius: 10px;
+    background-color: var(--bg-color3);
+}
+
+details[open] .subdet[open] summary {
+    background-color: var(--bg-color);
+    /* font-weight: 800; */
+    padding: 0px;
+    border: solid #272b41 3px;
+    padding-left: 0px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+details[open] .iconbar{
+    padding: 1px 3px;
+}
+
+
+
+/* .logoiconwrapper {
+    margin: 0px;
+} */
+.logotype span {
+    white-space: nowrap;
+    font-size: 24px;
+    position: absolute;
+    bottom: 0;
+    left: 10px;
+    font-weight: 500;
+}
+
+.logoicon {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    float: left;
+    width: 32px;
+    line-height: 0px !important;
+    margin-top: 8px;
+}
+.logotype {
+    display: inline;
+    padding: 0 0 25px 10px;
+    text-decoration: none;
+    float: right;
+    font-size: 30px;
+    color: var(--highlight);
+    position: relative;
+}
+.logotype a:hover{
+    text-decoration: underline !important;
+}
+
+footer {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: auto;
+}
+
+.footer-item {
+    padding: 5px 20px;
+    margin: 10px 20px;
+}
+
+
+.footer2 {
+    grid-area: 1 / 1 / 2 / 5;
+    text-align: center;
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+.grid12 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background-color: var(--bg-color);
+    grid-template-rows: auto;
+    grid-template-areas:
+    "info hero author"
+    ". status author"
+    " . intro author"
+    " . dod ."
+    " projects projects projects"
+    "tasks tasks tasks"
+    " . sm . "
+    " . comments . "
+    "contr partners patreons"
+    ". end ."
+    ;
+}
+@media screen and (max-width: 1400px) {
+    .grid12 {
+        display: grid;
+        grid-template-columns: 1fr 4fr 1fr;
+        background-color: var(--bg-color);
+        grid-template-rows: auto;
+        grid-template-areas:
+        "info hero hero"
+        ". author . "
+        "status status status"
+        " . intro ."
+        " dod dod dod"
+        " projects projects projects"
+        "tasks tasks tasks"
+        " . sm . "
+        " . comments . "
+        "contr"
+        "partners"
+        "patreons"
+        ". end ."
+        ;
+    }
+  }
+
+/* On screens that are 600px or less, set the background color to olive */
+@media screen and (max-width: 600px) {
+    .grid12 {
+        display: grid;
+        grid-template-columns: 1fr;
+        background-color: var(--bg-color);
+        grid-template-rows: auto;
+        grid-template-areas:
+        " hero "
+        "info"
+        "author"
+        "status"
+        "intro"
+        "dod"
+        "projects"
+        "tasks"
+        "sm"
+        "comments"
+        "contr"
+        "partners"
+        "patreons"
+        "end"
+        ;
+    }
+  }
+
+
+.about {
+    display: grid;
+    grid-template-columns: 1fr;
+    background-color: var(--bg-color);
+    grid-template-rows: auto;
+    grid-template-areas:
+    "hero"
+    ;
+}
+
+.hero{
+    grid-area: hero;
+    margin: 10px;
+}
+
+.g12info{
+    grid-area: info;
+    margin: 10px;
+}
+
+
+.g12hero {
+    grid-area: hero;
+    height: fit-content;
+    padding: 10px 20px;
+    border-radius: 10px;
+    margin: 10px;
+}
+.homehero{
+    text-align: center;
+    margin-top: 100px;
+}
+.homehero h3{
+    color: var(--highlight) !important;
+}
+
+.g12hero button {
+    padding: 6px;
+    margin: 10px 5px 0px;
+    background-color: var(--bg-color);
+    color: var(--text2ndary);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+
+
+.g12hero button:hover {
+    color: var(--highlight);
+}
+
+.g12hero h1 {
+    margin: 14px 0px 8px;
+}
+.g12hero h3{
+    color: var(--text);
+}
+
+.herosummary{
+    font-size: large;
+}
+
+
+.g12author {
+    height: fit-content;
+    padding: 10px;
+    grid-area: author;
+    /* margin: 10px; */
+}
+
+.g12adm {
+    grid-column: col-start 1 / span 4;
+    grid-row: 3 / 4;
+    height: fit-content;
+    padding: 0px 20px;
+    margin: 10px;
+}
+
+.g12status {
+    grid-area: status;
+    margin: 10px;
+}
+
+
+
+/*.g12end .box*/
+/*{box-shadow: 0 10px 20px 0 rgb(255, 230, 0);*/
+/*}*/
+
+.g12intro {
+grid-area: intro;
+margin: 10px;
+}
+
+.g12dod {
+grid-area: dod;
+margin: 10px;
+}
+
+.g12projects {
+    margin-top: 40px;
+grid-area: projects;
+margin: 10px;
+}
+
+.g12projects .box {
+    margin-bottom: 60px;
+    border: solid var(--highlightdark) 2px;
+}
+
+.g12projects .box .hsummary {
+    max-width: 800px;
+    text-align: center;
+    justify-content: center;
+    align-content: center;
+
+}
+
+.g12tasks {
+grid-area: tasks;
+margin: 10px;
+}
+
+.g12tasks .box {margin-bottom: 60px;}
+
+
+.g12notes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    align-items: start;
+    justify-content: center;
+}
+
+.g12note {
+    flex: 0 0 20%;
+    width: auto;
+    min-width: 420px;
+    height: auto;
+    background-color: var(--bg-light);
+    border-radius: 30px 15px 60px 30px;
+    padding: 5px 10px;
+    margin: 20px;
+    justify-content: center;
+    align-content: center;
+}
+
+
+.g12sm {
+grid-area: sm;
+margin: 10px;
+}
+
+.g12com {
+    grid-area: comments;
+    margin: 10px -70px;
+}
+
+.g12c1 {
+grid-area: contr;
+margin: 10px;
+}
+
+.g12c2 {
+grid-area: partners;
+margin: 10px;
+}
+
+.g12c3 {
+grid-area: patreons;
+margin: 10px;
+}
+
+.g12end {
+grid-area: end;
+margin: 10px;
+}
+
+.rules {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 4fr 1fr 1fr 2fr;
+    background-color: var(--bg-color);
+    grid-template-areas:
+    ". . . hero . . ."
+    ". . intro intro intro . ."
+    ". . terms terms terms . ."
+    ". . condi condi condi . ."
+    ". . . summary . . ."
+    ;
+}
+
+.rhero {
+    grid-area: hero;
+    margin: 10px;
+}
+
+.rintro {
+    grid-area: intro;
+    margin: 10px;
+}
+
+.rterms {
+    grid-area: terms;
+    margin: 10px;
+}
+
+.rconditions {
+    grid-area: condi;
+    margin: 10px;
+}
+
+.rsummary {
+    grid-area: summary;
+    margin: 10px;
+}
+
+
+
+.post {
+    grid-area: post;
+}
+
+/* working on a single agreement's layout */
+.agreement {
+    margin-top: 80px;
+    display: grid;
+    grid-template-columns: repeat(12, [col-start] 1fr);
+    gap: 20px;
+    background-color: var(--bg-color);
+}
+
+.aheader {
+    grid-column: col-start 4 / span 6;
+    grid-row: 1 / 2;
+}
+
+
+.asender {
+    grid-column: col-start 1 / span 3;
+    grid-row: 2 / 3;
+}
+
+.asummary {
+    grid-column: col-start 4 / span 6;
+    grid-row: 2 / 3;
+}
+
+.areceipent {
+    grid-column: col-start 10 / span 6;
+    grid-row: 2 / 3;
+}
+
+
+
+/* profiles layout */
+
+
+.profile {
+    place-items: center;
+    margin-top: 80px;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 4fr 1fr 1fr 2fr;
+    gap: 20px;
+    background-color: var(--bg-color);
+    grid-template-areas: 
+    "pin1 pin1 pin1 name pin2 pin2 pin2"
+    "pin1 pin1 pin1 hero pin2 pin2 pin2"
+    "pin1 pin1 pin1 skills pin2 pin2 pin2"
+    ". . contr contr contr . ."
+    ". . ini ini ini . . "
+    ". . . exp . . ."
+    ". . ref ref ref . ."
+    ". . . posts . . .";
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.pname{
+    grid-area: name;
+    justify-self: start;
+    padding: 10px 20px;
+}
+
+.phero {
+    grid-area: hero;
+    justify-self: start;
+}
+
+.ppinned {
+    grid-area: pin1;
+    align-self: baseline;
+}
+
+
+/*to improve: profile page avatar and miniavatar for comments and small cards*/
+.profpic{
+    /* width: 300px;
+    height: 300px; */
+    max-width: 60%;
+    object-fit: contain;
+    float: right;
+    align-self: flex-start;
+}
+
+
+.ppinned2 {
+    grid-area: pin2;
+    margin-left: 0;
+    margin-right: auto;
+    width: fit-content;
+    align-self: baseline;
+}
+
+.pskill {
+    grid-area: skills;
+}
+
+.pini {
+    grid-area: ini;
+}
+
+.pcontr {
+    grid-area: contr;
+}
+
+.pexp {
+    grid-area: exp;
+}
+
+.pref {
+    grid-area: ref;
+}
+
+.pposts {
+    grid-area: posts;
+}
+
+.pposts img {
+    max-width: 600px;
+}
+
+
+.profile {
+    place-items: center;
+    margin-top: 80px;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 4fr 1fr 1fr 2fr;
+    gap: 20px;
+    background-color: var(--bg-color);
+    grid-template-areas: 
+    "pin1 pin1 pin1 name pin2 pin2 pin2"
+    "pin1 pin1 pin1 hero pin2 pin2 pin2"
+    "pin1 pin1 pin1 skills . . ."
+    ". . contr contr contr . ."
+    ". . ini ini ini . . "
+    ". . . exp . . ."
+    ". . ref ref ref . ."
+    ". . . posts . . .";
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+@media only screen and (max-width: 600px) {
+    .profile{
+    margin-top: 12px;
+    grid-template-columns: 1fr 1fr 4fr 1fr 1fr;
+    grid-template-areas: 
+    "name name name name name"
+    "pin1 pin1 pin1 pin1 pin1"
+    ". hero hero hero ."
+    "skills skills skills pin2 pin2"
+    ". . posts . . "
+    ". ref ref ref ."
+    ". contr contr contr ."
+    ". ini ini ini ."
+    ". . exp . ."
+    ;
+    }
+    .logotype-text {
+        font-size: 10px;
+    }
+    .logo{
+        max-width: 20px;
+    }
+    /* .logotype{
+        padding: 0 0 4px 3px !important;
+    } */
+    /* .logotype span {
+        font-size: 10px !important;
+    } */
+    /* nav a{
+        font-size: 12px !important;
+    } */
+    header li{
+        padding: 4px;
+    }
+
+}
+
+@media (max-width: 900px) {
+    .profile {
+    grid-template-columns: 1fr 1fr 3fr 1fr 1fr;
+    grid-template-areas: 
+    "pin1 pin1 name name name"
+    "pin1 pin1 hero hero hero"
+    "pin2 pin2 hero hero hero"
+    "pin2 pin2 skills skills skills"
+    ". exp exp exp ."
+    ". . posts . ."
+    ". ref ref ref ."
+    ". contr contr contr ."
+    ". ini ini ini ."
+    ;
+    }
+    .ppinned2{
+        margin-left: auto;
+        margin-right: auto;
+        color: #e5c129 !important;
+        align-self: center;
+    }
+    .dropdown-content a{
+        padding: 8px !important;
+    }
+}
+
+@media (min-width: 900px) and (max-width: 1200px) {
+    .profile {
+        grid-template-columns: 1fr 1fr 3fr 1fr 1fr;
+        grid-template-areas: 
+        " . . posts . . "
+        " pin1 pin1 name pin2 pin2 "
+        " pin1 pin1 hero pin2 pin2 "
+        " . ref ref ref . "
+        " . contr contr contr . "
+        " . . skills . . "
+        " . ini ini ini . "
+        " . . exp . . ";
+        }
+}
+
+@media (min-width: 2000px) and (max-width: 2500px) {
+    .profile {
+        margin: 0 200px;
+        grid-template-columns: 1fr 1fr 3fr 1fr 1fr;
+        grid-template-areas: 
+        " pin1 pin1 name pin2 pin2 "
+        " pin1 pin1 hero pin2 pin2 "
+        " . . posts . . "
+        " . ref ref ref . "
+        " . . skills . . "
+        " . contr contr contr . "
+        " . . exp . . "
+        " . ini ini ini . "
+        ;
+        }
+}
+
+
+
+
+
+/* 
+
+Comments *Work In Progress*
+
+*/
+
+.comment{
+    border-radius: 30px 30px 120px 30px;
+    background-color: var(--bg-light);
+    padding: 10px 30px;
+    margin-top: 20px;
+}
+
+.commentreply{
+    border-radius: 30px 30px 120px 30px;
+    background-color: var(--bg-color);
+    padding: 10px 30px;
+    margin: 15px 10px 15px 4rem;
+}
+.miniavatar{
+    float: left;
+    max-width: 60px !important;
+    max-height: 60px !important;
+    margin: 0px 30px 4px 4px;
+}
+
+.comment h4{
+    margin: 4px 0px;
+}
+.comment p{
+    margin-top: 30px;
+}
+.commentreply h4{
+    margin: 4px 0px;
+}
+
+
+
+@media (max-width: 30em) {
+  /* … */
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  .dropdown {
+    float: right;
+        overflow: hidden;
+  }
+  
+  .dropdown .dropbtn {
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: var(--text);
+    padding: 6px 8px;
+    background-color: inherit;
+    font-family: inherit;
+    font-weight: 800;
+    margin: 0;
+    opacity: 42%;
+
+  }
+  
+  .dropdown:hover .dropbtn {
+    background-color: var(--highlightmenu);
+    opacity: 75%;
+  }
+  
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--bg-light);
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+  }
+  
+  .dropdown-content a {
+    float: none;
+    color: var(--text);
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+  }
+  
+  .dropdown-content a:hover {
+    background-color: var(--highlightmenu);
+  }
+  
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+
+  .dropdown-content2 {
+    display: none;
+    position: absolute;
+    background-color: var(--bg-light);
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+  }
+  .dropdown2:hover .dropdown-content2  {
+    display: block !important;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /* vote */
+
+  .votegrid
+{
+    display: grid;
+    place-items: center;
+    margin-top: 80px;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 20px;
+    background-color: var(--bg-color);
+    grid-template-areas: 
+    ". intro ."
+    ". voting .";
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media screen and (max-width: 992px) {
+    .votegrid
+    {
+        display: grid;
+        place-items: center;
+        margin-top: 80px;
+        grid-template-columns: 1fr 8fr 1fr;
+        gap: 10px;
+        background-color: var(--bg-color);
+        grid-template-areas: 
+        ". intro ."
+        ". voting .";
+        margin-left: auto;
+        margin-right: auto;
+    }
+  }
+
+.vvoting{
+    grid-area: voting;
+}
+
+.vintro{
+    grid-area: intro;
+}
+
+/* .range-input{
+    margin-top: 10px;
+} */
+
+label:after { content: '\a' ; white-space: pre; }
+
+
+input, textarea {
+    color: #f1f1f5;
+    background: #272b41;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Actions menu(https://codepen.io/antoniputra/pen/BzyWmb) */
+
+
+.actions-menu {
+    z-index: 9;
+    float: right;
+  }
+  .actions-menu li {
+    display: inline-block;
+    position: relative;
+    
+  }
+  .actions-menu li.action-button:hover > .actions-list {
+    display: block;
+  }
+  .actions-menu li a {
+    display: block;
+    padding: 8px 8px;
+    background:var(--bg-color);
+  
+  
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: #d1d1d1;
+    background-color: inherit;
+    font-weight: 800;
+    margin: 0;
+  }
+  
+  .actions-menu li a:hover{
+      background-color: var(--highlightactions-menu);
+      color: var(--highlight);
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      border-radius: 10px;
+      text-decoration: none;
+  }
+  .actions-menu li.action-button > a::after {
+    font-style: normal;
+    font-weight: 400;
+    margin-left: 8px;
+    font-size: 10px;
+  }
+  .actions-menu li a::before {
+    font-style: normal;
+    font-weight: 400;
+    margin-right: 8px;
+  }
+  .actions-menu li a:hover {
+    background: var(--bg-color2);
+  }
+  
+  .actions-menu .actions-list {
+    display: none;
+  }
+  .actions-list {
+    margin: 0px;
+    padding: 0px;
+    position: absolute;
+    left: 0px;
+    list-style-type: none;
+    display: block;
+    width: 160px;
+    z-index: 9;
+    color: var(--text);
+  
+  }
+  .actions-list li {
+    display: block;
+  }
+  .actions-list li a {
+    display: block;
+    background: #414459;
+    color: #fff;
+    padding: 8px 6px;
+    margin-bottom: 1px;
+    border-radius: 0px !important;
+  
+  
+  
+  
+  
+  
+  }
+  .actions-menu .actions-list > li.action-button:hover > .actions-list {
+    display: block;
+  }
+  
+  .actions-menu .actions-list .actions-list {
+    position: absolute;
+    left: 160px;
+    top: 0px;
+  }
+  
+  .actions-list li.action-button > a:after {
+    font-style: normal;
+    font-weight: 400;
+    margin-left: 8px;
+    font-size: 10px;
+  }
+  
+  
+  .in-details {
+    padding: 0px;
+    margin: 0px;
+  }

@@ -1,0 +1,25 @@
+<h2>
+	Status:
+	<span>
+{{ status.name }}
+</span>
+</h2>
+<div class="box">
+<h4>
+</h4>
+<div class="iconbar">
+	<i title="{{ status.pub_date }}">{{ status.pub_date|naturaltime }}</i>
+	<a href="/status/{{ status.id }}">details</a>
+	<a class="iconbaricon" href="/status/{{ status.id }}">
+			<img src="{% static 'idea.svg' %}" alt="idea">
+	</a>
+	<a class="iconbaricon" href="#">
+			<img src="{% static 'plan.svg' %}" alt="idea">
+	</a>
+	<a class="iconbaricon" href="#">
+			<img src="{% static 'task.svg' %}" alt="idea">
+	</a>
+</div>
+<p>
+	{{ status.summary }} status jest ważny i powinien byc zaraz po zasadach, a obecny CSS i tak bedzie do zmiany
+</p>
