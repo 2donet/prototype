@@ -1,3 +1,4 @@
+
 """
 Django settings for todonet project.
 
@@ -11,7 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-
+import os   
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -44,6 +45,8 @@ INSTALLED_APPS = [
     'moderation.apps.ModerationConfig',
     'need.apps.NeedConfig',
     'task.apps.TaskConfig',
+    'todonet',
+    'django.contrib.humanize',
 
     'decisions.apps.DecisionsConfig',
 
@@ -65,7 +68,7 @@ ROOT_URLCONF = 'todonet.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],  # using templates from main app "/todonet"
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -80,7 +83,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'todonet.wsgi.application'
 
-
+\
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -127,6 +130,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = 'staticfiles'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

@@ -1,0 +1,41 @@
+<h4>
+	Goals:
+</h4>
+{% for goal in goals %}
+	<details>
+			<summary>
+					{{ goal.name }}
+			</summary>
+			<ul class="actions-menu in-details">
+					<li class="action-button">
+						<a href="">Actions</a>
+						<ul class="actions-list">
+							<li>
+								<a href="/goal/{{ goal.id }}/update">Update</a>
+							</li>
+							<li>
+								<a href="/admin/portal/goal/{{ goal.id }}/change/">Admin panel</a>
+							</li>
+							<li class="action-button">
+								<a href="#">Add *WIP*</a>
+								<ul class="actions-list">
+									<li> <a href="/{{ project.id }}/add_task/">task</a></li>
+									<li> <a href="/project/{{ project.id }}/add_problem/">problem</a></li>
+									<li> <a href="/{{ project.id }}/add_subproject/">subproject</a></li>
+									<li> <a href="/project/{{ project.id }}/add_introduction/">introduction</a></li>
+									<li> <a href="/project/{{ project.id }}/add_goal/">goal</a></li>
+									<li> <a href="/project/{{ project.id }}/add_assumption/">assumption</a></li>
+									<li> <a href="/project/{{ project.id }}/add_requirement/">requirement</a></li></ul>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			<div class="iconbar">
+					
+					<a href="/goal/{{ goal.id }}">details</a>
+			</div>
+			<p>
+					{{ goal.summary }}
+			</p>
+	</details>
+{% endfor %}
