@@ -3,10 +3,13 @@
 {% block title %}2do.net | Home{% endblock %}
 {% block content %}
 {% load static %}
-    <h3>Hello world</h3>
+<h3>List of Projects</h3>
+    <div class="project-list">
     {% for project in latest_projects_list %}
-        {% include "components/projectcard.html" %}
-        <!-- base.html is in /todonet/templates/components/projectcard.html -->
-    <br>
-    {%endfor%}
-    {% endblock %}
+            {% include "components/projectcard.html" %}
+            
+    {% empty %}
+        <p>No projects available.</p>
+    {% endfor %}
+    </div>  
+{% endblock %}

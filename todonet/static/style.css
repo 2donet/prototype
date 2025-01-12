@@ -755,6 +755,36 @@ margin: 10px;
     grid-row: 2 / 3;
 }
 
+/* Project list container */
+.project-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; 
+    gap: 20px; 
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+}
+
+/* Individual project card */
+.project-card {
+    background-color: var(--bg-light); 
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+}
+
+@media (max-width: 1200px) {
+    .project-list {
+        grid-template-columns: 1fr 1fr; 
+    }
+}
+
+@media (max-width: 600px) {
+    .project-list {
+        grid-template-columns: 1fr; 
+    }
+}
+
 
 
 /* profiles layout */

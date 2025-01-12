@@ -1,11 +1,9 @@
 {% comment %} {% load static %} {% endcomment %}
 {% block projectcard %}
-<footer>
-
-    <div class="">
-			<a href="/{{project.id}}">{{project.name}}</a>	
-			<i>{{project.summary}}</i>
-    </div>
-    
-        </footer>
+<div class="project-card">
+    <h1>
+        <a href="/{{ project.id }}">{{ project.name }}</a>
+    </h1>
+    <p class="herosummary">{{ project.summary }}</p>
+</div>
 {% endblock %}
