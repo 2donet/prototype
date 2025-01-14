@@ -1,11 +1,7 @@
-<div class="g12info">
-                
-	<h4 style="color: var(--text2ndary);">Subproject of
-	{% for project in part_of_project %}
+<h4 style="color: var(--text2ndary);">Subproject of
+	{% for project in parent_projects %}
 			
-					<a  style="color: var(--text);" href="/{{ project.id }}">{{ project.name }}</a>
+					<a  style="color: var(--highlight);" href="/{{ project.id }}">{{ project.name }}</a>
 			
 	{% endfor %}
-	</h4>
-	
-</div>
+</h4>

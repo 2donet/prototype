@@ -9,7 +9,14 @@
 <!--    <script src="{% static 'project/js/script.js' %}"></script>-->
 
     <div class="grid12">
-        {% comment %} showing parent turned off, as parent content/projects has not been developed yet {% if part_of_project %} {% include "components/content/parentcard.html" %}{% endif %}{% endcomment %}
+        <div class="g12info">
+                
+            {% if parent_projects %}
+            
+                {% include "components/content/parentcard.html" %}
+            {% endif %}
+        </div>
+
         <div class="g12hero box">
 			{% include "components/content/projecthero.html" %}
 

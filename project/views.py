@@ -4,7 +4,7 @@ from django.shortcuts import render
 
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
-from project.models import Project
+from project.models import Project, Connection
 from comment.models import Comment
 from task.models import Task
 from need.models import Need
@@ -29,15 +29,35 @@ def project(request, project_id):
     needs = Need.objects.filter(to_project=project_id)
 
     comments = Comment.objects.filter(to_project=project_id)
-    # comments = Comment.objects.filter(to_project=project_id).prefetch_related(
-    #     Prefetch("replies", queryset=Comment.objects.select_related("user"))
-    # )
 
-    context = {"content": content,
-    "comments":comments,
-    "tasks": tasks,
-    "needs":needs,
-               }
+
+    # Get all child projects
+    child_connections = Connection.objects.filter(
+        from_project=content, 
+        type='child', 
+        status='approved'
+    ).select_related('to_project')
+    child_projects = [connection.to_project for connection in child_connections]
+    # get parents
+    parent_connections = Connection.objects.filter(
+        to_project=content, 
+        type='child', 
+        status='approved'
+    ).select_related('from_project')
+    parent_projects = [connection.from_project for connection in parent_connections]
+    
+    tasks = Task.objects.filter(to_project=project_id)
+    needs = Need.objects.filter(to_project=project_id)
+    comments = Comment.objects.filter(to_project=project_id)
+
+    context = {
+        "content": content,
+        "child_projects": child_projects, #list of project's children 
+        "parent_projects": parent_projects, #list of project's parents
+        "comments": comments,
+        "tasks": tasks,
+        "needs": needs,
+    }
     return render(request, "details.html", context=context)
 
 
