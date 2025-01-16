@@ -432,6 +432,7 @@ footer {
     ". status author"
     " . intro author"
     " . dod ."
+    " needs needs needs"
     " projects projects projects"
     "tasks tasks tasks"
     " . sm . "
@@ -615,6 +616,10 @@ margin: 10px;
 grid-area: tasks;
 margin: 10px;
 }
+.g12need {
+    grid-area: needs;
+    margin: 10px;
+    }
 
 .g12tasks .box {margin-bottom: 60px;}
 

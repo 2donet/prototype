@@ -163,8 +163,8 @@ li::marker {
 /* TYPE */
 .type 
  {
-    color: var(--text2ndary);
-    background-color: var(--bg-color);
+    /* color: var(--text2ndary);
+    background-color: var(--bg-color); */
     border: none;
     margin: 5px;
     border-radius: 10px;
@@ -432,6 +432,7 @@ footer {
     ". status author"
     " . intro author"
     " . dod ."
+    " needs needs needs"
     " projects projects projects"
     "tasks tasks tasks"
     " . sm . "
@@ -615,6 +616,10 @@ margin: 10px;
 grid-area: tasks;
 margin: 10px;
 }
+.g12need {
+    grid-area: needs;
+    margin: 10px;
+    }
 
 .g12tasks .box {margin-bottom: 60px;}
 
@@ -638,6 +643,16 @@ margin: 10px;
     margin: 20px;
     justify-content: center;
     align-content: center;
+    & span {
+      /* background-color: black; */
+        & button {
+          background-color: var(--bg-color);
+          color: var(--text2ndary);
+          border-color: transparent;
+          border-radius: 0.5rem;
+          padding: 0.32rem;
+        }
+    }
 }
 
 
@@ -745,11 +760,10 @@ margin: 10px;
     grid-row: 2 / 3;
 }
 
-
 /* Project list container */
 .project-list {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;  
+    grid-template-columns: 1fr 1fr 1fr; 
     gap: 20px; 
     padding: 20px;
     border-radius: 10px;
@@ -1347,5 +1361,3 @@ input, textarea {
     padding: 0px;
     margin: 0px;
   }
-  
-  
