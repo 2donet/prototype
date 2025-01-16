@@ -1,0 +1,11 @@
+
+
+{% extends "base.html" %}
+{% block title %}2do.net | Home{% endblock %}
+{% block content %}
+{% load static %}
+
+        <h1>{{ user.username }}'s Profile</h1>
+        <p>This user does not have a profile set up yet.</p>
+        <button onclick="history.back()">Back to the previous page</button>
+        {% endblock %}

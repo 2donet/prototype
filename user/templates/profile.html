@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}2do.net | Home{% endblock %}
+{% block content %}
+{% load static %}
     <h1>{{ user.username }}'s Profile</h1>
         <p>
             <b>Bio:</b> {{ user_profile.bio }}
@@ -14,5 +10,4 @@
         <p>
             <b>Location:</b> {{ user_profile.location }}
         </p>
-</body>
-</html>
+{% endblock %}

@@ -7,7 +7,7 @@
     <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
     </span>
     <h4>
-        {{ comment.user }}
+       <a href="/u/{{comment.user.id}}"> {{ comment.user }} </a> 
     </h4>
     <i>
         {{ comment.author.bio }}
