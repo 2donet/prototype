@@ -6,23 +6,13 @@
     <title>Document</title>
 </head>
 <body>
-    {{user.name}}
-    <a href="memberships">memberships</a>
-    {% if memberships %}
+    <h1>{{ user.username }}'s Profile</h1>
+        <p>
+            <b>Bio:</b> {{ user_profile.bio }}
+        </p>
     <br>
-    <b>Memberships</b>
-        <ul>
-        {% for membership in memberships %}
-            <li>
-                <strong>Group:</strong> {{ membership.group.name }}<br>
-                <strong>Date Joined:</strong> {{ membership.date_joined }}<br>
-                <strong>Invite Reason:</strong> {{ membership.invite_reason }}
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No memberships found for {{ person.name }}.</p>
-    {% endif %}
-    
+        <p>
+            <b>Location:</b> {{ user_profile.location }}
+        </p>
 </body>
 </html>

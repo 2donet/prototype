@@ -4,21 +4,28 @@ from django.db.models import Prefetch
 from django.contrib.auth import authenticate, login, logout
 from comment.models import Comment
 from decisions.models import Decision
-from user.models import Membership
+from user.models import Membership, UserProfile
 from user.models import Person
 from user.signup import SignupForm
 from user.signin import SignInForm
+from django.contrib.auth import get_user_model
 
-
-def userprofile(request, person_id):
-    user = get_object_or_404(Person, pk=person_id)
-    memberships = user.membership_set.select_related('group')  # Fetch memberships with group details
+def userprofile(request, user_id):
+    User = get_user_model()
+    
+    # Retrieve the User object by its ID
+    user = get_object_or_404(User, pk=user_id)
+    user_profile = getattr(user, 'profile', None)
+    # Render a template with the UserProfile and User information
+    if user_profile is None:
+        return render(request, "userprofile_not_found.html", {"user": user})
     
     # comments = Comment.objects.filter(to_need=need_id).prefetch_related(
     #     Prefetch("replies", queryset=Comment.objects.select_related("user"))
     # )
     context = {"user": user,
-               "memberships": memberships
+               "user_profile": user_profile,
+               #"memberships": memberships
     # "comments":comments,
     
             #    "part_of_project": part_of_project,
@@ -36,6 +43,7 @@ def userprofile(request, person_id):
             #    "communities": communities,
                }
     return render(request, "profile.html", context=context)
+    #return render(request, "profile.html", )
     # when loading template using "details.html" instead of "need/details.html", the project template is loaded (even when)
     # adding more logic to the project's details.html may be used 
 

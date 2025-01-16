@@ -1,4 +1,6 @@
 from django.db import models
+from django.conf import settings
+
 
 # Create your models here.
 class User(models.Model):
@@ -10,7 +12,24 @@ class User(models.Model):
     # def get_absolute_url(self):
     #     return Ueverse("user_detail", kwargs={"pk": self.pk})
 
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="profile",
+        db_index=True
+    )
+    bio = models.TextField(blank=True)    
+    location = models.CharField(max_length=255, blank=True)
 
+    class Meta:
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
+        ordering = ["user__username"]
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+    
 class Person(models.Model):
     name = models.CharField(max_length=128)
     def __str__(self):
