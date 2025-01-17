@@ -119,6 +119,21 @@ def create_project(request):
                         created_by=user,
                         to_project=project,
                     )
+        task_names = request.POST.getlist('task_name[]')  # List of task names
+        task_descs = request.POST.getlist('task_desc[]')  # List of task descriptions
+        task_priorities = request.POST.getlist('task_priority[]')  # List of task priorities
+
+        # Create each task (only if data exists)
+        if task_names and task_descs and task_priorities:
+            for name, desc, priority in zip(task_names, task_descs, task_priorities):
+                if name.strip():  # Ensure name is not empty
+                    Task.objects.create(
+                        name=name,
+                        desc=desc,
+                        priority=priority,
+                        created_by=user,
+                        to_project=project,
+                    )
 
         return redirect('project:project', project_id=project.id)
 
