@@ -106,14 +106,16 @@ def create_project(request):
         # Dane potrzeb
         need_names = request.POST.getlist('need_name[]')  # Lista nazw potrzeb
         need_descs = request.POST.getlist('need_desc[]')  # Lista opisów potrzeb
+        need_priorities = request.POST.getlist('need_priority[]')  
 
         # Tworzenie każdej potrzeby (only if data exists)
-        if need_names and need_descs:
-            for name, desc in zip(need_names, need_descs):
+        if need_names and need_descs and need_priorities:
+            for name, desc, priority in zip(need_names, need_descs, need_priorities):
                 if name.strip():  # Ensure name is not empty
                     Need.objects.create(
                         name=name,
                         desc=desc,
+                        priority=priority,
                         created_by=user,
                         to_project=project,
                     )

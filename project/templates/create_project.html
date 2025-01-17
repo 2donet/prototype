@@ -140,6 +140,20 @@
             needDiv.appendChild(descInput);
 
             needDiv.appendChild(document.createElement('br'));
+            
+            
+            
+            // Add input for need priority
+            const priorityLabel = document.createElement('label');
+            priorityLabel.textContent = 'Need priority:';
+            needDiv.appendChild(priorityLabel);
+
+            const priorityInput = document.createElement('input'); // Fix variable name
+            priorityInput.type = 'number';
+            priorityInput.name = 'need_priority[]'; // Array format
+            needDiv.appendChild(priorityInput);
+
+            needDiv.appendChild(document.createElement('br'));
 
             // Add a "Remove" button to delete the form
             const removeBtn = document.createElement('button');
