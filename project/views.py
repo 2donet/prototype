@@ -19,7 +19,11 @@ def index(request):
     """
         Display a list of the latest projects.
         """
-    latest_projects_list = Project.objects.order_by('id')
+    # latest_projects_list = Project.objects.filter().order_by('id')
+    latest_projects_list = Project.objects.exclude(
+        incoming_connections__type='child'
+    ).order_by('-id') # getting only standalone projects (excluding children)
+
     context = {"latest_projects_list": latest_projects_list,}
     return render(request, "index.html", context=context)
 
