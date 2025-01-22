@@ -1,14 +1,18 @@
 :root {
-    --bg-color: #272b41;
-    --bg-color2: #343851;
-    --bg-color3: #30344a;
-    --bgpopup: #414459;
     --highlight: #e5c129;
-    --highlight-dark: #d5d370;
     --text: #f1f1f5;
-    --text2ndary: #d1d1d1;
-    --bg-light: #383c57;
     --highlightdark: #3B4139;
+    --bg-color: #1f2234;
+    --bg-light: #2d3046;
+    --bg-color2: #272b41;
+    --bg-color3: #30344a;
+    
+    
+    --text2ndary: #d1d1d1;
+    --bgpopup: #414459;
+    
+
+    --highlight-dark: #d5d370;
     --highlightmenu: #4B4E5F;
     --status-green: rgb(83, 173, 9);
     --status-red: rgb(173, 9, 9);
@@ -18,9 +22,146 @@
     --status-orange: rgb(170, 140, 21);
     --status-pink: rgb(198, 43, 174);
     --status-purple: rgb(105, 31, 138);
-
 }
 /* --bg-light: #474B60; */
+
+/* Individual project card */
+.project-card {
+    background-color: var(--bg-light); 
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    text-align: center;
+    & details[open]{
+        color: var(--text2ndary);
+        background-color: var(--bg-color);
+        border-color: var(--highlightmenu);
+    }
+    & summary[open]{
+        border: none !important;
+    }
+}
+
+
+
+
+
+/* Main popup container */
+.popup {
+    position: fixed;
+    display: none; /* Hidden by default */
+    background-color: rgba(39, 43, 65, 0.8); /* Semi-transparent background */
+    width: 60%;
+    height: 60%;
+    left: 20%;
+    top: 20%;
+    z-index: 1999; /* Ensures it appears above other elements */
+    backdrop-filter: blur(5px); /* Optional: Adds a blur effect */
+    overflow-y: scroll;
+}
+
+
+/* Popup close button */
+.popup-close-btn {
+    font-weight: 800;
+    border: none;
+    float: right; /* Aligns button to the top-right corner */
+    font-size: 1.5rem;
+    background: none; /* Transparent background */
+    color: var(--text); /* Uses theme color for text */
+    padding: 0.5rem 1rem;
+    cursor: pointer; /* Pointer cursor for interactivity */
+    position: absolute; /* Position relative to the popupContent */
+    top: 5px;
+    right: 10px;
+    z-index: 1001; /* Ensures it's above popup content */
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.popup-close-btn:hover {
+    transform: scale(1.1); /* Slightly enlarges the button on hover */
+    color: var(--highlight); /* Highlight color on hover */
+}
+
+/* Popup content container */
+.popupContent {
+    position: fixed;
+    width: 60%;
+    height: 60%;
+    left: 50%; /* Centers horizontally */
+    top: 50%; /* Centers vertically */
+    transform: translate(-50%, -50%); /* Adjusts for centering */
+    background-color: var(--bg-color2); /* Background color for the popup */
+    border: 1px solid #ccc; /* Subtle border */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Shadow for depth */
+    z-index: 2000; /* Above the popup background */
+    overflow-y: auto; /* Adds scrolling for content overflow */
+    padding: 1rem;
+    text-align: left; /* Aligns text to start */
+}
+
+/* Ordered list inside the popup content */
+.popupContent ol {
+    display: flex;
+    flex-direction: column-reverse; /* Reverses the order for latest items first */
+    gap: 0.5rem; /* Spacing between list items */
+    padding: 0;
+    margin: 0;
+}
+
+.popupContent li {
+    flex: 0 0 auto; /* Prevents shrinking of items */
+    list-style-type: decimal; /* Default ordered list style */
+    margin-left: 1.5rem;
+    color: var(--text); /* Text color */
+}
+
+/* Button used to trigger the popup */
+.state {
+    font-weight: 800;
+    border-radius: 8px; /* Smoother rounded edges */
+    border: 2px solid var(--btn-border); /* Slightly thicker border */
+    color: var(--text); /* Text color */
+    background-color: transparent; /* Transparent background */
+    padding: 0.5rem 1rem; /* Consistent padding for buttons */
+    cursor: pointer; /* Pointer cursor for interactivity */
+    transition: background-color 0.2s ease, color 0.2s ease; /* Smooth transitions */
+}
+
+/* Active state for the button */
+.state:active {
+    color: var(--highlight); /* Highlight color when active */
+}
+
+/* Hover state for the button */
+.state:hover {
+    background-color: var(--btn-hover-bg); /* Background color on hover */
+    color: var(--btn-hover-text); /* Text color on hover */
+    border-color: var(--btn-hover-border); /* Border color on hover */
+}
+
+/* Additional improvements for responsive design */
+@media (max-width: 768px) {
+    .popupContent {
+        width: 90%; /* Adjust width for smaller screens */
+        height: 70%; /* Adjust height for smaller screens */
+        left: 5%; /* Centered with reduced width */
+        transform: none; /* Remove centering transform */
+    }
+
+    .popup-close-btn {
+        font-size: 1.2rem; /* Slightly smaller close button */
+        top: 10px; /* Adjust position */
+        right: 10px;
+    }
+
+    .state {
+        font-size: 0.9rem; /* Slightly smaller text for buttons */
+        padding: 0.4rem 0.8rem; /* Adjusted padding */
+    }
+}
+
 
 body {
     background-color: var(--bg-color);
@@ -235,6 +376,16 @@ To add
     margin: 5px 5px 5px 5px;
     gap: 6px;
     float: right;
+    border-radius: 10px;
+}
+.authorbar {
+    background: var(--bg-light);
+    width: fit-content;
+    border: 1px solid var(--highlightmenu);
+  color: var(--highlightmenu);
+    margin: 5px 5px 5px 5px;
+    gap: 6px;
+    float: left;
     border-radius: 10px;
 }
 
@@ -770,27 +921,6 @@ margin: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
 }
 
-/* Individual project card */
-.project-card {
-    background-color: var(--bg-light); 
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-}
-
-@media (max-width: 1200px) {
-    .project-list {
-        grid-template-columns: 1fr 1fr; 
-    }
-}
-
-@media (max-width: 600px) {
-    .project-list {
-        grid-template-columns: 1fr; 
-    }
-}
-
-
 
 /* profiles layout */
 
@@ -1076,7 +1206,18 @@ Comments *Work In Progress*
 
 
 
-
+.btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    /* background-color: #007bff; */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .btn:hover {
+    background-color: #0056b3;
+  }
 
 
 

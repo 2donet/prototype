@@ -19,5 +19,21 @@
       }
   })
 
-// stąd biore tutorial
-  // https://codepen.io/fazley_rabby/pen/rNxVRWx
+
+  function togglePopup(x) {
+    const popup = document.getElementById(x);
+    if (popup.style.display === 'none' || popup.style.display === '') {
+        popup.style.display = 'block';
+      } else {
+          popup.style.display = 'none';
+      }
+  };
+function closePopup (x) {
+    const popup = document.getElementById(x);
+    if (popup.style.display === 'block') {
+        popup.style.display = 'none';
+  } else {
+      popup.style.display = 'none';
+  } if (e.key === "Escape") {
+    document.getElementById('x').style.display = 'none'}
+};
