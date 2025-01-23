@@ -92,9 +92,8 @@
                         </div>
                     </div>                        
 
-        <a class="iconbaricon" href="/todo/">
-            details
         </div>
+
             {% comment %}
             <!-- poprawić:
              - [ ] adres pliku
@@ -107,11 +106,12 @@
         </div>
         - [ ]  -->
                 {% endcomment %}
-    <h1>
+                <!-- temporary css -->
+    <h1 style="position: relative; top: 20%;">
         <a href="/{{ project.id }}">{{ project.name }}</a>
     </h1>
-
-    <details><summary class="herosummary">{{ project.summary }}</summary>
+                <!-- temporary css -->
+    <details style="position: relative; top: 10%;"><summary class="herosummary">{{ project.summary|default:'no summary' }}</summary>
     Lorem ipsum dolor sit amet consectetur, adipisicing elit. Excepturi quasi est hic quam doloremque, suscipit delectus laudantium et cupiditate ratione facere illum ipsam aut. Distinctio, eius! Nemo amet soluta nesciunt.</details>
     <div class="needCards">
         <span style="font-weight: bold;">Needs:</span> 
@@ -120,7 +120,8 @@
                    {% empty %}
                    <span>not published</span>
                    
-                   {% endfor %}</div>
+                   {% endfor %}
+                </div>
 </div>
 
 {% endblock %}

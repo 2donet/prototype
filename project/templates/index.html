@@ -4,12 +4,17 @@
 {% block content %}
 {% load static %}
 <h3>List of Projects</h3>
-    <div class="project-list">
+{% include "components/projectgrid.html" %}
+
+{% comment %}
+<div class="project-list">
     {% for project in latest_projects_list %}
-            {% include "components/projectcard.html" %}
-            
+    {% include "components/projectcard.html" %}
+    
     {% empty %}
-        <p>No projects available.</p>
+    <p>No projects available.</p>
     {% endfor %}
-    </div>  
+</div>  
+{% endcomment %}
+
 {% endblock %}

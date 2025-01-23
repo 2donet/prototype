@@ -6,6 +6,22 @@
     --bg-light: #2d3046;
     --bg-color2: #272b41;
     --bg-color3: #30344a;
+    --confirm: #5ce65c;
+    --danger: #ff2c2c;
+    --warning: #db9200 ;
+
+    --information: #305cde ;
+    --risk: #FC6C85;
+    /* jak pisać własny gradient? */
+    --refuse--calm: #ff7081;
+
+
+
+    --confirm--highlight: #2cff05;
+    --confirm--: #2cff05;
+
+
+
     
     
     --text2ndary: #d1d1d1;
@@ -14,19 +30,17 @@
 
     --highlight-dark: #d5d370;
     --highlightmenu: #4B4E5F;
-    --status-green: rgb(83, 173, 9);
-    --status-red: rgb(173, 9, 9);
+
+    /* ^ coloring text accordingly from TBD to TBD rgb  */
     --status-red-dark: rgb(170, 21, 63);
     --status-yellow: rgb(232, 186, 78);
-    --status-blue: rgb(68, 112, 215);
-    --status-orange: rgb(170, 140, 21);
     --status-pink: rgb(198, 43, 174);
     --status-purple: rgb(105, 31, 138);
+    /* --bg-light: #474B60; */
 }
-/* --bg-light: #474B60; */
 
-/* Individual project card */
 .project-card {
+    /* Individual project card */
     background-color: var(--bg-light); 
     padding: 20px;
     border-radius: 10px;
@@ -42,7 +56,85 @@
     }
 }
 
+.projectgrid {
+    gap: none;
+    
+    & .project-card2 {
+        margin: 2rem;
+        padding:4px;
+        display: grid;
+        width: 620px;
+        border-radius: 12px;
+        grid-template-areas:
+        "admin stats"
+        "title title"
+        "summary summary"
+        "needs needs";
+        background-color: var(--bg-color2);
 
+        & .menu{
+            position: absolute;
+            left: 456px;
+        }
+        & .title{
+            grid-area: title;
+            font-size: larger;
+            font-weight: 800;
+            color: var(--highlight);
+            text-align: center;
+        }
+        & .stats{
+            grid-area: stats;
+            display: flex;
+            justify-content: right;
+        }
+        & .summary{
+            grid-area: summary;
+            font-size: large;
+            color: var(--text);
+            text-align: center;
+        }
+        & .type{
+            grid-area: type;
+        }
+        & .author{
+            grid-area: admin;
+            i{
+                color: var(--text) !important;
+            }
+            & .state{
+                padding: 2px
+            }
+        }
+        & .needs{
+            grid-area: needs;
+            & .needCards{
+                border-radius: 1rem;
+            }
+        }
+}
+  & .menucard2 {
+      padding: 0%;
+    }
+}
+
+/* TYPE */
+.type 
+ {
+    /* color: var(--text2ndary);
+    background-color: var(--bg-color); */
+    border: none;
+    margin: 5px;
+    border-radius: 10px;
+    padding: 5px;
+    font-weight: 600;
+    & button:hover {
+        color: var(--information);
+        cursor: pointer;
+        background-color: var(--highlightdark);
+        border: var(--highlight) 2px;
+    }
+}
 
 
 
@@ -96,7 +188,7 @@
     border-radius: 8px; /* Rounded corners */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Shadow for depth */
     z-index: 2000; /* Above the popup background */
-    overflow-y: auto; /* Adds scrolling for content overflow */
+    overflow-y: auto; /* Adds scrolling for content overflow*/
     padding: 1rem;
     text-align: left; /* Aligns text to start */
 }
@@ -301,24 +393,6 @@ li::marker {
     text-decoration: none;
 }
 
-/* TYPE */
-.type 
- {
-    /* color: var(--text2ndary);
-    background-color: var(--bg-color); */
-    border: none;
-    margin: 5px;
-    border-radius: 10px;
-    padding: 5px;
-    font-weight: 600;
-}
-
-.type button:hover {
-    color: var(--highlight);
-    cursor: pointer;
-    background-color: var(--highlightdark);
-    border: var(--highlight) 2px;
-}
 
 /* Content's verification status
     <button 
