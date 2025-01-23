@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'task.apps.TaskConfig',
     'todonet',
     'django.contrib.humanize',
+    'contribution',
 
     'decisions.apps.DecisionsConfig',
 
