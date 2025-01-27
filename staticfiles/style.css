@@ -58,59 +58,60 @@
 
 .projectgrid {
     gap: none;
-    padding: none;
-    margin: 0.4rem 0;
-
+    
     & .project-card2 {
+        margin: 2rem;
+        padding:4px;
         display: grid;
         width: 620px;
+        border-radius: 12px;
         grid-template-areas:
-        "type stats"
-        "admin ."
+        "admin stats"
         "title title"
         "summary summary"
         "needs needs";
+        background-color: var(--bg-color2);
+
         & .menu{
             position: absolute;
-
+            left: 456px;
         }
         & .title{
             grid-area: title;
             font-size: larger;
             font-weight: 800;
             color: var(--highlight);
+            text-align: center;
+        }
+        & .stats{
+            grid-area: stats;
+            display: flex;
+            justify-content: right;
         }
         & .summary{
             grid-area: summary;
             font-size: large;
             color: var(--text);
+            text-align: center;
         }
         & .type{
             grid-area: type;
         }
         & .author{
             grid-area: admin;
+            i{
+                color: var(--text) !important;
+            }
+            & .state{
+                padding: 2px
+            }
         }
         & .needs{
             grid-area: needs;
+            & .needCards{
+                border-radius: 1rem;
+            }
         }
-        padding: none;
-        margin: 0.4rem 0;
-        border: 1px solid #ccc;
-      border-radius: 8px;
-  border: var(--confirm);
-  border-right: 2px var(--warning);
-
-  border-bottom: var(--refuse);
-  /* ^czerwień, ultraczerwień, */
-  border-top: var(--highlight);
-
-    border-radius: 8px;
-  display: grid;
-  color: var(--information);
-  & .lefttop {
-      color: #d5d370;
-  }
 }
   & .menucard2 {
       padding: 0%;
@@ -187,7 +188,7 @@
     border-radius: 8px; /* Rounded corners */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Shadow for depth */
     z-index: 2000; /* Above the popup background */
-    overflow-y: auto; /* Adds scrolling for content overflow */
+    overflow-y: auto; /* Adds scrolling for content overflow*/
     padding: 1rem;
     text-align: left; /* Aligns text to start */
 }
@@ -1574,4 +1575,20 @@ input, textarea {
   .in-details {
     padding: 0px;
     margin: 0px;
+  }
+
+  
+  
+  
+  
+  /* icons */
+  .icon {
+    background-color: transparent;
+    border: none;
+    margin: 8px 0 0 8px;
+  }
+  
+  .icon:hover{
+    border: var(--highlight);
+    cursor:pointer;
   }

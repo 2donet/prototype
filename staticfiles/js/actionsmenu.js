@@ -37,3 +37,25 @@ function closePopup (x) {
   } if (e.key === "Escape") {
     document.getElementById('x').style.display = 'none'}
 };
+
+function toggleMenu(menuId) {
+    // Close any open menus
+    document.querySelectorAll('.actions-menu').forEach(menu => {
+        if (menu.id !== menuId) {
+            menu.style.display = 'none';
+        }
+    });
+
+    // Toggle the clicked menu
+    const menu = document.getElementById(menuId);
+    if (menu.style.display === 'none' || menu.style.display === '') {
+        menu.style.display = 'block';
+    } else {
+        menu.style.display = 'none';
+    }
+
+    // Close all submenus
+    document.querySelectorAll('.submenu').forEach(submenu => {
+        submenu.style.display = 'none';
+    });
+}
