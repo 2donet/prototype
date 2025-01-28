@@ -58,8 +58,13 @@
 }
 
 .projectgrid {
-    gap: none;
-    
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    justify-content: center;
+    word-wrap: break-word;
+
     & .project-card2 {
         margin: 2rem;
         padding:4px;
@@ -1483,7 +1488,7 @@ input, textarea {
     }
 
 .actions-menu {
-    z-index: 9;
+    z-index: 3;
     display: none;
     position: absolute;
   top: 100%;
