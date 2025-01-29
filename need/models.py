@@ -10,6 +10,9 @@ class Need(models.Model):
     to_project = models.ForeignKey("project.Project", blank=True, null=True, on_delete=models.CASCADE)
     to_task = models.ForeignKey("task.Task", blank=True, null=True, on_delete=models.CASCADE)
 
+    contributions = models.JSONField(
+        blank=True
+    ) 
 
     def __str__(self):
         return self.name

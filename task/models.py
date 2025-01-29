@@ -6,7 +6,10 @@ class Task(models.Model):
     desc = models.TextField("description")
     priority = models.IntegerField(blank=True)
     created_by = models.ForeignKey("user.User", on_delete=models.CASCADE)
-
+    
+    contributions = models.JSONField(
+        blank=True
+    ) 
 
     to_project = models.ForeignKey("project.Project", blank=True, null=True, on_delete=models.CASCADE)
     to_task = models.ForeignKey("task.Task", blank=True, null=True, on_delete=models.CASCADE)

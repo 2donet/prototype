@@ -33,6 +33,9 @@ class Project(models.Model):
     tags = models.TextField(blank=True, null=True, help_text="Comma-separated tags")
     published = models.BooleanField(default=False)
 
+    contributions = models.JSONField(
+        blank=True
+    ) 
 
     def __str__(self):
         return self.name
