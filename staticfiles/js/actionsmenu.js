@@ -19,21 +19,27 @@
       }
   })
 
-
   function togglePopup(x) {
-    const popup = document.getElementById(x);
+      const popup = document.getElementById(x);
+      const blur = document.getElementById('blur')
     if (popup.style.display === 'none' || popup.style.display === '') {
         popup.style.display = 'block';
+        blur.style.display = 'block';
       } else {
           popup.style.display = 'none';
+          blur.style.display = 'none';
+
       }
   };
 function closePopup (x) {
+    const blur = document.getElementById('blur')
     const popup = document.getElementById(x);
     if (popup.style.display === 'block') {
         popup.style.display = 'none';
-  } else {
+        blur.style.display = 'none';
+} else {
       popup.style.display = 'none';
+      blur.style.display = 'none';
   } if (e.key === "Escape") {
     document.getElementById('x').style.display = 'none'}
 };
@@ -59,3 +65,4 @@ function toggleMenu(menuId) {
         submenu.style.display = 'none';
     });
 }
+

@@ -4,7 +4,7 @@ from django.db.models import Prefetch
 from django.contrib.auth import authenticate, login, logout
 from comment.models import Comment
 from decisions.models import Decision
-from user.models import Membership, UserProfile
+from user.models import Membership, UserProfile, Post
 from user.models import Person
 from user.signup import SignupForm
 from user.signin import SignInForm
@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 
 def userprofile(request, user_id):
     User = get_user_model()
-    
+    posts = Post.objects.filter(author=user_id).order_by('-date')
     # Retrieve the User object by its ID
     user = get_object_or_404(User, pk=user_id)
     user_profile = getattr(user, 'profile', None)
@@ -25,6 +25,7 @@ def userprofile(request, user_id):
     # )
     context = {"user": user,
                "user_profile": user_profile,
+               "posts": posts
                #"memberships": memberships
     # "comments":comments,
     

@@ -3,13 +3,37 @@
 <html lang="en">
   
 <head>
+    <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
+    
+    <link type="text/css" rel="stylesheet" href="{% static 'css/materialize.css' %}" media="screen,projection"/>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/nouislider.css' %}" media="screen,projection"/>
     <link rel="stylesheet" href="{% static 'style.css' %}">
+    
     <link rel="stylesheet" href="{% static 'navbar.css' %}">
+    <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
 
-    <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
+    <link rel="shortcut icon" type="image/png" href="{% static 'icons/favicon.ico' %}"/>
 
     <script src="{% static 'js/actionsmenu.js' %}"></script>
-          {% comment %} nie wykorzystywany w tej template {% endcomment %}
+    <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/materialize.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/nouislider.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/wNumb.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/create_project.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+          $(".dropdown-trigger").dropdown();
+          $('.modal').modal();
+          $('.fixed-action-btn').floatingActionButton();
+          $('.collapsible').collapsible();
+          $('.sidenav').sidenav();
+          $('select').formSelect();
+          $('.tabs').tabs();
+          M.updateTextFields();
+          $('.carousel').carousel();
+        });
+      </script>      
+    {% comment %} nie wykorzystywany w tej template {% endcomment %}
 
     <title>{% block title %}2do.net{% endblock %}</title>
 </head>
@@ -17,14 +41,22 @@
 {% include "navbar.html" %}
 
 <body>
-    <div class="contentBASE">
-
-        {% if user.is_authenticated %}
-            <div class="desktop-item">
-                <button onclick="window.location.href='/create/'">Create project</button>
+    <div class="row">
+        <div class="s12 m8">
+            <div class="contentBASE">
+                {% block content %}{% endblock %}
+                
             </div>
-        {% endif %}
-        {% block content %}{% endblock %}
+            <div class="s12 m4">
+                {% if user.is_authenticated %}
+                <button onclick="window.location.href='/create/'">Create project</button>
+                {% endif %}
+            </div>
+
+    <div class="desktop-item">
+    </div>
+</div>
+
     </div>
 {% include "footer.html" %}
 

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Skill Details: {{ skill.name }}{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="card-panel">
+            <h4 class="center-align">{{ skill.name }}</h4>
+            <p><strong>Description:</strong> {{ skill.description }}</p> <!-- Assuming you have a description field in Skill model -->
+            <h5>Projects Using This Skill:</h5>
+            {% if projects %}
+                <ul>
+                    {% for project in projects %}
+                        <li>
+                            <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> 
+                            <!-- Replace 'project:project' with the correct URL name for the project details page -->
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No projects linked to this skill yet.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

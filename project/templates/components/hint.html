@@ -1,0 +1,17 @@
+{% load static %}
+<a class="waves-effect waves-teal btn-flat modal-trigger border" href="#support-{{hint}}">
+    Nu <i class="right"><img src="{% static 'icons/supporters.svg' %}" alt=""></i>
+</a>
+<!-- supporters popup -->
+<div id="support-{{hint}}" class="modal modal-fixed-footer">
+    <div class="modal-content">
+        <h4>Modal Header for {{project.name}}</h4>
+        <p>A bunch of text</p>
+        <h4>supporters</h4>
+        <p>lorem ipsum</p>
+        <a href="/about">asd</a>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+    </div>
+</div>

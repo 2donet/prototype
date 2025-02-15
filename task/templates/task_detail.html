@@ -1,21 +1,64 @@
-<h2>Task Details</h2>
-<p>{{ task.name }}</p>
-<h3>Comments</h3>
-<div id="comments">
-    {% for comment in comments %}
-        <div class="comment">
-            <p>{{ comment.user.username }}: {{ comment.content }}</p>
-            <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
-            <div class="replies">
-                {% for reply in comment.replies.all %}
-                    <p>{{ reply.user.username }}: {{ reply.content }}</p>
-                {% endfor %}
-            </div>
+{% extends "base.html" %}
+{% load static %}
+{% block title %}2do.net | Home{% endblock %}
+{% block content %}
+
+<div class="container">
+  
+  
+  <div class="row">
+      <div class="col s12 m6">
+        <div class="card blue-grey darken-1">
+          <div class="card-content">asdasd</div>
+          <a class="btn-small halfway-fab waves-effect waves-light red"><i class="material-icons">add</i></a>
+          <a class="btn-small waves-effect waves-light red"><i class="material-icons">add</i></a>
+          <a class="btn-small"><i class="material-icons">add</i></a>
+          <div class="card-content white-text">
+            
+              <span class="card-title">{{ task.name }}
+                <a  href="/2 "><span class="new badge" data-badge-caption="custom caption">4</span></a>
+            </span>
+            <p>I am a very simple card. I am good at containing small bits of information.
+            I am convenient because I require little markup to use effectively.</p>
+            
+          </div>
+          <div class="card-content">
+              <div class="chip">Nonprofit    
+                <i><img class="close" src="{% static 'icons/close.svg' %}" alt=""></i>
+              </div>
+  <div class="chip"><a>Software</a></div>
+            <a href="#">This is a link</a>
+            <a href="#">This is a link</a>
+          </div>
         </div>
-    {% endfor %}
+      </div>
+    </div>
+  
+  
+  
+  <h2>Task Details</h2>
+  
+  <h3>Comments</h3>
+  
+  <div id="comments">
+      {% for comment in comments %}
+          <div class="comment">
+              <p>{{ comment.user.username }}: {{ comment.content }}</p>
+              <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
+              <div class="replies">
+                  {% for reply in comment.replies.all %}
+                      <p>{{ reply.user.username }}: {{ reply.content }}</p>
+                  {% endfor %}
+              </div>
+          </div>
+      {% endfor %}
+  </div>
+  <form id="add-comment-form">
+      <textarea name="content" placeholder="Add a comment..."></textarea>
+      <input type="hidden" name="to_task_id" value="{{ task.id }}">
+      <button type="submit">Submit</button>
+  </form>
+  
 </div>
-<form id="add-comment-form">
-    <textarea name="content" placeholder="Add a comment..."></textarea>
-    <input type="hidden" name="to_task_id" value="{{ task.id }}">
-    <button type="submit">Submit</button>
-</form>
+
+{% endblock %}

@@ -30,6 +30,22 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile"
     
+class Post(models.Model):
+    # name = post's title
+    name = models.CharField(max_length=128) 
+    # date = post's publish date
+    date = models.DateTimeField(auto_now_add=True)
+    desc = models.TextField()
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="posts",  # Changed related_name to plural
+        db_index=True
+    )
+
+    def __str__(self):
+        return self.name
+
 class Person(models.Model):
     name = models.CharField(max_length=128)
     def __str__(self):

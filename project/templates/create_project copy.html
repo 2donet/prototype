@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% load static%}
+{% block title %}2do.net - Create a New Project{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="card-panel">
+            <h4 class="center-align">Create a New Project</h4>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="input-field">
+                    <input type="text" id="name" name="name" required>
+                    <label for="name">Project Name</label>
+                </div>
+                <div class="row">
+                    <div class="col s12 m4 l6">
+                        
+                        <div class="input-field">
+                            <label  for="visibility">Visibility</label>
+                            <br><br>
+                            <!-- without double brake label displays on top of  -->
+                            <select id="visibility" name="visibility" class="browser-default" required>
+                                <option value=""disabled selected >-- Who can see your project? --</option>
+                                <option value="public">Public</option>
+                                <option value="logged_in">Only Logged-In Users</option>
+                                <option value="restricted">Restricted</option>
+                                <option value="private">Private</option>
+                            </select>
+        
+                        </div>
+                    </div>
+                    <div class="col s12 m4 l6">
+
+                        <div class="input-field col s12">
+                            <select id="status" name="status" >
+                                <option value=""disabled selected >-- Select Status --</option>
+                                <option value="to_do">To Do</option>
+                                <option value="doing">Doing</option>
+                                <option value="done">Done</option>
+                            </select>
+                            <label>Materialize Select</label>
+                          </div>
+                    </div>
+                </div>
+                
+                <!-- <div class="input-field">
+                    <select id="status" name="status" class="browser-default" required>
+                        <option value=""disabled selected >-- Select Status --</option>
+                        <option value="to_do">To Do</option>
+                        <option value="doing">Doing</option>
+                        <option value="done">Done</option>
+                    </select>
+                    <label for="status">Status</label>
+
+                </div> -->
+
+
+                <div class="input-field">
+                    <div class="chips chips-autocomplete" id="skills-input"></div>
+                </div>
+
+
+                
+                <div class="input-field">
+                    <input type="text" id="area" name="area">
+                    <label for="area">Area</label>
+                </div>
+                
+                <div class="input-field">
+                    <input type="text" id="tags" name="tags">
+                    <label for="tags">Tags (comma-separated)</label>
+                </div>
+                
+                <div class="input-field">
+
+                </div>
+                
+                <div class="input-field">
+                    <textarea id="desc" name="desc" class="materialize-textarea"></textarea>
+                    <label for="desc">Description</label>
+                </div>
+                
+                <label>
+                    <input type="checkbox" id="published" name="published" value="1" class="filled-in" />
+                    <span>Publish Now</span>
+                </label>
+                
+                <div class="section">
+                    <button type="button" id="toggle-needs-btn" class="btn waves-effect waves-light">Add Needs</button>
+                    <div id="needs-section" class="card-panel" style="display: none;">
+                        <h5>Needs for This Project</h5>
+                        <div id="needs-container"></div>
+                        <button type="button" id="add-need-btn" class="btn green">Add Another Need</button>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <button type="button" id="toggle-tasks-btn" class="btn waves-effect waves-light">Add Tasks</button>
+                    <div id="tasks-section" class="card-panel" style="display: none;">
+                        <h5>Tasks for This Project</h5>
+                        <div id="tasks-container"></div>
+                        <button type="button" id="add-task-btn" class="btn green">Add Another Task</button>
+                    </div>
+                </div>
+                
+                <hr>
+                <button type="submit" class="btn blue waves-effect waves-light">Create Project</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleNeedsBtn = document.getElementById('toggle-needs-btn');
+            const needsSection = document.getElementById('needs-section');
+            const addNeedBtn = document.getElementById('add-need-btn');
+            const needsContainer = document.getElementById('needs-container');
+
+            toggleNeedsBtn.addEventListener('click', () => {
+                needsSection.style.display = needsSection.style.display === 'none' ? 'block' : 'none';
+            });
+
+            addNeedBtn.addEventListener('click', () => {
+                const needDiv = document.createElement('div');
+                needDiv.classList.add('card-panel');
+                needDiv.innerHTML = `
+                    <div class="input-field">
+                        <input type="text" name="need_name[]" required>
+                        <label>Need Name</label>
+                    </div>
+                    <div class="input-field">
+                        <textarea name="need_desc[]" class="materialize-textarea"></textarea>
+                        <label>Need Description</label>
+                    </div>
+                    <div class="input-field">
+                        <input required value="1" type="number" name="need_priority[]">
+                        <label class="active">Need Priority</label>
+                    </div>
+                    <button type="button" class="btn red remove-need-btn">Remove</button>
+                `;
+                needDiv.querySelector('.remove-need-btn').addEventListener('click', () => needsContainer.removeChild(needDiv));
+                needsContainer.appendChild(needDiv);
+            });
+
+            const toggleTasksBtn = document.getElementById('toggle-tasks-btn');
+            const tasksSection = document.getElementById('tasks-section');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const tasksContainer = document.getElementById('tasks-container');
+
+            toggleTasksBtn.addEventListener('click', () => {
+                tasksSection.style.display = tasksSection.style.display === 'none' ? 'block' : 'none';
+            });
+
+            addTaskBtn.addEventListener('click', () => {
+                const taskDiv = document.createElement('div');
+                taskDiv.classList.add('card-panel');
+                taskDiv.innerHTML = `
+                    <div class="input-field">
+                        <input type="text" name="task_name[]" required>
+                        <label>Task Name</label>
+                    </div>
+                    <div class="input-field">
+                        <textarea name="task_desc[]" class="materialize-textarea"></textarea>
+                        <label>Task Description</label>
+                    </div>
+                    <div class="input-field">
+                        <input type="number" name="task_priority[]" required value="1" >
+                        <label class="active" >Task Priority</label>
+                    </div>
+                    <button type="button" class="btn red remove-task-btn">Remove</button>
+                `;
+                taskDiv.querySelector('.remove-task-btn').addEventListener('click', () => tasksContainer.removeChild(taskDiv));
+                tasksContainer.appendChild(taskDiv);
+            });
+        });
+    </script>
+{% endblock %}

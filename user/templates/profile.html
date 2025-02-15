@@ -10,4 +10,11 @@
         <p>
             <b>Location:</b> {{ user_profile.location }}
         </p>
+        {%if posts %}
+        <h2>Posts</h2>
+        {% for post in posts%}
+            <h5>{{post.name}}</h5>
+            <i>{{post.desc}}</i>
+        {% endfor %}
+        {%endif%}
 {% endblock %}

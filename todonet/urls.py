@@ -21,11 +21,12 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("project.urls")),
     path("comments/", include("comment.urls")),
-    path("p/", include("post.urls")),
     path("u/", include("user.urls")),
     path("d/", include("decisions.urls")),
     path("t/", include("task.urls")),
     path("n/", include("need.urls")),
+    path("c/", include("contribution.urls")),
+    path('', include('skills.urls')),  
 
     # path("project_constructor/", include("project_constructor.urls")),
 

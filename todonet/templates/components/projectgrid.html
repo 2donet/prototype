@@ -2,7 +2,6 @@
 {% endcomment %}
 {% load static %}
 {% block projectcard %}
-<script src="{% static 'js/actionsmenu.js' %}"></script>
 <div id="blur" class="blur"></div>
 <div class="projectgrid">
     {% for project in latest_projects_list %}
@@ -14,14 +13,8 @@
 
         <div class="author">
             <button class="state post-type" onclick="togglePopup('author-{{project.id}}')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M15.75 6C15.75 8.07107 14.071 9.75 12 9.75C9.9289 9.75 8.24996 8.07107 8.24996 6C8.24996 3.92893 9.9289 2.25 12 2.25C14.071 2.25 15.75 3.92893 15.75 6Z"
-                        stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                    <path
-                        d="M4.5011 20.1182C4.5714 16.0369 7.90184 12.75 12 12.75C16.0982 12.75 19.4287 16.0371 19.4988 20.1185C17.216 21.166 14.6764 21.75 12.0003 21.75C9.32396 21.75 6.78406 21.1659 4.5011 20.1182Z"
-                        stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+                <img src="{% static 'icons/author.svg' %}"></img>
+
 
             </button>
             <div id="author-{{project.id}}" class="popup">
@@ -46,16 +39,12 @@
             </div>
 
 
-            <a href="/u/{{user.id}}">
+            <a href="/u/{{project.created_by.id}}">
                 <i style="color: #e5c129;">
-                    Username</i></a>
+                    {{project.created_by.username}}</i></a>
 
             <button class="state post-type" onclick="togglePopup('verification-{{project.id}}')">
-                <svg xmlns="http://www.w3.org/2000/svg" style="fill: var(--text);" width="16" height="16"
-                    viewBox="0 -960 960 960">
-                    <path
-                        d="m438-338 226-226-57-57-169 169-84-84-57 57zm42 258q-139-35-229.5-159.5T160-516v-244l320-120 320 120v244q0 152-90.5 276.5T480-80m0-84q104-33 172-132t68-220v-189l-240-90-240 90v189q0 121 68 220t172 132m0-316" />
-                </svg>
+                <img style="fill: blue !important;" src="{% static 'icons/ver.svg' %}"></img>
             </button>
             <div id="verification-{{project.id}}" class="popup">
                 <button class="popup-close-btn" onclick="togglePopup('verification-{{project.id}}')">X Close</button>
@@ -68,7 +57,7 @@
                         <li>different icon for different kind of verifications
                         </li>
                     </ul>
-                    <p>{% lorem 21 b random %}</p>
+                    <p>lorem ipsum</p>
                     <a href="/about">asd</a>
                 </div>
             </div>
@@ -78,100 +67,102 @@
         </div>
 
         <div class="stats">
-            <button class="state post-type" onclick="togglePopup('comments-{{project.id}}')">
-                Nc <svg title="Number of comments" width="16" height="16" viewBox="0 0 16 16"
-                    xmlns="http://www.w3.org/2000/svg" fill="var(--highlight)">
-                    <path fill-rule="evenodd" clip-rule="evenodd"
-                        d="M4 11.29l1-1v1.42l-1.15 1.14L3 12.5V10H1.5L1 9.5v-8l.5-.5h12l.5.5V6h-1V2H2v7h1.5l.5.5v1.79zM10.29 13l1.86 1.85.85-.35V13h1.5l.5-.5v-5l-.5-.5h-8l-.5.5v5l.5.5h3.79zm.21-1H7V8h7v4h-1.5l-.5.5v.79l-1.15-1.14-.35-.15z" />
-                </svg>
-            </button>
-    
-            <div id="comments-{{project.id}}" class="popup">
-                <button class="popup-close-btn" onclick="togglePopup('comments-{{project.id}}')">X Close</button>
-                <div style="overflow-y: scroll; height:400px;" class="popupContent">
-                    <h4>Comments</h4>
-                    <p>{% lorem 21 b random %}</p>
-                    <a href="/about">asd</a>
-                </div>
-            </div>
-    
-            <button title="Users in the project" class="state post-type" onclick="togglePopup('users-{{project.id}}')">
-    
-                Nu <svg width="16" height="16" viewBox="0 0 24 24" fill=transparent stroke="var--highlight"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M15 19.1276C15.8329 19.37 16.7138 19.5 17.625 19.5C19.1037 19.5 20.5025 19.1576 21.7464 18.5478C21.7488 18.4905 21.75 18.4329 21.75 18.375C21.75 16.0968 19.9031 14.25 17.625 14.25C16.2069 14.25 14.956 14.9655 14.2136 16.0552M15 19.1276V19.125C15 18.0121 14.7148 16.9658 14.2136 16.0552M15 19.1276C15 19.1632 14.9997 19.1988 14.9991 19.2343C13.1374 20.3552 10.9565 21 8.625 21C6.29353 21 4.11264 20.3552 2.25092 19.2343C2.25031 19.198 2.25 19.1615 2.25 19.125C2.25 15.6042 5.10418 12.75 8.625 12.75C11.0329 12.75 13.129 14.085 14.2136 16.0552M12 6.375C12 8.23896 10.489 9.75 8.625 9.75C6.76104 9.75 5.25 8.23896 5.25 6.375C5.25 4.51104 6.76104 3 8.625 3C10.489 3 12 4.51104 12 6.375ZM20.25 8.625C20.25 10.0747 19.0747 11.25 17.625 11.25C16.1753 11.25 15 10.0747 15 8.625C15 7.17525 16.1753 6 17.625 6C19.0747 6 20.25 7.17525 20.25 8.625Z"
-                        stroke="#e5c129" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-    
-            </button>
-            <div id="users-{{project.id}}" class="popup">
-                <button class="popup-close-btn" onclick="togglePopup('users-{{project.id}}')">X Close</button>
-                <div style="overflow-y: scroll; height:400px;" class="popupContent">
-                    <h4>USers in the project</h4>
-                    <p>{% lorem 21 b random %}</p>
-                    <a href="/about">asd</a>
-                </div>
-            </div>
 
-
-            <button title="supporters in the project" class="state post-type" onclick="togglePopup('supporters-{{project.id}}')">
-    
-                Nu <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="var(--highlight)" viewBox="0 -960 960 960"><path d="M640-440 474-602q-31-30-52.5-66.5T400-748q0-55 38.5-93.5T532-880q32 0 60 13.5t48 36.5q20-23 48-36.5t60-13.5q55 0 93.5 38.5T880-748q0 43-21 79.5T807-602zm0-112 109-107q19-19 35-40.5t16-48.5q0-22-15-37t-37-15q-14 0-26.5 5.5T700-778l-60 72-60-72q-9-11-21.5-16.5T532-800q-22 0-37 15t-15 37q0 27 16 48.5t35 40.5zM280-220l278 76 238-74q-5-9-14.5-15.5T760-240H558q-27 0-43-2t-33-8l-93-31 22-78 81 27q17 5 40 8t68 4q0-11-6.5-21T578-354l-234-86h-64zM40-80v-440h304q7 0 14 1.5t13 3.5l235 87q33 12 53.5 42t20.5 66h80q50 0 85 33t35 87v40L560-60l-280-78v58zm80-80h80v-280h-80zm520-546"/></svg>
-    
-            </button>
-            <div id="supporters-{{project.id}}" class="popup">
-                <button class="popup-close-btn" onclick="togglePopup('supporters-{{project.id}}')">X Close</button>
-                <div style="overflow-y: scroll; height:400px;" class="popupContent">
-                    <h4>supporters in the project</h4>
-                    <p>{% lorem 21 b random %}</p>
-                    <a href="/about">asd</a>
-                </div>
-            </div>
-
-
-
-            <div class="actions">
-                <button title="actions-button" class="actions-btn" onclick="toggleMenu('{{project.id}}')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#f1f1f5" viewBox="0 -960 960 960"><path d="M120-240v-80h720v80zm0-200v-80h720v80zm0-200v-80h720v80z" /></svg>
-                </button>
-            <div id="{{project.id}}" class="actions-menu">
-                <ul>
-                    <li onclick="toggleSubmenu('submenu-{{project.id}}')">Option 1.1</li>
-                    <div id="submenu-{{project.id}}" class="submenu">
-                        <ul>
-                            <li>Suboption 1.1.1</li>
-                            <li>Suboption 1.1.2</li>
-                            <li>Suboption 1.1.3</li>
-                        </ul>
+<!-- comments -->
+            <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#comments-{{project.id}}">
+                Nc
+                <i class="right">
+                    <img src="{% static 'icons/comments.svg' %}" alt="xD"></img>
+                </i>
+            </a>
+            <!-- comments popup content -->
+                <div id="comments-{{project.id}}" class="modal modal-fixed-footer">
+                    <div class="modal-content">
+                        <h4>Modal Header for {{project.name}}</h4>
+                        <p>A bunch of text</p>
+                        <h4>USers in the project</h4>
+                        <p>lorem ipsum</p>
+                        <a href="/about">asd</a>
                     </div>
-                    <li>Option 1.3</li>
-                    <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a></li>
-                    <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a></li>
-                    <li> <a href="/{{ project.id }}/add_task/">add task</a></li>
-                    <li> <a href="/project/{{ project.id }}/add_introduction/">add introduction</a></li>
-                    <li> <a href="/project/{{ project.id }}/add_goal/">add goal</a></li>
-                    <li> <a href="/project/{{ project.id }}/add_assumption/">add assumption</a></li>
-                    <li> <a href="/project/{{ project.id }}/add_requirement/">add requirement</a></li>
-                    <li> <a href="/project/{{ project.id }}/add_problem/">add problem</a></li>
-                    <li> <a href="/{{ project.id }}/update/">update</a></li>
+                    <div class="modal-footer">
+                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                    </div>
+                </div>
+
+<!-- users -->
+            <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#users-{{project.id}}">
+
+                Nu <img src="{% static 'icons/users.svg' %}"></img>
+            </a>
+            <!-- users popup -->
+                <div id="users-{{project.id}}" class="modal modal-fixed-footer">
+                    <div class="modal-header">
+                        <a href="#!" class="modal-close waves-effect waves-green btn-flat right">
+                            <i>	<img class="close" src="{% static 'icons/close.svg' %}" alt=""></i>
+                        </a>
+                    </div>
+                    <div class="modal-content">
+                        <h4>Modal Header for {{project.name}}</h4>
+                        <p>A bunch of text</p>
+                        <h4>USers in the project</h4>
+                        <p>lorem ipsum</p>
+                        <a href="/about">asd</a>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                    </div>
+                </div>
+
+<!-- supporters -->
+                <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#supporters-{{project.id}}">
+                    Nu <i class="right"><img src="{% static 'icons/supporters.svg' %}" alt=""></i>
+                </a>
+                <!-- supporters popup -->
+                <div id="supporters-{{project.id}}" class="modal modal-fixed-footer">
+                    <div class="modal-content">
+                        <h4>Modal Header for {{project.name}}</h4>
+                        <p>A bunch of text</p>
+                        <h4>supporters</h4>
+                        <p>lorem ipsum</p>
+                        <a href="/about">asd</a>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                    </div>
+                </div>
+
+
+
+                <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{project.id}}'>
+                    <img src="{% static 'icons/menu.svg' %}" alt="idea">
+                </a>
+        
+                <!-- Dropdown Structure -->
+                <ul id='actions-{{project.id}}' class='dropdown-content'>
+                    <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
+                    </li>
+                    <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
+                    </li>
+                    <li class="divider" tabindex="-1"></li>
+                    <li> <a href="/{{ project.id }}/add_task/">add task</a>
+                    </li>
+                    <li><a href="#!"><i class="material-icons">view_module</i>four</a></li>
+                    <li><a href="#!"><i class="material-icons">cloud</i>five</a></li>
                 </ul>
+        </div>
+
+        <div class="needs">
+            <div class="needCards">
+                <span style="font-weight: bold;">Needs:</span>
+                {% for need in project.need_set.all %}
+                <a href="/need/{{need.id}}">{{need.name}}</a>
+                {% empty %}
+                <span>not published</span>
+
+                {% endfor %}
             </div>
-        </div>
-        </div>
-
-    <div class="needs">
-        <div class="needCards">
-            <span style="font-weight: bold;">Needs:</span>
-            {% for need in project.need_set.all %}
-            <a href="/need/{{need.id}}">{{need.name}}</a>
-            {% empty %}
-            <span>not published</span>
-
-            {% endfor %}
         </div>
     </div>
-</div>
 
 
     {% empty %}

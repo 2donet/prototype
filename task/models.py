@@ -4,11 +4,11 @@ from django.db import models
 class Task(models.Model):
     name = models.CharField(max_length=50)
     desc = models.TextField("description")
-    priority = models.IntegerField(blank=True)
+    priority = models.IntegerField(null=True)
     created_by = models.ForeignKey("user.User", on_delete=models.CASCADE)
     
     contributions = models.JSONField(
-        blank=True
+        null=True
     ) 
 
     to_project = models.ForeignKey("project.Project", blank=True, null=True, on_delete=models.CASCADE)

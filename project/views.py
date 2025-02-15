@@ -11,7 +11,9 @@ from need.models import Need
 from user.models import User
 from django.urls import path, reverse
 from django.db.models import Prefetch
+import json
 
+from skills.models import Skill
 
 from django.contrib.auth import get_user_model
 
@@ -89,7 +91,7 @@ def create_project(request):
         published = request.POST.get('published') == '1'  # Checkbox or select input
 
         # Utwórz projekt
-        user = User.objects.get(name='tester-1')  # Replace with dynamic user retrieval in production
+        user = request.user 
         project = Project.objects.create(
             name=name,
             visibility=visibility,
@@ -134,12 +136,20 @@ def create_project(request):
                         created_by=user,
                         to_project=project,
                     )
+        skills_json = request.POST.get('skills')
+        if skills_json:
+            skill_names = json.loads(skills_json)
+            for skill_name in skill_names:
+                project.add_skill(skill_name)
 
         return redirect('project:project', project_id=project.id)
 
     return render(request, 'create_project.html')
 
 
+# lsit of projects with certain skill
 
-
-
+def skill_projects(request, skill_name):
+    skill = get_object_or_404(Skill, name__iexact=skill_name)
+    projects = skill.project_set.all()
+    return render(request, 'skills/skill_projects.html', {'skill': skill, 'projects': projects})

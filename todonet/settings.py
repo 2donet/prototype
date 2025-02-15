@@ -26,7 +26,11 @@ SECRET_KEY = 'django-insecure-ze*j_p$1+q%$=msvr&kb&5wp6$9kt(tb8aqkmqzq+c84p^!$9q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    '192.168.100.139',
+    '192.168.125.139',
+]
 
 
 # Application definition
@@ -41,7 +45,6 @@ INSTALLED_APPS = [
     'user.apps.UserConfig',
     'comment.apps.CommentConfig',
     'project.apps.ProjectConfig',
-    'post.apps.PostConfig',
     'moderation.apps.ModerationConfig',
     'need.apps.NeedConfig',
     'task.apps.TaskConfig',
@@ -50,6 +53,9 @@ INSTALLED_APPS = [
     'contribution',
 
     'decisions.apps.DecisionsConfig',
+
+    'skills', 
+    'rest_framework',
 
 
 ]

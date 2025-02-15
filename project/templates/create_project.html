@@ -1,259 +1,153 @@
 {% extends "base.html" %}
-<style>
-    .need-item {
-        border: 1px solid #ddd;
-        padding: 10px;
-        margin-bottom: 10px;
-        position: relative;
-    }
-    .remove-need-btn {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        background: #f44336;
-        color: white;
-        border: none;
-        border-radius: 3px;
-        padding: 3px 6px;
-        cursor: pointer;
-    }
-</style>
-
-{% block title %}
-    2do.net - Create a New Project
-{% endblock %}
+{% load static%}
+{% block title %}2do.net - Create a New Project{% endblock %}
 
 {% block content %}
-    <div class="grid12">
-        <div class="g12hero box">
-            <h1>Create a New Project</h1>
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label for="name">Project Name:</label>
-                    <input type="text" id="name" name="name" required>
+
+<form method="post">
+{% csrf_token %}
+<div class="grid12">
+    <div class="g12hero box">
+            {% include "components/hero.html" %}
+            <input type="text" id="name" name="name" placeholder="Project name" style="font-size: xx-large;" required>
+            <label for="name">Project Name</label>
+
+            <blockquote>
+                by <a href="/u/{{user.id}}">{{user.username}}</a>
+            </blockquote>
+            <p class="herosummary" title="Project's summary">                    <textarea id="summary" name="summary" class="materialize-textarea"></textarea>
+                <label for="summary">Summary</label></p>
+                <div class="input-field">
+                    <div class="chips chips-autocomplete" id="skills-input"></div>
                 </div>
-
-                <div class="form-group">
-                    <label for="visibility">Visibility:</label>
-                    <select id="visibility" name="visibility" required>
-                        <option value="public">Public</option>
-                        <option value="logged_in">Only Logged-In Users</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="private">Private</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="status">Status:</label>
-                    <select id="status" name="status">
-                        <option value="">-- Select Status --</option>
-                        <option value="to_do">To Do</option>
-                        <option value="doing">Doing</option>
-                        <option value="done">Done</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="area">Area:</label>
-                    <input type="text" id="area" name="area">
-                </div>
-
-                <div class="form-group">
-                    <label for="tags">Tags (comma-separated):</label>
-                    <input type="text" id="tags" name="tags">
-                </div>
-
-                <div class="form-group">
-                    <label for="summary">Summary:</label>
-                    <textarea id="summary" name="summary"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="desc">Description:</label>
-                    <textarea id="desc" name="desc"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="published">Publish Now:</label>
-                    <input type="checkbox" id="published" name="published" value="1">
-                </div>
-
-                <button type="button" id="toggle-needs-btn">Add Needs</button>
-
-                <div id="needs-section" class="needs-section" style="display: none;">
-                    <h2>Needs for This Project</h2>
-                    <div id="needs-container">
-                        <!-- Dynamic fields for needs will be added here -->
-                    </div>
-                    <button type="button" id="add-need-btn">Add Another Need</button>
-                </div>
-
-
-                <button type="button" id="toggle-tasks-btn">Add Tasks</button>
-
-                    <div id="tasks-section" class="tasks-section" style="display: none;">
-                        <h2>Tasks for This Project</h2>
-                        <div id="tasks-container">
-                            <!-- Dynamic fields for tasks will be added here -->
-                        </div>
-                        <button type="button" id="add-task-btn">Add Another Task</button>
-                    </div>
-                <hr>
-                <button type="submit" class="btn-primary">Create Project</button>
-            </form>
+                <blockquote>
+                    <i>Wriste each skill/tag, and add enter e.g.:</i>
+                    <code>First tag</code> press
+                    <kbd>enter</kbd> <code>Second tag </code> press <kbd>enter</kbd>
+                    
+                </blockquote>
         </div>
+
+        <div class="g12dod">
+            <h2>
+                Definition of Done
+            </h2>
+            <div class="box">
+                <textarea id="desc" name="desc" class="materialize-textarea">
+                    {% if form.desc.value %}{{ form.desc.value }}{% else %}
+                
+                    Default description. Following this content layout is reccomended, but not required.
+                
+                    Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit...
+                There is no one who loves pain itself, who seeks after it and wants to have it, simply because it is pain...
+                
+
+                
+
+                Curabitur rhoncus eget tortor vel consectetur. In ultrices auctor purus, pulvinar lobortis orci pharetra et. Duis in erat purus. Aliquam accumsan porttitor posuere. Sed elementum augue id ligula ullamcorper suscipit. Vivamus fringilla felis non urna dignissim maximus. Nunc convallis magna vitae malesuada placerat. Pellentesque vitae augue efficitur elit volutpat consectetur nec eget nunc. Suspendisse potenti. Donec orci orci, pretium ac lectus sed, vulputate blandit arc.
+                {% endif %}    
+            </textarea>
+        </div>
+        <div class="g12need">
+            <h1 style="text-align: center;">
+                Needs
+            </h1>
+            <div class="box">
+            <button type="button" id="toggle-needs-btn" class="btn waves-effect waves-light">Show Needs</button>
+
+            <button type="button" id="add-need-btn" class="btn green">Add Another Need</button>
+                <span class="type">
+            </div>
+            <div class="g12notes">
+                
+                            <div class="section">
+                                <div id="needs-section" class="card-panel" style="display: none;">
+                                    <div id="needs-container"></div>
+                                </div>
+                            </div>
+    </form>
+
+
+
+
+
+
+
+
+            
+            <div class="section">
+                <button type="button" id="toggle-tasks-btn" class="btn waves-effect waves-light">Add Tasks</button>
+                <div id="tasks-section" class="card-panel" style="display: none;">
+                    <h5>Tasks for This Project</h5>
+                    <div id="tasks-container"></div>
+                    <button type="button" id="add-task-btn" class="btn green">Add Another Task</button>
+                </div>
+            </div>
     </div>
-
     <script>
-        const toggleNeedsBtn = document.getElementById('toggle-needs-btn');
-        const needsSection = document.getElementById('needs-section');
-        const addNeedBtn = document.getElementById('add-need-btn');
-        const needsContainer = document.getElementById('needs-container');
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleNeedsBtn = document.getElementById('toggle-needs-btn');
+            const needsSection = document.getElementById('needs-section');
+            const addNeedBtn = document.getElementById('add-need-btn');
+            const needsContainer = document.getElementById('needs-container');
 
-        // Toggle visibility of the needs section
-        toggleNeedsBtn.addEventListener('click', () => {
-            if (needsSection.style.display === 'none') {
-                needsSection.style.display = 'block';
-                toggleNeedsBtn.textContent = 'Hide Needs';
-            } else {
-                needsSection.style.display = 'none';
-                toggleNeedsBtn.textContent = 'Add Needs';
-            }
-        });
-
-        // Function to add a new need field
-        function addNeed() {
-            // Create a new div for the need fields
-            const needDiv = document.createElement('div');
-            needDiv.classList.add('need-item');
-
-            // Add input for need name
-            const nameLabel = document.createElement('label');
-            nameLabel.textContent = 'Need Name:';
-            needDiv.appendChild(nameLabel);
-
-            const nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.name = 'need_name[]'; // Array format
-            needDiv.appendChild(nameInput);
-
-            needDiv.appendChild(document.createElement('br'));
-
-            // Add textarea for need description
-            const descLabel = document.createElement('label');
-            descLabel.textContent = 'Need Description:';
-            needDiv.appendChild(descLabel);
-
-            const descInput = document.createElement('textarea');
-            descInput.name = 'need_desc[]'; // Array format
-            needDiv.appendChild(descInput);
-
-            needDiv.appendChild(document.createElement('br'));
-            
-            
-            
-            // Add input for need priority
-            const priorityLabel = document.createElement('label');
-            priorityLabel.textContent = 'Need priority:';
-            needDiv.appendChild(priorityLabel);
-
-            const priorityInput = document.createElement('input'); // Fix variable name
-            priorityInput.type = 'number';
-            priorityInput.name = 'need_priority[]'; // Array format
-            needDiv.appendChild(priorityInput);
-
-            needDiv.appendChild(document.createElement('br'));
-
-            // Add a "Remove" button to delete the form
-            const removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.textContent = 'Remove';
-            removeBtn.classList.add('remove-need-btn');
-            removeBtn.addEventListener('click', () => {
-                needsContainer.removeChild(needDiv); // Remove the entire need form
+            toggleNeedsBtn.addEventListener('click', () => {
+                needsSection.style.display = needsSection.style.display === 'none' ? 'block' : 'none';
             });
-            needDiv.appendChild(removeBtn);
 
-            // Append the new div to the container
-            needsContainer.appendChild(needDiv);
-        }
+            addNeedBtn.addEventListener('click', () => {
+                const needDiv = document.createElement('div');
+                needDiv.classList.add('g12note');
+                needDiv.innerHTML = `
 
-        // Attach event listener for adding needs
-        addNeedBtn.addEventListener('click', addNeed);
+                    <span class="type"><input required value="1" type="number" name="need_priority[]"><span class="type">
+                    <label class="active">Need Priority</label>
+        
+                    <div class="input-field">
+                        <input type="text" name="need_name[]" required>
+                        <label>Need Name</label>
+                    </div>
+                    <div class="input-field">
+                        <textarea name="need_desc[]" class="materialize-textarea"></textarea>
+                        <label>Need Description</label>
+                    </div>
+                    <button type="button" class="btn red remove-need-btn">Remove</button>
+                `;
+                needDiv.querySelector('.remove-need-btn').addEventListener('click', () => needsContainer.removeChild(needDiv));
+                needsContainer.appendChild(needDiv);
+            });
 
-        const toggleTasksBtn = document.getElementById('toggle-tasks-btn');
-    const tasksSection = document.getElementById('tasks-section');
-    const addTaskBtn = document.getElementById('add-task-btn');
-    const tasksContainer = document.getElementById('tasks-container');
+            const toggleTasksBtn = document.getElementById('toggle-tasks-btn');
+            const tasksSection = document.getElementById('tasks-section');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const tasksContainer = document.getElementById('tasks-container');
 
-    // Toggle visibility of the tasks section
-    toggleTasksBtn.addEventListener('click', () => {
-        if (tasksSection.style.display === 'none') {
-            tasksSection.style.display = 'block';
-            toggleTasksBtn.textContent = 'Hide Tasks';
-        } else {
-            tasksSection.style.display = 'none';
-            toggleTasksBtn.textContent = 'Add Tasks';
-        }
-    });
+            toggleTasksBtn.addEventListener('click', () => {
+                tasksSection.style.display = tasksSection.style.display === 'none' ? 'block' : 'none';
+            });
 
-    // Function to add a new task field
-    function addTask() {
-        // Create a new div for the task fields
-        const taskDiv = document.createElement('div');
-        taskDiv.classList.add('task-item');
-
-        // Add input for task name
-        const nameLabel = document.createElement('label');
-        nameLabel.textContent = 'Task Name:';
-        taskDiv.appendChild(nameLabel);
-
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.name = 'task_name[]'; // Array format
-        taskDiv.appendChild(nameInput);
-
-        taskDiv.appendChild(document.createElement('br'));
-
-        // Add textarea for task description
-        const descLabel = document.createElement('label');
-        descLabel.textContent = 'Task Description:';
-        taskDiv.appendChild(descLabel);
-
-        const descInput = document.createElement('textarea');
-        descInput.name = 'task_desc[]'; // Array format
-        taskDiv.appendChild(descInput);
-
-        taskDiv.appendChild(document.createElement('br'));
-
-        // Add input for task priority
-        const priorityLabel = document.createElement('label');
-        priorityLabel.textContent = 'Task Priority:';
-        taskDiv.appendChild(priorityLabel);
-
-        const priorityInput = document.createElement('input');
-        priorityInput.type = 'number';
-        priorityInput.name = 'task_priority[]'; // Array format
-        taskDiv.appendChild(priorityInput);
-
-        taskDiv.appendChild(document.createElement('br'));
-
-        // Add a "Remove" button to delete the task form
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.textContent = 'Remove';
-        removeBtn.classList.add('remove-task-btn');
-        removeBtn.addEventListener('click', () => {
-            tasksContainer.removeChild(taskDiv); // Remove the entire task form
+            addTaskBtn.addEventListener('click', () => {
+                const taskDiv = document.createElement('div');
+                taskDiv.classList.add('card-panel');
+                taskDiv.innerHTML = `
+                    <div class="input-field">
+                        <input type="text" name="task_name[]" required>
+                        <label>Task Name</label>
+                    </div>
+                    <div class="input-field">
+                        <textarea name="task_desc[]" class="materialize-textarea"></textarea>
+                        <label>Task Description</label>
+                    </div>
+                    <div class="input-field">
+                        <input type="number" name="task_priority[]" required value="1" >
+                        <label class="active" >Task Priority</label>
+                    </div>
+                    <button type="button" class="btn red remove-task-btn">Remove</button>
+                `;
+                taskDiv.querySelector('.remove-task-btn').addEventListener('click', () => tasksContainer.removeChild(taskDiv));
+                tasksContainer.appendChild(taskDiv);
+            });
         });
-        taskDiv.appendChild(removeBtn);
-
-        // Append the new div to the container
-        tasksContainer.appendChild(taskDiv);
-    }
-
-    // Attach event listener for adding tasks
-    addTaskBtn.addEventListener('click', addTask);
     </script>
-{% endblock %}
+    
+    {% endblock %}

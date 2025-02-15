@@ -1,199 +1,46 @@
-{% load static %}
+{% load static%}
 {% block navbar %}
 <nav>
-    <div class="navbar">
-        <div class="logo">
-                <a href="/">
-                  <!--
-                    logoiconwrapper -->
-                    <img class="logoicon" src="{% static 'logo.png' %}" alt="logo">
-                </a>
-                <div class="logotype">
-                    <a href="/" class="logotype-textold">
-                      To do Network
-                        <!-- To do Network -->
-                    </a>
-                    <span>
-                        <a href="/about/">
-                          Public Development
-                            <!-- Public Development -->
-                        </a>
-                    </span>
-                </div>
-      </div>
-      <input type="radio" name="slider" id="menu-btn">
-      <input type="radio" name="slider" id="close-btn">
-      <ul class="nav-links">
-        <label for="close-btn" class="btn close-btn">
-            <a class="iconbaricon" >
-                <img src="{% static 'plan.svg' %}" alt="idea">
-            </a>
-        </label>
-        <li><a href="/">Home</a></li>
-        <li><a href="/1">2do.net</a></li>
-        <li>
-          <a href="#" class="desktop-item">Dev Menu</a>
-          <input type="checkbox" id="showDrop">
-          <label for="showDrop" class="mobile-item">Dropdown Menu</label>
-          <ul class="drop-menu">
-            <li><a href="/">Projects</a></li>
-            <li><a href="/tasks/">Tasks</a></li>
-            <li><a href="/about/">About</a></li>
-            <li><a href="/terms-and-conditions/">Rules</a></li>
-            <li><a href="/admin/">Admin</a></li>
-          </ul>
-        </li>
+  <div class="nav-wrapper">
+    <a href="/" class="brand-logo">
+      <img class="logoicon" src="{% static 'icons/logo.png' %}" alt="logo">
+      To do Network
+    </a>
+    <a href="#" data-target="mobile-demo" class="sidenav-trigger">
+      <img src="{% static 'icons/menu.svg' %}" alt="">
+    </a>
+    <ul class="right hide-on-med-and-down">
+      <li><a href="/">Home</a></li>
+      <li><a href="/1">2do.net</a></li>
+      <li><a href="/admin">admin</a></li>
+      <li><a href="mobile.html">Mobile</a></li>
+      <li><a class="dropdown-trigger" href="#!" data-target="dropdown-add-nav">Add</a></li>
+    </ul>
+  </div>
+</nav>
 
-        <li>
-          <a href="#" class="desktop-item">Browser</a>
-          <input type="checkbox" id="showMega">
-          <label for="showMega" class="mobile-item">Browser</label>
-          <div class="mega-box">
-            <div class="nav-card">
-                <div class="row">
-                    <div class="megatxt">
-                        <h4>
-                            See what Authors want to do, do, and "done" 
-                        </h4>
-                        <p>
-                            {% lorem 29 w random%}
-                        </p>
-                    </div>
-                </div>
-              <div class="row">
-                <header><a>Published</a></header>
-                <ul class="mega-links">
-                  <li><a href="/">Projects</a></li>
-                  <li><a href="#">Tasks</a></li>
-                  <li><a href="#">Needs</a></li>
+<!-- Dropdown for Desktop -->
+<ul id="dropdown-add-nav" class="dropdown-content">
+  <li><a href="/create">Project</a></li>
+  <li><a href="/c/review">Review</a></li>
+  <li class="divider"></li>
+  <li><a href="#!">three</a></li>
+</ul>
 
-                </ul>
-              </div>
-              <div class="row">
-                <header><a>Filter</a></header>
-                <ul class="mega-links">
-                  <li><a href="#">Coming soon</a></li>
-                  <li><a href="#">Join development</a></li>
+<!-- Sidenav for Mobile -->
+<ul class="sidenav" id="mobile-demo">
+  <li><a href="/">Home</a></li>
+  <li><a href="/1">2do.net</a></li>
+  <li><a href="/admin">admin</a></li>
+  <li><a href="mobile.html">Mobile</a></li>
+  <li><a class="dropdown-trigger" href="#!" data-target="dropdown-add-nav-mobile">Add</a></li>
+</ul>
 
-                </ul>
-              </div>
-              <div class="row">
-                <header><a>Publish</a></header>
-                <ul class="mega-links">
-                  <li><a href="/create/">Add project</a></li>
-									<li><a href="#">How publishing works?</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </li>
-        <li>
-          <a href="#" class="desktop-item">Tutorial</a>
-          <input type="checkbox" id="showMega3">
-          <label for="showMega3" class="mobile-item">Tutorial</label>
-          <div class="mega-box mb3">
-            <div class="nav-card">
-              <div class="row">
-                <div class="megatxt">
-                    <h4>
-                        2do.net
-                    </h4>
-                    <p>
-                        {% lorem 29 w random%}
-                    </p>
-										<br>
-										<a href="#">More about 2do.net</a>
-										<br>
-										<a href="#">General introduction</a>
-                </div>
-            </div>
-              <div class="row">
-                <header><a href="#">Usage</a></header>
-                <ul class="mega-links">
-                  <li><a href="#">Basics</a></li>
-                </ul>
-              </div>
-              <div class="row">
-                <header><a href="#">Support</a></header>
-                <ul class="mega-links">
-                  <li><a href="#">Helping others</a></li>
-									<li><a href="#">Getting help</a></li>
-									<li><a href="#">General rules</a></li>
-                </ul>
-              </div>
-              <div class="row">
-                <header><a>Legal</a></header>
-                <ul class="mega-links">
-                  <li><a href="#">Community policy</a></li>
-									<li><a href="#">Privacy policy</a></li>
-									<li><a href="#">Intellectual Property policy</a></li>
-									<li><a href="#">Disputes</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </li>
-        <li>
-            <a href="#" class="desktop-item">About</a>
-            <input type="checkbox" id="showMega2">
-            <label for="showMega2" class="mobile-item">About</label>
-            <div class="mega-box mb2">
-              <div class="nav-card">
-                <div class="row">
-                  <div class="megatxt">
-                      <h4>
-                          2do.net
-                      </h4>
-                      <p>
-                          {% lorem 29 w random%}
-                      </p>
-                  </div>
-              </div>
-                <div class="row">
-                  <header><a>The website</a></header>
-                  <ul class="mega-links">
-                    <li><a href="#">Administration</a></li>
-										<li><a href="#">Moderation</a></li>
-                  </ul>
-                </div>
-                <div class="row">
-                  <header><a href="#">Software</a></header>
-                  <ul class="mega-links">
-                    <li><a href="#">GitHub</a></li>
-                  </ul>
-                </div>
-                <div class="row">
-                  <header><a>Organization</a></header>
-                  <ul class="mega-links">
-                    <li><a href="#">UW</a></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </li>
-        <li><a href="#">Feedback</a></li>
-      {% if user.is_authenticated %}
-      <li><a href="u/{{user.id}}">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-          d="M15.75 6C15.75 8.07107 14.071 9.75 12 9.75C9.9289 9.75 8.24996 8.07107 8.24996 6C8.24996 3.92893 9.9289 2.25 12 2.25C14.071 2.25 15.75 3.92893 15.75 6Z"
-          stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-          <path
-          d="M4.5011 20.1182C4.5714 16.0369 7.90184 12.75 12 12.75C16.0982 12.75 19.4287 16.0371 19.4988 20.1185C17.216 21.166 14.6764 21.75 12.0003 21.75C9.32396 21.75 6.78406 21.1659 4.5011 20.1182Z"
-          stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg></a></li>
-      <li><a href="u/logout">Logout</a></li>
-      {% else %}
-        <li><a href="u/signin">Sign In</a></li>
-        <li><a href="u/signup">Sign Up</a></li>
-      {% endif %}
-      </ul>
-      <label for="menu-btn" class="btn menu-btn">
-        <a class="iconbaricon">
-            <img src="{% static 'task.svg' %}" alt="idea">
-        </a>
-    </label>
-    </div>
-  </nav>
-
+<!-- Dropdown for Mobile -->
+<ul id="dropdown-add-nav-mobile" class="dropdown-content">
+  <li><a href="/create">Project</a></li>
+  <li><a href="/c/review">Review</a></li>
+  <li class="divider"></li>
+  <li><a href="#!">three</a></li>
+</ul>
 {% endblock %}

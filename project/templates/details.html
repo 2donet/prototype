@@ -9,41 +9,53 @@
 <!--    <script src="{% static 'project/js/script.js' %}"></script>-->
 
 <div class="grid12">
-    <div class="g12info">
 
-        {% if parent_projects %}
-
-        {% include "components/content/parentcard.html" %}
-        {% endif %}
-    </div>
 
     <div class="g12hero box">
-        {% include "components/content/projecthero.html" %}
+        
+        {% include "components/hero.html" %} <!-- project/templates/components -->
+        <h2>{{ content.name }}</h2>
+            <blockquote>
+                by <a href="/u/{{content.created_by.id}}">{{content.created_by.username}}</a>
+                <p>
+                    # user bio
+                    # user verifications
+                    # user rep 
 
-        <h1>{{ content.name }}</h1>
-        {{ project.content_type}}
+                </p>
+            </blockquote>
+            <div class="chips" style="border-bottom: none;">
+                {% for skill in content.skills.all %}
+                <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                    {{ skill.name }}
+                </a>
+                {% empty %}
+                <p>No skills added yet.</p>
+                {% endfor %}
+            </div>
+            <p>
+                {{ content.content_type}}
+    
+            </p>
+            <p class="herosummary" title="Project's summary">{{ content.summary|default_if_none:" " }}</p>
 
-        <p class="herosummary" title="Project's summary">{{ content.summary|default_if_none:" " }}</p>
-
-        {% include "components/content/rulescard.html" %}
-        {% include "components/content/administrationcard.html" %}
+        {% include "components/rulescard.html" %}
+        {% include "components/administrationcard.html" %}
 
 
         {% comment %}
         status module not ready yet
         {% for status in last_status %}
-        {% include "components/content/statuscard.html" %}
+        {% include "components/statuscard.html" %}
         {% endfor %}
         {% endcomment %}
-
 
         {% comment %}
         no goals yet
         {% if goals %}
-        {% include "components/content/goalscard.html" %}
+        {% include "components/goalscard.html" %}
         {% endif %}
         {% endcomment %}
-
 
         {% comment %}
         {% for author in project.author.all %}
@@ -86,33 +98,37 @@
 
 
     </div>
-
-
+<!-- parent project -->
+    <div class="g12info">
+        {% if parent_projects %}
+        {% include "components/parentcard.html" %}
+        {% endif %}
+    </div>
     <!-- Edycja danej treści -->
     <div class="g12author">
+        <!-- Dropdown Trigger -->
+        <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
+            <img src="{% static 'icons/menu.svg' %}" alt="idea">
+        </a>
 
+        <!-- Dropdown Structure -->
+        <ul id='dropdown1' class='dropdown-content'>
+            <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
+            </li>
+            <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
+            </li>
+            <li class="divider" tabindex="-1"></li>
+            <li> <a href="/{{ project.id }}/add_task/">add task</a>
+            </li>
+            <li><a href="#!"><i class="material-icons">view_module</i>four</a></li>
+            <li><a href="#!"><i class="material-icons">cloud</i>five</a></li>
+        </ul>
 
-        <div class="dropdown">
-            <button class="dropbtn">Actions
-            </button>
-            <div class="dropdown-content" id="myDropdown">
-                <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
-                <a href="/{{ project.id }}/add_subproject/">add subproject</a>
-                <a href="/{{ project.id }}/add_task/">add task</a>
-                <a href="/project/{{ project.id }}/add_introduction/">add introduction</a>
-                <a href="/project/{{ project.id }}/add_goal/">add goal</a>
-                <a href="/project/{{ project.id }}/add_assumption/">add assumption</a>
-                <a href="/project/{{ project.id }}/add_requirement/">add requirement</a>
-                <a href="/project/{{ project.id }}/add_problem/">add problem</a>
-                <a href="/{{ project.id }}/update/">update</a>
-            </div>
-        </div>
-        <br>
         <!--
         todonet/templates/components/content/topcontributors.html
             -->
 
-        {% include "components/content/topcontributors.html" %}
+        {% include "components/topcontributors.html" %}
 
     </div>
 
@@ -466,11 +482,11 @@
 
 
         <div class="g12note">
-            <span class="type"><button href="#">Volunteering</button></span>
+            <span class="type"><button href="">Volunteering</button></span>
             <span class="type"><button title="Pool of awards" href="#">Awards: {{ task.award_money }}$ + {{
                     task.award_shares }}m%</button></span>
             {% include "components/content/actionsdropdown.html" %}
-            <h3><a href="#"><span style="font-weight: 400">{{ task.get_progress_display }}</span> {{ task.name }}</a>
+            <h3><a href="/t/{{task.id}}"><span style="font-weight: 400">{{ task.get_progress_display }}</span> {{ task.name }}</a>
             </h3>
             <ul>
                 <li>

@@ -1,0 +1,63 @@
+{% load static %}
+<!-- comments -->
+<a class="waves-effect waves-teal btn-flat modal-trigger border" href="#comments-{{project.id}}">
+    Nc
+    <i class="right">
+        <img src="{% static 'icons/comments.svg' %}" alt="xD"></img>
+    </i>
+</a>
+<!-- comments popup content -->
+    <div id="comments-{{project.id}}" class="modal modal-fixed-footer">
+        <div class="modal-content">
+            <h4>Modal Header for {{project.name}}</h4>
+            <p>A bunch of text</p>
+            <h4>USers in the project</h4>
+            <p>lorem ipsum</p>
+            <a href="/about">asd</a>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+        </div>
+    </div>
+
+<!-- users -->
+<a class="waves-effect waves-teal btn-flat modal-trigger border" href="#users-{{project.id}}">
+
+    Nu <img src="{% static 'icons/users.svg' %}"></img>
+</a>
+<!-- users popup -->
+    <div id="users-{{project.id}}" class="modal modal-fixed-footer">
+        <div class="modal-header">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat right">
+                <i>	<img class="close" src="{% static 'icons/close.svg' %}" alt=""></i>
+            </a>
+        </div>
+        <div class="modal-content">
+            <h4>Modal Header for {{project.name}}</h4>
+            <p>A bunch of text</p>
+            <h4>USers in the project</h4>
+            <p>lorem ipsum</p>
+            <a href="/about">asd</a>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+        </div>
+    </div>
+
+<!-- supporters -->
+    <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#supporters-{{project.id}}">
+        Nu <i class="right"><img src="{% static 'icons/supporters.svg' %}" alt=""></i>
+    </a>
+    <!-- supporters popup -->
+    <div id="supporters-{{project.id}}" class="modal modal-fixed-footer">
+        <div class="modal-content">
+            <h4>Modal Header for {{project.name}}</h4>
+            <p>A bunch of text</p>
+            <h4>supporters</h4>
+            <p>lorem ipsum</p>
+            <a href="/about">asd</a>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+        </div>
+    </div>

@@ -1,0 +1,1035 @@
+{% extends "base.html" %}
+{% block title %}
+2do.net - {{ content.name }}
+{% endblock %}
+
+{% block content %}
+{% load static %}
+{% load humanize %}
+
+<div class="grid2">
+    <div class="pcard">
+        What = name + summary
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab col "><a class="active" href="#Why">Why</a></li>
+                <li class="tab col "><a href="#Where">Where</a></li>
+                <li class="tab col "><a href="#How">How</a></li>
+                <li class="tab col "><a href="#When">When</a></li>
+                <li class="tab col "><a href="#Who">Who</a></li>
+            </ul>
+        </div>
+        <style>
+            .pcard > .col {
+                overflow-y: scroll;
+            }
+            .pcard > tabs {
+                height: 500px;
+            }
+        </style>
+        <div id="Why" class="col s12">
+            Test 1
+            {% include "components/hint.html" with hint=1 %}
+            <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.
+            </p>
+        </div>
+        <div id="Where" class="col s12">
+            Test 1
+            {% include "components/hint.html" with hint=1 %}
+            <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.
+            </p>
+        </div>
+        <div id="Who" class="col s12">
+            Test 2
+            {% include "components/hint.html" with hint=1 %}
+            <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.
+            </p>
+        </div>
+        <div id="How" class="col s12">
+            Test 2
+            {% include "components/hint.html" with hint=1 %}
+            <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.
+            </p>
+        </div>
+        <div id="When" class="col s12">
+            Test 2
+            {% include "components/hint.html" with hint=1 %}
+            <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime natus autem quas aperiam. Velit
+                voluptates labore doloribus praesentium? Necessitatibus cumque ut quia provident deleniti fuga facere
+                mollitia, omnis quam consequuntur.
+            </p>
+        </div>
+    </div>
+    <div class="pinfo">
+        What who when where
+        {% include "components/hero.html" %}
+
+
+        Project run by <a href="/u/{{content.created_by.id}}">{{content.created_by.username}}</a>
+        <blockquote>
+            # user bio
+            # user verifications
+            # user rep
+        </blockquote>
+        {% include "components/rulescard.html" %}
+        {% include "components/administrationcard.html" %}
+    </div>
+
+    <div class="ptab">
+        <h3>To do</h3>
+
+
+    <h3>Doing</h3>
+
+        <div class="carousel">
+        {%for need in needs%}
+
+
+                <div class="child-card carousel-item" style="opacity: 1 !important;">
+                        <i>{{need.priority}}</i>
+                    <a title="☰ needs" class='dropdown-trigger btn-flat' href='#' data-target='actions-need{{need.id}}'><img src="{% static 'icons/menu.svg' %}" alt="idea"></a>
+                        <ul id='actions-need{{need.id}}' class='dropdown-content'>
+                            <li><a href="#">action</a></li>
+                            <li><a href="#">{{need.name}}</a></li>
+                        </ul>
+                    <div class="child-detials">
+                        <h5><a href="{% url 'need:need' need.id %}">{{ need.name }}</a></h5>
+                        <p class="child-summary">
+                            {{ need.desc|default_if_none:"" }}
+                        </p>
+                    </div>
+        
+                </div>
+
+
+            {% endfor %}
+        </div>
+
+
+    </div>
+    <div class="pcom">
+asd
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var elems = document.querySelectorAll('.carousel');
+        M.Carousel.init(elems, {
+            fullWidth: false,
+            indicators: false,
+            noWrap: true, // Prevents looping
+        });
+
+        // Fix opacity issue
+        let items = document.querySelectorAll('.carousel-item');
+        items.forEach(item => {
+            item.style.opacity = 1; // Force items to be visible
+        });
+    });
+</script>
+<style>
+    .carousel .carousel-item {
+    opacity: 1 !important; /* Force all items to be visible */
+    visibility: visible !important;
+}
+.carousel-item{
+    width: 190px;
+    height: 254px;
+}
+
+</style>
+
+<!--    <script src="{% static 'project/js/script.js' %}"></script>-->
+
+<!-- <div class="nav-wrapper"> bedzie czesto bardzo szerokie. trzeba inaczejc
+      <div class="col s12">
+        <a href="#!" class="breadcrumb">First</a>
+        <a href="#!" class="breadcrumb">Second</a>
+        <a href="#!" class="breadcrumb">Third</a>
+      </div>
+    </div> -->
+
+<div class="row">
+    <div class="col s3">
+
+        <!-- users should be able to add tags. verified user with a rep > N can flag project by clicking tags on left of the screen -->
+
+        <div class="chips" style="border-bottom: none;">
+            {% for skill in content.skills.all %}
+            <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                {{ skill.name }}
+            </a>
+            {% empty %}
+            <p>No skills added yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col s5">
+
+        <div class="box">
+            {% include "components/newhero.html" %}
+
+            <h2>{{ content.name }}</h2>
+            <p>
+                {{ content.content_type}}
+            </p>
+            <p class="herosummary" title="Project's summary">{{ content.summary|default_if_none:" " }}</p>
+        </div>
+
+        <div class="row">
+            <div class="col s12">
+                <ul class="tabs">
+                    <li class="tab col s3"><a href="#test1">Intro</a></li>
+                    <li class="tab col s3"><a class="active" href="#goals">Goals</a></li>
+                    <li class="tab col s3 disabled"><a href="#test3">Disabled Tab</a></li>
+                    <li class="tab col s3"><a href="#test4">Needs</a></li>
+                </ul>
+            </div>
+            <div id="test1" class="col s12">
+                Test 1
+                {% include "components/hint.html" with hint=1 %}
+            </div>
+
+            <div id="goals" class="col s12">
+                Goals
+                {% include "components/hint.html" with hint=2 %}
+
+                <details>
+                    <summary>
+                        <p>
+                            <label>
+                                <input type="checkbox" class="filled-in" checked="checked" />
+                                <span>Create sth</span>
+                            </label>
+                        </p>
+                    </summary>
+                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia dolores ipsam eos. Saepe modi
+                    dolores quasi accusantium non enim amet nisi sit vel molestias quisquam, nam omnis similique?
+                    Reprehenderit, amet!
+
+                </details>
+                <p>
+                    <label>
+                        <input type="checkbox" class="filled-in" />
+                        <span>Filled in</span>
+                    </label>
+                </p>
+                <p>
+                    <label>
+                        <input type="checkbox" class="filled-in" />
+                        <span>Filled in</span>
+                    </label>
+                </p>
+
+            </div>
+            <div id="test3" class="col s12">Test 3</div>
+            <div id="test4" class="col s12">Test 4
+                <div class="needs-new">
+                    co jest pootrzebne
+                    gdzie? jakiś podprojekt? jakis przedmiot w danym miejscu?
+
+                    {%for need in needs%}
+                    <div class="child-card">
+                        <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
+                            priority: {{need.priority}}
+                            <img src="{% static 'icons/menu.svg' %}" alt="idea">
+                        </a>
+
+                        <!-- Dropdown Structure -->
+                        <ul id='dropdown1' class='dropdown-content'>
+                            <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
+                            </li>
+                            <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
+                            </li>
+                            <li class="divider" tabindex="-1"></li>
+                            <li> <a href="/{{ project.id }}/add_task/">add task</a>
+                            </li>
+                            <li><a href="#!"><i class="material-icons">view_module</i>four</a></li>
+                            <li><a href="#!"><i class="material-icons">cloud</i>five</a></li>
+                        </ul>
+                        <div class="child-detials">
+
+
+                            <h5><a href="{% url 'need:need' need.id %}">{{ need.name }}</a></h5>
+                            <p class="child-summary">
+                                {{ need.desc|default_if_none:"" }}
+                            </p>
+                        </div>
+
+                    </div>
+
+
+
+
+
+
+                    {% empty %}
+                    <div class="g12note" style="width: 30%; flex: none; padding: 20px;">
+                        <!-- dodać nową klasę, która będzie responsywna, bo inline css... dziąsło -->
+                        <h3>No needs published</h3>
+                        <p>You can change that {% lorem 1 b random %}</p>
+                    </div>
+                </div>
+                <!-- ^closed needs-new -->
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="col s4 newcomments">
+    <h2>
+        Comments
+    </h2>
+    <h3>Add comment</h3>
+
+    <form id="add-comment-form" method="post">
+        {% csrf_token %}
+        <textarea name="content" placeholder="Add a comment..."></textarea>
+        <input type="hidden" name="to_project_id" value="{{ content.id }}">
+        <button type="submit">Submit</button>
+    </form>
+    <div>
+        {% if comments %}
+        {% include "comments.html" with comments=comments %}
+        {% else %}
+        <p>No comments</p>
+        {% endif %}
+
+    </div>
+
+    <br>
+
+
+
+
+</div>
+
+</div>
+<div class="grid12">
+
+
+    <div class="g12hero box">
+        <div class="box">
+
+        </div>
+        {% include "components/hero.html" %}
+
+        <!-- project/templates/components -->
+
+        {% include "components/rulescard.html" %}
+        {% include "components/administrationcard.html" %}
+
+
+        {% comment %}
+        status module not ready yet
+        {% for status in last_status %}
+        {% include "components/statuscard.html" %}
+        {% endfor %}
+        {% endcomment %}
+
+        {% comment %}
+        no goals yet
+        {% if goals %}
+        {% include "components/goalscard.html" %}
+        {% endif %}
+        {% endcomment %}
+
+        {% comment %}
+        {% for author in project.author.all %}
+        <details>
+            <summary>
+                Initiator: <b> {{ author.name }} </b>
+            </summary>
+            <div class="iconbar">
+                <a href="/user/{{ author.id }}">details</a>
+            </div>
+            <p>
+                asdasd
+            </p>
+        </details>
+        {% endfor %} {% endcomment %}
+        <!-- Social Media -->
+        {% comment %} {% if communities %}
+        <details>
+            <summary>
+                <b>Communities</b>
+            </summary>
+            <div class="iconbar">
+                <a href="#">details</a>
+            </div>
+            <p>
+                {% lorem 1 b random %}
+            </p>
+            {% for community in communities %}
+            <details class="subdet">
+                <summary>{{ community.name }}</summary>
+                <p>
+                    {{ community.desc|safe }}
+                </p>
+            </details>
+            {% endfor %}
+        </details>
+        {% endif %} {% endcomment %}
+
+
+
+
+    </div>
+    <!-- parent project -->
+    <div class="g12info">
+        {% if parent_projects %}
+        {% include "components/parentcard.html" %}
+        {% endif %}
+    </div>
+    <!-- Edycja danej treści -->
+    <div class="g12author">
+        <!-- Dropdown Trigger -->
+
+
+        <!--
+        todonet/templates/components/content/topcontributors.html
+            -->
+
+        {% include "components/topcontributors.html" %}
+
+    </div>
+
+    <!-- Status -->
+    {% if last_status %}
+    <div class="g12status">
+        {% for status in last_status %}
+        <h2>
+            Status:
+            <span>
+                {{ status.name }}
+            </span>
+        </h2>
+        <div class="box">
+            <h4>
+            </h4>
+            <div class="iconbar">
+                <i title="{{ status.pub_date }}">{{ status.pub_date|naturaltime }}</i>
+                <a href="/status/{{ status.id }}">details</a>
+                <a class="iconbaricon" href="/status/{{ status.id }}">
+                    <img src="{% static 'idea.svg' %}" alt="idea">
+                </a>
+                <a class="iconbaricon" href="#">
+                    <img src="{% static 'plan.svg' %}" alt="idea">
+                </a>
+                <a class="iconbaricon" href="#">
+                    <img src="{% static 'task.svg' %}" alt="idea">
+                </a>
+            </div>
+            <p>
+                {{ status.summary }}
+            </p>
+            {% endfor %}
+            <i>
+                Previous status:
+            </i>
+            <br>
+            {% if old_status %}
+            {% for status in old_status %}
+            <details>
+                <summary>
+                    {{ status.name }}
+                </summary>
+                <div class="iconbar">
+                    <i title="{{ status.pub_date }}">{{ status.pub_date|naturaltime }}</i>
+                    <a href="/status/{{ status.id }}">details</a>
+                    <a class="iconbaricon" href="/status/{{ status.id }}">
+                        <img src="{% static 'idea.svg' %}" alt="idea">
+                    </a>
+                    <a class="iconbaricon" href="#">
+                        <img src="{% static 'plan.svg' %}" alt="idea">
+                    </a>
+                    <a class="iconbaricon" href="#">
+                        <img src="{% static 'task.svg' %}" alt="idea">
+                    </a>
+                </div>
+                <p>
+                    {{ status.summary }}
+                </p>
+            </details>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+<!-- Introductions -->
+{% if introductions or goals or assumptions %}
+<div class="g12intro">
+    <h2>
+        Intro
+    </h2>
+    <div class="box">
+        {% for introduction in introductions %}
+        <details>
+            <summary>
+                {{ introduction.name }}
+            </summary>
+            <div class="iconbar">
+                <a href="/introduction/{{ introduction.id }}">details</a>
+            </div>
+            <p>
+                {{ introduction.summary }}
+            </p>
+        </details>
+        {% endfor %}
+
+        {% if assumptions %}
+        <h3>
+            Assumptions
+        </h3>
+        {% for assumption in assumptions %}
+        <details>
+            <summary>
+                {{ assumption.name }}
+            </summary>
+            <div class="iconbar">
+                <a href="/assumption/{{ assumption.id }}">details</a>
+            </div>
+            <p>
+                {{ assumption.summary }}
+            </p>
+        </details>
+        {% endfor %}
+        {% endif %}
+
+    </div>
+</div>
+{% endif %}
+
+
+<div class="g12dod">
+    <h2>
+        Definition of Done
+    </h2>
+    <div class="box">
+
+
+
+
+
+        {% if requirements %}
+        <h3>
+            Requirements
+        </h3>
+        {% for requirement in requirements %}
+        <details>
+            <summary>
+                {{ requirement.name }}
+            </summary>
+            <div class="dropdown">
+                <button class="dropbtn">Actions
+                </button>
+                <div class="dropdown-content" id="myDropdown">
+                    <a href="/requirement/{{ requirement.id }}">Details</a>
+                    <a href="/{{ project.id }}">Link 2</a>
+                    <a href="#">Link 3</a>
+                </div>
+            </div>
+            <p>
+                {{ requirement.summary }}
+            </p>
+            {% for justification in requirement.justification_set.all %}
+            {% if forloop.first %}
+            <h4>
+                Justification
+            </h4>
+            {% endif %}
+            <details class="subdet">
+                <summary>
+                    {{ justification.name }}
+                </summary>
+                <div class="dropdown">
+                    <button class="dropbtn">Actions
+                    </button>
+                    <div class="dropdown-content" id="myDropdown">
+                        <a href="/justification/{{ justification.id }}">Details</a>
+                        <a href="/{{ project.id }}">Link 2</a>
+                        <a href="#">Link 3</a>
+                    </div>
+                </div>
+                <p>
+                    {{ justification.summary }}
+                </p>
+            </details>
+            {% endfor %}
+        </details>
+        {% endfor %}
+        {% endif %}
+
+        <h3>
+            Description
+        </h3>
+        <p>{{ content.desc|safe }}</p>
+
+        {% if problems %}
+        <h3>
+            Problems
+        </h3>
+        {% for problem in problems %}
+        <details>
+            <summary>
+                {{ problem.name }}
+            </summary>
+            <p>
+                {{ problem.summary }}
+            </p>
+            <i>
+                Details: <a href="#">link</a>
+            </i>
+            <p>
+                {{ problem.desc|safe }}
+            </p>
+        </details>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+{% if needs %}
+<div class="g12need">
+    <div class="box">
+        <h1 style="text-align: center;">
+            Needs
+        </h1>
+
+    </div>
+    <div class="g12notes">
+
+        {%for need in needs%}
+        <div class="g12note">
+            <span class="type"><button href="#">priority: {{need.priority}}</button></span>
+            <span class="type"><button href="#">type</button></span>
+            <div class="iconbar">
+                <div class="dropdown">
+                    <button class="dropbtn">Actions
+                    </button>
+                    <div class="dropdown-content" id="myDropdown">
+                        <a href="/admin/need/need/{{ need.id }}/change/">[ ADMIN ]</a>
+                    </div>
+                </div>
+                <a class="iconbartext" href="{% url 'need:need' need.id %}">details</a>
+
+            </div>
+            <h3><a href="{% url 'need:need' need.id %}">{{ need.name }}</a></h3>
+
+
+            <details title="Click for more information">
+                <summary>{{ need.desc|default_if_none:"Summary" }}</summary>
+
+                <p>{% lorem 1 p random %}
+                </p>
+
+
+            </details>
+
+            <div class="needCards">
+                <span style="font-weight: bold;">Tags:</span>
+                <button href="#">tag</button>
+                <button href="#">tag</button>
+            </div>
+
+        </div>
+        {% empty %}
+        <div class="g12note" style="width: 30%; flex: none; padding: 20px;">
+            <!-- dodać nową klasę, która będzie responsywna, bo inline css... dziąsło -->
+            <h3>No needs published</h3>
+            <p>You can change that {% lorem 1 b random %}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+{% endif %}
+
+{% if subprojects %}
+<div class="g12projects">
+    <div class="box">
+        <h1 style="text-align: center;">
+            Subrojects
+        </h1>
+        <!-- <div class="hsummary"><p>
+                    {% lorem 3 p random %}
+                </p></div> -->
+    </div>
+    <div class="g12notes">
+
+
+        {% for subproject in project.subprojects.all %}
+        <div class="g12note">
+            <span class="type"><button href="#">{{ subproject.get_type_display|default_if_none:"XD" }} </button></span>
+            <div class="iconbar">
+                <div class="dropdown">
+                    <button class="dropbtn">Actions
+                    </button>
+                    <div class="dropdown-content" id="myDropdown">
+                        <a href="/admin/portal/project/{{ subproject.id }}/change/">[ ADMIN ]</a>
+                        <a href="/{{ subproject.id }}/add_subproject/">add subproject</a>
+                        <a href="/{{ subproject.id }}/add_task/">add task</a>
+                        <a href="/project/{{ subproject.id }}/add_introduction/">add introduction</a>
+                        <a href="/project/{{ subproject.id }}/add_goal/">add goal</a>
+                        <a href="/project/{{ subproject.id }}/add_assumption/">add assumption</a>
+                        <a href="/project/{{ subproject.id }}/add_requirement/">add requirement</a>
+                        <a href="/project/{{ subproject.id }}/add_problem/">add problem</a>
+                        <a href="/{{ subproject.id }}/update/">update</a>
+                    </div>
+                </div>
+                <a class="iconbartext" href="{% url 'portal:project' subproject.id %}">details</a>
+                <!-- <a class="iconbaricon" href="#">
+                                    <img src="{% static 'idea.svg' %}" alt="idea">
+                                </a>
+                                <a class="iconbaricon" href="#">
+                                    <img src="{% static 'plan.svg' %}" alt="idea">
+                                </a>
+                                <a class="iconbaricon" href="#">
+                                    <img src="{% static 'task.svg' %}" alt="idea">
+                                </a> -->
+            </div>
+            <h3><a href="{% url 'portal:project' subproject.id %}">{{ subproject.name }}</a></h3>
+
+
+            <details title="Click for more information">
+                <summary>{{ subproject.summary|default_if_none:"Summary" }}</summary>
+
+                <p>{% lorem 1 p random %}
+                </p>
+
+
+            </details>
+
+            <div class="needCards">
+                <span style="font-weight: bold;">Needs:</span>
+                {% for need in subproject.need_set.all %}
+                <button href="#">{{ need.name }}</button> {% empty %}
+                <span>not published</span>
+                {% endfor %}
+            </div>
+            <div class="SMicons">
+                {% for community in subproject.community_set.all %}
+                <span><a href="{{ community.link }}">
+                        <img src="/static/{{ community.type }}.svg">
+                    </a></span>
+                {% endfor %}
+            </div>
+        </div>{% empty %}
+        <div class="g12note" style="width: 30%; flex: none; padding: 20px;">
+            <!-- dodać nową klasę, która będzie responsywna, bo inline css... dziąsło -->
+            <h3>No subprojects available</h3>
+            <p>You can change that {% lorem 1 b random %}</p>
+        </div>
+        {% endfor %}
+
+
+    </div>
+</div>
+{% endif %}
+
+{% if tasks %}
+<div class="g12tasks">
+    <div class="box">
+        <h1 style="text-align: center;">
+            Tasks
+        </h1>
+    </div>
+    <div class="g12notes">
+        {% for task in tasks %}
+
+
+
+        <div class="g12note">
+            <span class="type"><button href="">Volunteering</button></span>
+            <span class="type"><button title="Pool of awards" href="#">Awards: {{ task.award_money }}$ + {{
+                    task.award_shares }}m%</button></span>
+            {% include "components/content/actionsdropdown.html" %}
+            <h3><a href="/t/{{task.id}}"><span style="font-weight: 400">{{ task.get_progress_display }}</span> {{task.name }}</a>
+            </h3>
+            <ul>
+                <li>
+                    Budget: {{ task.budget }}$ <a href="#" style="font-weight: 800">+</a>
+                </li>
+                {% for resource in task.resource_set.all %}
+                {% if forloop.first %}
+                <li> Resources:
+                    {% endif %}
+                    <a href="#">{{ resource.name }}</a>,
+                    {% if forloop.last %}
+                    <a href="#" style="font-weight: 800">+</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% for requirement in task.requirement_set.all %}
+                {% if forloop.first %}
+                <li>Requirements:
+                    {% endif %}
+                    {{ requirement.name }},
+                    {% if forloop.last %}
+                </li>
+                {% endif %}
+                {% empty %}
+                {% endfor %}
+            </ul>
+            <details title="Click for more information">
+                <summary>
+                    {{ task.desc|default_if_none:"Summary" }}
+                </summary>
+                {% for introduction in task.introduction_set.all %}
+                {% if forloop.first %}
+                <h4>
+                    Introduction
+                </h4>
+                {% endif %}
+                <details class="subdet">
+                    <summary>
+                        {{ introduction.name }}
+                    </summary>
+                    <p>
+                        {{ introduction.summary }}
+                    </p>
+                </details>
+                {% endfor %}
+                {% if task.desc %}
+                <h4>
+                    Description
+                </h4>
+                {{ task.desc|safe|default_if_none:"<p>asd</p>" }}
+                {% endif %}
+
+                {% for problem in task.problem_set.all %}
+                {% if forloop.first %}
+                <h4>
+                    Problems
+                </h4>
+                {% endif %}
+                <details class="subdet">
+                    <summary>
+                        {{ problem.name }}
+                    </summary>
+                    <p>
+                        {{ problem.summary }}
+                    </p>
+                    {% for subproblems in problem.subproblems.all %}
+                    {% if forloop.first %}
+                    <h4>
+                        Subproblems
+                    </h4>
+                    <ul>
+                        {% endif %}
+                        <li>
+                            {{ subproblems.name }}
+                        </li>
+                        {% if forloop.last %}
+                    </ul>
+                    {% endif %}
+
+                    {% endfor %}
+                    <h4>
+                        Solutions
+                    </h4>
+                    <ul>
+                        {% for solution in problem.solution_set.all %}
+                        <li>
+                            {{ solution.name }}
+                        </li>
+                        {% if forloop.last %}
+                    </ul>
+                    <a href="#">Submit a possible solution </a>
+
+                    {% endif %}
+                    {% empty %}
+                    <li>
+                        None found... <a href="#">Submit a possible solution </a>
+                    </li>
+                    </ul>
+                    {% endfor %}
+
+
+                </details>
+                {% if forloop.last %}
+                <a href="#">Add a problem</a>
+                {% endif %}
+                {% empty %}
+                <a href="#">Add a problem</a>
+                {% endfor %}
+
+
+            </details>
+
+
+            <div class="needCards">
+                <span style="font-weight: bold;">Needs:</span> {% for need in task.need_set.all %}
+                <button href="#">{{ need.name }}</button> {% empty %}
+                <span>not published</span>
+                {% endfor %}
+            </div>
+            <div class="SMicons">
+                {% for community in task.community_set.all %}
+                <span><a title="{{ community.name }}: {{ community.summary }}" href="{{ community.link }}">
+                        <img src="/static/{{ community.type }}.svg">
+                    </a></span> {% endfor %}
+            </div>
+        </div>
+
+        {% endfor %}
+    </div>
+
+</div>
+
+{% endif %}
+
+{% if communities %}
+<div class="g12sm">
+
+    <h2>
+        Communities
+    </h2>
+    <div class="box">
+        {% for community in communities %}
+        <details>
+            <summary>
+                {{ community.name }}
+            </summary>
+            <div class="iconbar">
+                <a href="{{ community.link }}">details</a>
+            </div>
+            <p>
+                {{ community.desc|safe }}
+            </p>
+        </details>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+
+
+<!------------- COMMENT SECTION ---------------->
+<div class="g12com">
+
+
+
+
+</div>
+
+
+</div>
+
+
+<script src="{% static 'js/project/comments.js' %}"></script>
+
+
+{% endblock %}

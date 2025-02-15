@@ -65,3 +65,4 @@ function toggleMenu(menuId) {
         submenu.style.display = 'none';
     });
 }
+
