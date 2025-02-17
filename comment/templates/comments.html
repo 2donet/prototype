@@ -5,29 +5,41 @@
     <img class="miniavatar" src="{{ comment.author.avatar }}">
     <span>
     <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
-    </span>
-    <h4>
-       <a href="/u/{{comment.user.id}}"> {{ comment.user }} </a> 
-    </h4>
-    <i>
+    
+    <a href="/u/{{comment.user.id}}"> {{ comment.user }} </a>
+         
+    {{ comment.total_replies }} replies
+
+                <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{project.id}}'>
+                    <img src="{% static 'icons/menu.svg' %}" alt="idea">
+                </a>
+        
+                <!-- Dropdown Structure -->
+                <ul id='actions-{{project.id}}' class='dropdown-content'>
+                    <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
+                    </li>
+                    <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
+
+                    <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>                    <li> <a href="/{{ project.id }}/add_task/">add task</a>
+                    </li>
+                    
+                </ul>
+</span>
+    
+    <!-- <i>
         {{ comment.author.bio }}
-    </i>
+    </i> -->
 
     <p>
         {{ comment.content }}
     </p>
 
-    <br>
-    <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
-    <span>{{ comment.total_replies }} replies</span>
-    <br>
-    <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
-    <br>
+    <span></span>
+
     <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
         {% include "comments.html" with comments=comment.replies.all %}
     </div>
 
-    <br>
 </div>
 {% endfor %}
 

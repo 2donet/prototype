@@ -1,46 +1,4 @@
 {% load static%}
 {% block navbar %}
-<nav>
-  <div class="nav-wrapper">
-    <a href="/" class="brand-logo">
-      <img class="logoicon" src="{% static 'icons/logo.png' %}" alt="logo">
-      To do Network
-    </a>
-    <a href="#" data-target="mobile-demo" class="sidenav-trigger">
-      <img src="{% static 'icons/menu.svg' %}" alt="">
-    </a>
-    <ul class="right hide-on-med-and-down">
-      <li><a href="/">Home</a></li>
-      <li><a href="/1">2do.net</a></li>
-      <li><a href="/admin">admin</a></li>
-      <li><a href="mobile.html">Mobile</a></li>
-      <li><a class="dropdown-trigger" href="#!" data-target="dropdown-add-nav">Add</a></li>
-    </ul>
-  </div>
-</nav>
 
-<!-- Dropdown for Desktop -->
-<ul id="dropdown-add-nav" class="dropdown-content">
-  <li><a href="/create">Project</a></li>
-  <li><a href="/c/review">Review</a></li>
-  <li class="divider"></li>
-  <li><a href="#!">three</a></li>
-</ul>
-
-<!-- Sidenav for Mobile -->
-<ul class="sidenav" id="mobile-demo">
-  <li><a href="/">Home</a></li>
-  <li><a href="/1">2do.net</a></li>
-  <li><a href="/admin">admin</a></li>
-  <li><a href="mobile.html">Mobile</a></li>
-  <li><a class="dropdown-trigger" href="#!" data-target="dropdown-add-nav-mobile">Add</a></li>
-</ul>
-
-<!-- Dropdown for Mobile -->
-<ul id="dropdown-add-nav-mobile" class="dropdown-content">
-  <li><a href="/create">Project</a></li>
-  <li><a href="/c/review">Review</a></li>
-  <li class="divider"></li>
-  <li><a href="#!">three</a></li>
-</ul>
 {% endblock %}

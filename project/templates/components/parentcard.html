@@ -1,7 +1,20 @@
-<h4 style="color: var(--text2ndary);">Subproject of
+<p>Subproject of:</p>
 	{% for project in parent_projects %}
-			
-					<a  style="color: var(--highlight);" href="/{{ project.id }}">{{ project.name }}</a>
+			<div class="box">
+				<a  style="color: var(--highlight);" href="/{{ project.id }}">{{ project.name }}</a>
+
+				<p>{{ project.summary }}</p>
+
+                <div class="chips" style="border-bottom: none;">
+                    {% for skill in project.skills.all %}
+                    <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                        {{ skill.name }}
+                    </a>
+                    {% empty %}
+                    <p>No skills added yet.</p>
+                    {% endfor %}
+                </div>
+
+			</div>
 			
 	{% endfor %}
-</h4>

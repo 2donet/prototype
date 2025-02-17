@@ -329,6 +329,7 @@ code
     background-color: var(--bg-light);
     border-radius: 10px;
     /*width: 100%;*/
+    margin: 1rem;
 }
 
 
@@ -1674,7 +1675,7 @@ input, textarea {
         display: grid;
         grid-template-columns: 1fr 2fr 1fr;
             grid-template-areas:
-    "parent card community"
+    "info card community"
     
     "info details community";
         & .pcard{
@@ -1691,9 +1692,7 @@ input, textarea {
         & .pinfo{
             grid-area: info;
         }
-        & .pparent{
-            grid-area: parent;
-        }
+
 
 
         & .child-card{
@@ -1712,6 +1711,10 @@ align-self: flex-start;            }
 
 
     }
+
+
+
+
 
 .grid12 {
     display: grid;
