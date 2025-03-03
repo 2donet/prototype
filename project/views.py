@@ -32,7 +32,7 @@ def index(request):
 def project(request, project_id):
     content = get_object_or_404(Project, pk=project_id)
     tasks = Task.objects.filter(to_project=project_id)
-    needs = Need.objects.filter(to_project=project_id)
+    needs = Need.objects.filter(to_project=project_id).order_by('-priority', 'id')
 
     comments = Comment.objects.filter(to_project=project_id)
 
@@ -52,9 +52,7 @@ def project(request, project_id):
     ).select_related('from_project')
     parent_projects = [connection.from_project for connection in parent_connections]
     
-    tasks = Task.objects.filter(to_project=project_id)
-    needs = Need.objects.filter(to_project=project_id)
-    comments = Comment.objects.filter(to_project=project_id)
+ 
 
     context = {
         "content": content,

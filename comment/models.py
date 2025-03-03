@@ -6,6 +6,7 @@ from django.conf import settings
 
 class Comment(models.Model):
     content = models.TextField("description")
+    score = models.IntegerField(default=0)
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies"
     )  # Self-referential ForeignKey for replies

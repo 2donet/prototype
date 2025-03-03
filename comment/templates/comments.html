@@ -4,28 +4,35 @@
 <div class="comment" data-comment-id="{{ comment.id }}">
     <img class="miniavatar" src="{{ comment.author.avatar }}">
     <span>
-    <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
-    
-    <a href="/u/{{comment.user.id}}"> {{ comment.user }} </a>
-         
-    {{ comment.total_replies }} replies
+        <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
 
-                <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{project.id}}'>
-                    <img src="{% static 'icons/menu.svg' %}" alt="idea">
-                </a>
-        
-                <!-- Dropdown Structure -->
-                <ul id='actions-{{project.id}}' class='dropdown-content'>
-                    <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
-                    </li>
-                    <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
+        <a href="/u/{{comment.user.id}}"> {{ comment.user }} </a>
 
-                    <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>                    <li> <a href="/{{ project.id }}/add_task/">add task</a>
-                    </li>
-                    
-                </ul>
-</span>
-    
+        <div style="float: right">
+            <a href="#">+</a>
+            <a href="#">0</a>
+            <a href="#">-</a>
+            <a href="#" title="reward">🎁</a>
+            <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{project.id}}'>
+                <img src="{% static 'icons/menu.svg' %}" alt="idea">
+            </a>
+        </div>
+
+        <!-- Dropdown Structure -->
+        <ul id='actions-{{project.id}}' class='dropdown-content'>
+            <li>
+                <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
+            </li>
+
+            <li>
+                <a href="/{{ project.id }}/add_task/">add task</a>
+            </li>
+            <li><a href="#">Report</a></li>
+
+        </ul>
+
+    </span>
+
     <!-- <i>
         {{ comment.author.bio }}
     </i> -->
@@ -34,7 +41,11 @@
         {{ comment.content }}
     </p>
 
-    <span></span>
+    <span></span> {{ comment.total_replies }} replies
+
+    <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
+
+    <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
 
     <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
         {% include "comments.html" with comments=comment.replies.all %}
@@ -42,58 +53,3 @@
 
 </div>
 {% endfor %}
-
-
-
-
-{% comment %}
-{% for comment in comments %}
-<div class="comment">
-    <img class="miniavatar" src="{{ comment.author.avatar }}">
-    <span>
-    <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
-    </span>
-    <h4>
-        {{ comment.user }}
-    </h4>
-
-    <i>
-        {{ comment.author.bio }}
-    </i>
-
-    <p>
-        {{ comment.content }}
-    </p>
-    {% for comment in comment.reply.all %}
-        <div class="commentreply">
-            <img class="miniavatar" src="{{ comment.author.avatar }}">
-            <div class="iconbar">
-                <i title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</i>
-                <a href="/comment/{{ comment.id }}">details</a>
-                <a class="iconbaricon" href="/comment/{{ comment.id }}">
-                    <img src="{% static 'idea.svg' %}" alt="idea">
-                </a>
-                <a class="iconbaricon" href="#">
-                    <img src="{% static 'plan.svg' %}" alt="idea">
-                </a>
-                <a class="iconbaricon" href="#">
-                    <img src="{% static 'task.svg' %}" alt="idea">
-                </a>
-            </div>
-
-            <h4>
-                {{ comment.author }}
-            </h4>
-
-            <i>
-                {{ comment.author.bio }}
-            </i>
-
-            <p>
-                {{ comment.summary }}
-            </p>
-        </div>
-    {% endfor %}
-</div>
-{% endfor %}
-{% endcomment %}

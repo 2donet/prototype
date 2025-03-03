@@ -1,15 +1,15 @@
 {% load static %}
 <!-- comments -->
-<a class="waves-effect waves-teal btn-flat modal-trigger border" href="#comments-{{project.id}}">
+<a class="waves-effect waves-teal btn-flat modal-trigger border" href="#comments-{{content.id}}">
     Nc
     <i class="right">
         <img src="{% static 'icons/comments.svg' %}" alt="xD"></img>
     </i>
 </a>
 <!-- comments popup content -->
-    <div id="comments-{{project.id}}" class="modal modal-fixed-footer">
+    <div id="comments-{{content.id}}" class="modal modal-fixed-footer">
         <div class="modal-content">
-            <h4>Modal Header for {{project.name}}</h4>
+            <h4>Modal Header for {{content.name}}</h4>
             <p>A bunch of text</p>
             <h4>USers in the project</h4>
             <p>lorem ipsum</p>
@@ -21,19 +21,19 @@
     </div>
 
 <!-- users -->
-<a class="waves-effect waves-teal btn-flat modal-trigger border" href="#users-{{project.id}}">
+<a class="waves-effect waves-teal btn-flat modal-trigger border" href="#users-{{content.id}}">
 
     Nu <img src="{% static 'icons/users.svg' %}"></img>
 </a>
 <!-- users popup -->
-    <div id="users-{{project.id}}" class="modal modal-fixed-footer">
+    <div id="users-{{content.id}}" class="modal modal-fixed-footer">
         <div class="modal-header">
             <a href="#!" class="modal-close waves-effect waves-green btn-flat right">
                 <i>	<img class="close" src="{% static 'icons/close.svg' %}" alt=""></i>
             </a>
         </div>
         <div class="modal-content">
-            <h4>Modal Header for {{project.name}}</h4>
+            <h4>Modal Header for {{content.name}}</h4>
             <p>A bunch of text</p>
             <h4>USers in the project</h4>
             <p>lorem ipsum</p>
@@ -45,13 +45,13 @@
     </div>
 
 <!-- supporters -->
-    <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#supporters-{{project.id}}">
+    <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#supporters-{{content.id}}">
         Nu <i class="right"><img src="{% static 'icons/supporters.svg' %}" alt=""></i>
     </a>
     <!-- supporters popup -->
-    <div id="supporters-{{project.id}}" class="modal modal-fixed-footer">
+    <div id="supporters-{{content.id}}" class="modal modal-fixed-footer">
         <div class="modal-content">
-            <h4>Modal Header for {{project.name}}</h4>
+            <h4>Modal Header for {{content.name}}</h4>
             <p>A bunch of text</p>
             <h4>supporters</h4>
             <p>lorem ipsum</p>

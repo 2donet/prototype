@@ -14,122 +14,426 @@
             {% include "components/newhero.html" %}
 
             <h2>{{ content.name }}</h2>
+            <i>{{ content.summary|default_if_none:" " }}</i>
+            <br>
             <a class="waves-effect waves-light btn location">
                 University of Warsaw, Pasteura 5 Warszawa, Poland
-                </a> 
-                            <br>
-                <ul class="tabs">
-                    <li class="tab col"><a href="#intro"  >Intro</a></li>
-                    <li class="tab col"><a href="#plan" class="active">Plan</a></li>
-                    <li class="tab col"><a href="#todo">To do</a></li>
-                    <li class="tab col"><a href="#doing">Doing</a></li>
-                    <li class="tab col"><a href="#done">Done</a></li>
+            </a>
+            <br>
+            <h5>Status</h5>
+            nie zrobiliśmy jeszcze nic
+            <h5>Goal</h5>
+            <p>
+                Creating MVP/Prototype showcasing main ideas being splitting big pieces of work into smaller and smaller parts. 
+            </p>
+            <p>
 
-                </ul>
-                
+            </p>
 
-                <div id="intro" class="col s12">  
-                    <p class="herosummary" title="Project's summary">{{ content.summary|default_if_none:" " }}
-        
-                        co jest pootrzebne <br>
-                        gdzie? jakiś podprojekt? jakis przedmiot  <br>w danym miejscu? <br>
-        
-        
+            <h5>Plan</h5>
+            When adding/updating the project Users can add 
+            <ol>
+                <li>
+                    <a class=" modal-trigger" href="#plan123">Plan stage</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#tasks-plan">Tasks</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#goals-plan">Goals</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#status-plan">Status</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#needs-plan">Needs</a>
+
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#comments-plan">Comments</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#ideas-plan">Ideas</a>
+
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#intros-plan">Intro</a>
+                </li>
+            </ol>
+
+
+            <!-- supporters popup -->
+            <div id="plan123" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for showing plans</h4>
+                    <p>It's important to show plans. Plan is a part of project. </p>
+                    <h4>Requirements</h4>
+                    <ul>
+                        <li>displayed as ordered list</li>
+                        <li>can have set of tasks, needs, problems </li>
+                        <li>can be commented</li>
+                        <li>has version control</li>
+
+                    </ul>
+                    <h4>Ordered List</h4>
+                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
+                    <p></p>
+                    <a href="/about">asd</a>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+
+            <div id="tasks-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for tasks</h4>
+                    <p>Tasks are so important. They are basically projects with few differences. </p>
+                <h5>Example</h5>
+                    <p>At specific time, go to a location, do stuff. </p>
+                    <p>Must register for that task at registration_end_date.</p>
+                    <p>There may be rewards for that task</p>
+                    <p>might have Requirements e.g. University of Warsaw Student, project member, etc</p>
+                    
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>Has open_to_grab boolean indicating if Users can do tasks</li>
+                        <li>can have set of tasks, needs, problems </li>
+
+                    </ul>
+                    <h4>Ordered List</h4>
+                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
+                    <p></p>
+                    <a href="/about">asd</a>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="goals-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for Goals</h4>
+                    <p>
+                        
                     </p>
-                </div>
-                <div id="plan" class="col s12">
-plan Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugiat quia nam magni enim illo libero animi, obcaecati quidem id? Minus ducimus provident amet maxime nisi esse animi, possimus fugit ea.plan Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugiat quia nam magni enim illo libero animi, obcaecati quidem id? Minus ducimus provident amet maxime nisi esse animi, possimus fugit ea.plan Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugiat quia nam magni enim illo libero animi, obcaecati quidem id? Minus ducimus provident amet maxime nisi esse animi, possimus fugit ea.plan Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugiat quia nam magni enim illo libero animi, obcaecati quidem id? Minus ducimus provident amet maxime nisi esse animi, possimus fugit ea.plan Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugiat quia nam magni enim illo libero animi, obcaecati quidem id? Minus ducimus provident amet maxime nisi esse animi, possimus fugit ea.plan Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugiat quia nam magni enim illo libero animi, obcaecati quidem id? Minus ducimus provident amet maxime nisi esse animi, possimus fugit ea.plan Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugiat quia nam magni enim illo libero animi, obcaecati quidem id? Minus ducimus provident amet maxime nisi esse animi, possimus fugit ea.
-                </div>
-                <div id="todo" class="col s12">
-todo
-                </div>
-                <div id="doing" class="col s12">
-doing
-                </div>
-                <div id="done" class="col s12">
-done
-                </div>
 
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+                            can be described using one text
+                        </li>
+                        <li>
+                            may be made of multiple goal_objects 
+                        </li>
+                        <li>
+                            may have start/end_date 
+                        </li>
+                    </ul>
+                    <h4>Ordered List</h4>
+                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
+                    <p></p>
+                    <a href="/about">asd</a>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="status-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for status</h4>
+                    <p>
+
+                    </p>
+
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+
+                        </li>
+                        <li>
+                        </li>
+                    </ul>
+
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="needs-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for needs</h4>
+                    <p>
+
+                    </p>
+
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+
+                        </li>
+                        <li>
+                        </li>
+                    </ul>
+
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="comments-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for comments</h4>
+                    <p>
+
+                    </p>
+
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+                            Moderators should be able to move comments to more suitable places (e.g., comment on Task X should be in Task X, not general discussion)
+                        </li>
+                    </ul>
+
+                    <h4>Comment moderation</h4>
+                    <p>Members have the abilty to moderate comments from anonymous users</p>
+                    <ol>
+                        <li>new comment posted by anonymous. It is visible only to project members.</li>
+                        <li>Members </li>
+                    </ol>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="ideas-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>What is an idea?</h4>
+                    <p>
+                        It is a discussion thread for a content.
+                    </p>
+                    <p>
+                        Its goal is to facilitate discussion for a certain, <b>usually not yet specifically defined</b>, development decision
+                    </p>
+                    <p>
+                        distinguished from other content by its potential to become new content object .
+                    </p>
+
+                    <h4>Examples</h4>
+                    <ul>
+                        <li>changing foundamental</li>
+                    </ul>
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+                            Members have the abilty to moderate comments from anonymous users
+                        </li>
+                        <li>
+
+                        </li>
+                    </ul>
+
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="intros-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h2>Introductions</h2>
+                    <ul>
+                        <li>FAQ</li>
+                        <li>Justification?</li>
+                        <li>Theoretical Introduction - e.g., collection of onboarding materials</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
             <p>
                 {{ content.content_type}}
             </p>
-            
+
         </div>
 
     </div>
 
-        
-    
 
-<div class="pinfo">
-    {% include "components/hero.html" %}
-    Run by <a href="/u/{{content.created_by.id}}">{{content.created_by.username}}</a>
+
+
+    <div class="pinfo">
+        {% include "components/hero.html" %}
+        <br>
+        <br>
+        Run by <a href="/u/{{content.created_by.id}}">{{content.created_by.username}}</a>
         <blockquote>
             # user bio
             # user verifications
             # user rep
         </blockquote>
-    {% if parent_projects %}
-    {% include "components/parentcard.html" %}
-    {% endif %}
+        {% if parent_projects %}
+        {% include "components/parentcard.html" %}
+        {% endif %}
 
 
         <br>
         {% include "components/administrationcard.html" %}
-                <!-- users should be able to add tags. verified user with a rep > N can flag project by clicking tags on left of the screen -->
+        <!-- users should be able to add tags. verified user with a rep > N can flag project by clicking tags on left of the screen -->
 
-                <div class="chips" style="border-bottom: none;">
-                    {% for skill in content.skills.all %}
-                    <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
-                        {{ skill.name }}
-                    </a>
-                    {% empty %}
-                    <p>No skills added yet.</p>
-                    {% endfor %}
-                </div>
+        <div class="chips" style="border-bottom: none;">
+            {% for skill in content.skills.all %}
+            <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                {{ skill.name }}
+            </a>
+            {% empty %}
+            <p>No skills added yet.</p>
+            {% endfor %}
+        </div>
 
-                <ul class="tabs">
-                    <li class="tab col s3"><a href="#members">Members</a></li>
-                    <li class="tab col s3 "><a href="#admins">Admins</a></li>
-                    <li class="tab col s3"><a href="#sponsors">Sponsors</a></li>
-                </ul>
-                <div id="members">
-                    <h4>Total: Nm</h4>
-                    <p>
-                        user
-                    </p>
-                    <p>user</p>
-                </div>
-                <div id="admins">
-                    <h4>Total: Nm</h4>
-                    <p>
-                        admin
-                    </p>
-                    <p>user</p>
-                </div>
-<div id="sponsors">
-                    <h5>Sponsors</h5>
-                    <div class="chip">
-                        <img  src="{% static "icons/thispersondoesnotexist.jpg" %}" alt="Contact Person">20$ Jane Doe
-                    </div>
-</div>
+        <ul class="tabs">
+            <li class="tab col s4"><a href="#members">Members</a></li>
+            <li class="tab col s4 "><a href="#admins">Admins</a></li>
+            <li class="tab col s4"><a href="#sponsors">Sponsors</a></li>
+        </ul>
+        <div id="members">
+            <h4>Total: Nm</h4>
+            <p>
+                user
+            </p>
+            <p>user</p>
+        </div>
+        <div id="admins">
+            <h4>Total: Nm</h4>
+            <p>
+                admin
+            </p>
+            <p>user</p>
+        </div>
+        <div id="sponsors">
+            <h5>Sponsors</h5>
+            <div class="chip">
+                <img src="{% static "icons/thispersondoesnotexist.jpg" %}" alt="Contact Person">20$ Jane Doe
+            </div>
+        </div>
 
 
 
-</div>
+    </div>
     <div class="ptab">
         <ul class="tabs">
-            <li class="tab col s3"><a href="#test1">Intro</a></li>
-            <li class="tab col s3"><a href="#goals">Goals</a></li>
-            <li class="tab col s3 disabled"><a href="#test3">Disabled Tab</a></li>
-            <li class="tab col s3"><a class="active" href="#test4">Needs</a></li>
+            <li class="tab col s3"><a href="#intro">Intro</a></li>
+            <li class="tab col s3"><a class="active" href="#tasks">Tasks</a></li>
+            <li class="tab col s3"><a href="#needs">Needs</a></li>
+            <li class="tab col s3"><a href="#ideas">Ideas</a></li>
         </ul>
-        <div id="test1" class="col s12">
+        <div id="intro" class="col s12">
             Test 1
             {% include "components/hint.html" with hint=1 %}
         </div>
+        <div id="tasks" class="tab col s12">
 
-        <div id="goals" class="col s12">
+
+
+            <div class="row">
+
+                <div class="input-field col s12 m3">
+                    <select>
+                        <option value="" disabled>Sorting by</option>
+                        <option value="1" selected>Most important</option>
+                        <option value="2">Newest</option>
+                        <option value="3">Most comments</option>
+                        <option value="4">Highest reward</option>
+                    </select>
+
+                    <label>Sorting by</label>
+                </div>
+
+                <div class="input-field col s12 m4">
+                    <select>
+                        <option value="" disabled>Choose your option</option>
+                        <option value="1" selected>Doing</option>
+                        <option value="2">To do</option>
+                        <option value="3">Done</option>
+                        <option value="4">Pending</option>
+                    </select>
+
+                    <label>All / To do / Doing / Done </label>
+                </div>
+                <div class="input-field">
+                    <p>
+                        <label>
+                          <input type="checkbox" class="filled-in" checked="checked" />
+                          <span>Show tasks without reviews</span>
+                        </label>
+                      </p>
+                      <p>
+                        <label>
+                          <input type="checkbox" class="filled-in" checked="checked" />
+                          <span>Show tasks without comments</span>
+                        </label>
+                      </p>
+                </div>
+            </div>
+
+            <div class="needs-new">
+
+                {%for need in needs%}
+                <div class="child-card">
+
+                    <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
+                        <div class="priority">priority: {{need.priority}}</div>
+
+                        <img src="{% static 'icons/menu.svg' %}" alt="idea">
+                    </a>
+
+                    <!-- Dropdown Structure -->
+                    <ul id='dropdown1' class='dropdown-content'>
+                        <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
+                        </li>
+                        <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
+                        </li>
+                        <li class="divider" tabindex="-1"></li>
+                        <li> <a href="/{{ project.id }}/add_task/">add task</a>
+                        </li>
+
+                    </ul>
+                    <div class="child-detials">
+
+
+                        <h5><a href="{% url 'need:need' need.id %}">{{ need.name }}</a></h5>
+                        <p class="child-summary">
+                            {{ need.desc|default_if_none:"" }}
+                        </p>
+                    </div>
+
+                </div>
+
+
+
+
+
+
+                {% empty %}
+                <div class="g12note" style="width: 30%; flex: none; padding: 20px;">
+                    <!-- dodać nową klasę, która będzie responsywna, bo inline css... dziąsło -->
+                    <h3>No needs published</h3>
+                    <p>You can change that {% lorem 1 b random %}</p>
+                </div>
+
+                <!-- ^closed needs-new -->
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="ideas" class="col s12">
             Goals
             {% include "components/hint.html" with hint=2 %}
 
@@ -161,17 +465,16 @@ done
             </p>
 
         </div>
-        <div id="test3" class="col s12">Test 3</div>
-        <div id="test4" class="col s12">
+        <div id="needs" class="col s12">
             <!-- needs -->
             <div class="needs-new">
 
                 {%for need in needs%}
                 <div class="child-card">
-                    
+
                     <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
                         <div class="priority">priority: {{need.priority}}</div>
-                        
+
                         <img src="{% static 'icons/menu.svg' %}" alt="idea">
                     </a>
 
@@ -184,8 +487,7 @@ done
                         <li class="divider" tabindex="-1"></li>
                         <li> <a href="/{{ project.id }}/add_task/">add task</a>
                         </li>
-                        <li><a href="#!"><i class="material-icons">view_module</i>four</a></li>
-                        <li><a href="#!"><i class="material-icons">cloud</i>five</a></li>
+
                     </ul>
                     <div class="child-detials">
 
@@ -209,47 +511,65 @@ done
                     <h3>No needs published</h3>
                     <p>You can change that {% lorem 1 b random %}</p>
                 </div>
-            
-            <!-- ^closed needs-new -->
-            {% endfor %}
+
+                <!-- ^closed needs-new -->
+                {% endfor %}
+            </div>
         </div>
-    </div>
 
 
     </div>
     <div class="pcom">
         <ul class="tabs">
             <li class="tab"><a href="#comments" class="active">Comments</a></li>
-            <li class="tab "><a href="#contribs">Contribs</a></li>
-            <li class="tab "><a href="#rewads">Rewards</a></li>
+            <li class="tab"><a href="#contribs">Contribs</a></li>
+            <li class="tab"><a href="#rewards">Rewards</a></li>
         </ul>
 
 
         <div id="contribs">
             contribs
         </div>
-        <div id="Rewards">
-            coasdasd
+        <div id="rewards">
+            rewards
         </div>
         <div id="comments" class="newcomments">
 
-        <form id="add-comment-form" method="post">
-            {% csrf_token %}
-            <textarea name="content" placeholder="Add a comment..."></textarea>
-            <input type="hidden" name="to_project_id" value="{{ content.id }}">
-            <button type="submit">Submit</button>
-        </form>
-        <div>
-            {% if comments %}
-            {% include "comments.html" with comments=comments %}
-            {% else %}
-            <p>No comments</p>
-            {% endif %}
-    
-        </div>
-    
-        <br>
-    
+
+            
+            <div>
+                {% if comments %}
+                <div class="input-field col s12">
+                    <select>
+                        <option value="" disabled>Sorting by</option>
+                        <option value="0" selected>Highest reviews</option>
+                        <option value="1">Lowest reviews</option>
+                        <option value="2">Newest</option>
+                        <option value="3">Oldes</option>
+                    </select>
+
+                    <label>Sorting by</label>
+
+                </div>
+                <label>
+                    <input type="checkbox" class="filled-in"  />
+                    <span>Show comments from anonymous Users</span>
+                  </label>
+
+                {% include "comments.html" with comments=comments %}
+                {% else %}
+                <p>No comments</p>
+                {% endif %}
+                <form id="add-comment-form" method="post">
+                    {% csrf_token %}
+                    <textarea name="content" placeholder="Add a comment..."></textarea>
+                    <input type="hidden" name="to_project_id" value="{{ content.id }}">
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+
+            <br>
+
         </div>
     </div>
 </div>

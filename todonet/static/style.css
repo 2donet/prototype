@@ -1674,7 +1674,7 @@ input, textarea {
     .grid2{
         display: grid;
         grid-template-columns: 1fr 2fr 1fr;
-            grid-template-areas:
+        grid-template-areas:
     "info card community"
     
     "info details community";
