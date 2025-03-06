@@ -41,6 +41,9 @@
         {{ comment.content }}
     </p>
 
+    <!-- Link to single comment view -->
+    <a href="{% url 'comments:single_comment' comment.id %}">Permalink</a>
+
     <span></span> {{ comment.total_replies }} replies
 
     <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>

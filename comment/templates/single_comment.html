@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Comment - {{ comment.content|truncatechars:50 }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb navigation -->
+    <div class="breadcrumb">
+        {% if object_type and object %}
+            <a href="/">Home</a> &gt;
+            
+            {% if object_type == "project" %}
+                <a href="/{{ object.id }}/">{{ object.name }}</a> &gt;
+            {% elif object_type == "task" %}
+                <a href="/t/{{ object.id }}/">{{ object.name }}</a> &gt;
+            {% elif object_type == "need" %}
+                <a href="/n/{{ object.id }}/">{{ object.name }}</a> &gt;
+            {% elif object_type == "decision" %}
+                <a href="/d/{{ object.id }}/">{{ object.name }}</a> &gt;
+            {% endif %}
+            
+            {% if parent_comment %}
+                <a href="{% url 'comments:single_comment' parent_comment.id %}">Parent Comment</a> &gt;
+            {% endif %}
+            
+            Comment
+        {% else %}
+            <a href="/">Home</a> &gt; Comment
+        {% endif %}
+    </div>
+    
+    <!-- Main comment -->
+    <div class="comment-section">
+        <h2>Comment</h2>
+        
+        <div class="comment main-comment" data-comment-id="{{ comment.id }}">
+            <!-- User information -->
+            <div class="comment-header">
+                {% if comment.user %}
+                    <img class="miniavatar" src="{{ comment.user.avatar }}" alt="{{ comment.user.username }}">
+                    <div class="comment-meta">
+                        <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
+                        <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
+                    </div>
+                {% else %}
+                    <div class="comment-meta">
+                        <span>Anonymous</span>
+                        <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
+                    </div>
+                {% endif %}
+                
+                <!-- Comment actions -->
+                <div class="comment-actions">
+                    <a href="#" class="upvote">+</a>
+                    <span class="score">{{ comment.score }}</span>
+                    <a href="#" class="downvote">-</a>
+                    <a href="#" title="reward" class="reward">🎁</a>
+                    
+                    <div class="dropdown">
+                        <a class="dropdown-trigger btn-flat" href="#" data-target="actions-{{ comment.id }}">
+                            <img src="{% static 'icons/menu.svg' %}" alt="menu">
+                        </a>
+                        <ul id="actions-{{ comment.id }}" class="dropdown-content">
+                            {% if request.user.is_staff %}
+                                <li><a href="/admin/comment/comment/{{ comment.id }}/change/">[ ADMIN ]</a></li>
+                            {% endif %}
+                            <li><a href="#" class="report-link">Report</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Comment content -->
+            <div class="comment-content">
+                <p>{{ comment.content }}</p>
+            </div>
+            
+            <!-- Reply button -->
+            <div class="comment-footer">
+                <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
+                <span class="reply-count">{{ comment.total_replies }} replies</span>
+            </div>
+            
+            <!-- Reply form (initially hidden) -->
+            <div class="reply-form-container" style="display: none;">
+                <form class="reply-form" data-parent-id="{{ comment.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                    <textarea name="content" rows="4" placeholder="Write your reply..." required></textarea>
+                    <div class="form-actions">
+                        <button type="submit" class="submit-reply">Submit Reply</button>
+                        <button type="button" class="cancel-reply">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Replies section -->
+    <div class="replies-section">
+        <h3>Replies</h3>
+        
+        {% if comment.total_replies > 0 %}
+            {% for reply in replies %}
+                <div class="comment reply" data-comment-id="{{ reply.id }}">
+                    <!-- User information -->
+                    <div class="comment-header">
+                        {% if reply.user %}
+                            <img class="miniavatar" src="{{ reply.user.avatar }}" alt="{{ reply.user.username }}">
+                            <div class="comment-meta">
+                                <a href="/u/{{ reply.user.id }}">{{ reply.user.username }}</a>
+                                <span class="time" title="{{ reply.pub_date }}">{{ reply.pub_date|naturaltime }}</span>
+                            </div>
+                        {% else %}
+                            <div class="comment-meta">
+                                <span>Anonymous</span>
+                                <span class="time" title="{{ reply.pub_date }}">{{ reply.pub_date|naturaltime }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Reply actions -->
+                        <div class="comment-actions">
+                            <a href="#" class="upvote">+</a>
+                            <span class="score">{{ reply.score }}</span>
+                            <a href="#" class="downvote">-</a>
+                            <a href="#" title="reward" class="reward">🎁</a>
+                            
+                            <div class="dropdown">
+                                <a class="dropdown-trigger btn-flat" href="#" data-target="actions-{{ reply.id }}">
+                                    <img src="{% static 'icons/menu.svg' %}" alt="menu">
+                                </a>
+                                <ul id="actions-{{ reply.id }}" class="dropdown-content">
+                                    {% if request.user.is_staff %}
+                                        <li><a href="/admin/comment/comment/{{ reply.id }}/change/">[ ADMIN ]</a></li>
+                                    {% endif %}
+                                    <li><a href="#" class="report-link">Report</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reply content -->
+                    <div class="comment-content">
+                        <p>{{ reply.content }}</p>
+                    </div>
+                    
+                    <!-- Reply to reply button -->
+                    <div class="comment-footer">
+                        <button class="reply-btn" data-comment-id="{{ reply.id }}">Reply</button>
+                        {% if reply.total_replies > 0 %}
+                            <a href="{% url 'comments:single_comment' reply.id %}" class="view-nested-replies">
+                                View {{ reply.total_replies }} nested replies
+                            </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Reply form (initially hidden) -->
+                    <div class="reply-form-container" style="display: none;">
+                        <form class="reply-form" data-parent-id="{{ reply.id }}">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent_id" value="{{ reply.id }}">
+                            <textarea name="content" rows="4" placeholder="Write your reply..." required></textarea>
+                            <div class="form-actions">
+                                <button type="submit" class="submit-reply">Submit Reply</button>
+                                <button type="button" class="cancel-reply">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-replies">No replies yet.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Main reply form at the bottom -->
+    <div class="main-reply-form">
+        <h3>Add a reply</h3>
+        <form id="add-reply-form" data-parent-id="{{ comment.id }}">
+            {% csrf_token %}
+            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+            <textarea name="content" rows="4" placeholder="Write your reply..." required></textarea>
+            <div class="form-actions">
+                <button type="submit">Submit Reply</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Initialize dropdowns if using Materialize CSS
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof M !== 'undefined') {
+            var elems = document.querySelectorAll('.dropdown-trigger');
+            var instances = M.Dropdown.init(elems);
+        }
+        
+        // Handle reply button clicks
+        document.querySelectorAll('.reply-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const commentId = this.getAttribute('data-comment-id');
+                const replyForm = this.closest('.comment').querySelector('.reply-form-container');
+                
+                // Toggle form visibility
+                if (replyForm.style.display === 'none' || !replyForm.style.display) {
+                    replyForm.style.display = 'block';
+                } else {
+                    replyForm.style.display = 'none';
+                }
+            });
+        });
+        
+        // Handle cancel reply button clicks
+        document.querySelectorAll('.cancel-reply').forEach(button => {
+            button.addEventListener('click', function() {
+                const replyForm = this.closest('.reply-form-container');
+                replyForm.style.display = 'none';
+            });
+        });
+        
+        // Handle reply form submissions
+        document.querySelectorAll('.reply-form, #add-reply-form').forEach(form => {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                try {
+                    const response = await fetch('/comments/add/', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        },
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        // Reload the page to show the new reply
+                        window.location.reload();
+                    } else {
+                        const error = await response.json();
+                        alert('Error: ' + error.error);
+                    }
+                } catch (error) {
+                    console.error('Error submitting reply:', error);
+                    alert('An error occurred. Please try again.');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -23,6 +23,45 @@ def comment_list_view(request, object_type, object_id):
     return render(request, "comments.html", {"comments": comments})
 
 
+def single_comment_view(request, comment_id):
+    """
+    Display a single comment and all of its replies in a dedicated view.
+    """
+    comment = get_object_or_404(Comment, id=comment_id)
+    
+    # Get the context based on what the comment is attached to
+    context = {
+        "comment": comment,
+        "replies": comment.replies.select_related("user").all(),
+    }
+    
+    # Add the parent object to context if this is a reply
+    if comment.parent:
+        context["parent_comment"] = comment.parent
+    
+    # Add the associated object (project, task, etc.) to context
+    if comment.to_project:
+        context["object_type"] = "project"
+        context["object"] = comment.to_project
+    elif comment.to_task:
+        context["object_type"] = "task"
+        context["object"] = comment.to_task
+    elif comment.to_need:
+        context["object_type"] = "need"
+        context["object"] = comment.to_need
+    elif comment.to_decision:
+        context["object_type"] = "decision"
+        context["object"] = comment.to_decision
+    elif comment.to_membership:
+        context["object_type"] = "membership"
+        context["object"] = comment.to_membership
+    elif comment.to_report:
+        context["object_type"] = "report"
+        context["object"] = comment.to_report
+    
+    return render(request, "single_comment.html", context)
+
+
 def load_replies(request, comment_id):
     """
     Fetch replies dynamically for a specific comment.
