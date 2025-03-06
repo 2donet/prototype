@@ -13,13 +13,13 @@
             <a href="#">0</a>
             <a href="#">-</a>
             <a href="#" title="reward">🎁</a>
-            <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{project.id}}'>
+            <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{comment.id}}'>
                 <img src="{% static 'icons/menu.svg' %}" alt="idea">
             </a>
         </div>
 
         <!-- Dropdown Structure -->
-        <ul id='actions-{{project.id}}' class='dropdown-content'>
+        <ul id='actions-{{comment.id}}' class='dropdown-content'>
             <li>
                 <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
             </li>
@@ -27,8 +27,7 @@
             <li>
                 <a href="/{{ project.id }}/add_task/">add task</a>
             </li>
-            <li><a href="#">Report</a></li>
-
+            <li><a href="{% url 'comments:report_comment' comment.id %}">Report</a></li>
         </ul>
 
     </span>

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Moderation Dashboard - Comment Reports{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <h3>Comment Reports</h3>
+            <div class="breadcrumb">
+                <a href="/">Home</a> &gt;
+                Moderation &gt; Reports
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status filter tabs -->
+    <div class="row">
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab">
+                    <a href="{% url 'comments:report_list' %}" class="{% if not request.GET.status %}active{% endif %}">
+                        All Reports
+                    </a>
+                </li>
+                {% for status_value, status_label in statuses.choices %}
+                    <li class="tab">
+                        <a href="{% url 'comments:report_list' %}?status={{ status_value }}" 
+                           class="{% if request.GET.status == status_value %}active{% endif %}">
+                            {{ status_label }}
+                            {% if status_value == 'PENDING' %}
+                                <span class="new badge" data-badge-caption="">
+                                    {{ pending_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Reports table -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    {% if reports %}
+                        <table class="responsive-table highlight">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Reported By</th>
+                                    <th>Against</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            
+                            <tbody>
+                                {% for report in reports %}
+                                    <tr class="report-row {% if report.status == 'PENDING' %}pending{% endif %}">
+                                        <td>{{ report.id }}</td>
+                                        <td>{{ report.get_report_type_display }}</td>
+                                        <td>
+                                            {% if report.reportee %}
+                                                <a href="/u/{{ report.reportee.id }}">{{ report.reportee.username }}</a>
+                                            {% else %}
+                                                Anonymous
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if report.reported %}
+                                                <a href="/u/{{ report.reported.id }}">{{ report.reported.username }}</a>
+                                            {% else %}
+                                                Anonymous
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ report.created_at|naturaltime }}</td>
+                                        <td>
+                                            <span class="status-badge status-{{ report.status|lower }}">
+                                                {{ report.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'comments:report_detail' report.id %}" class="btn-small waves-effect waves-light">
+                                                Review
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>No reports found matching your criteria.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tabs .tab a:focus, .tabs .tab a:focus.active {
+        background-color: rgba(33, 150, 243, 0.1);
+    }
+    
+    .tabs .indicator {
+        background-color: #2196F3;
+    }
+    
+    .report-row.pending {
+        background-color: rgba(255, 235, 238, 0.3);
+    }
+    
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.85em;
+        display: inline-block;
+    }
+    
+    .status-pending {
+        background-color: #FFC107;
+        color: #333;
+    }
+    
+    .status-reviewed {
+        background-color: #2196F3;
+        color: white;
+    }
+    
+    .status-rejected {
+        background-color: #9E9E9E;
+        color: white;
+    }
+    
+    .status-resolved {
+        background-color: #4CAF50;
+        color: white;
+    }
+</style>
+{% endblock %}

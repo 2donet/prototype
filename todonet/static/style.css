@@ -32,7 +32,9 @@
     --status-purple: rgb(105, 31, 138);
     /* --bg-light: #474B60; */
 }
-
+.card{
+    background-color: var(--bg-color3);
+}
 /* General settings */
 nav{
     /* position: fixed;

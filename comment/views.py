@@ -1,10 +1,12 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.http import JsonResponse
-from .models import Comment
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.urls import reverse
+from .models import Comment, CommentReport, ReportStatus
+from .forms import CommentReportForm, ModeratorReviewForm
 from project.models import Project
 from task.models import Task
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
 
 
 def comment_list_view(request, object_type, object_id):
@@ -60,6 +62,61 @@ def single_comment_view(request, comment_id):
         context["object"] = comment.to_report
     
     return render(request, "single_comment.html", context)
+
+
+def report_comment_view(request, comment_id):
+    """
+    View for reporting a comment for moderation.
+    """
+    comment = get_object_or_404(Comment, id=comment_id)
+    
+    # Check if the user already reported this comment
+    if request.user.is_authenticated:
+        existing_report = CommentReport.objects.filter(
+            comment=comment,
+            reportee=request.user,
+            status__in=[ReportStatus.PENDING, ReportStatus.REVIEWED]
+        ).first()
+        
+        if existing_report:
+            messages.info(request, "You have already reported this comment. Here is your existing report.")
+            # If user is a moderator, redirect them to the report detail page
+            if is_moderator(request.user):
+                return redirect('comments:report_detail', report_id=existing_report.id)
+            # For regular users, we'll create a view to show their reports
+            else:
+                # Since we don't have a user report view yet, let's give them a message and redirect to comment
+                messages.info(request, "Your report is being reviewed by our moderation team.")
+                return redirect('comments:single_comment', comment_id=comment.id)
+    
+    # Check if the comment has already been reported by anyone
+    existing_reports = CommentReport.objects.filter(
+        comment=comment,
+        status__in=[ReportStatus.PENDING, ReportStatus.REVIEWED]
+    ).exists()
+    
+    if existing_reports and not is_moderator(request.user):
+        messages.info(request, "This comment has already been reported and is being reviewed by our moderation team.")
+        return redirect('comments:single_comment', comment_id=comment.id)
+    
+    if request.method == 'POST':
+        form = CommentReportForm(
+            request.POST,
+            comment=comment,
+            reportee=request.user if request.user.is_authenticated else None
+        )
+        
+        if form.is_valid():
+            report = form.save()
+            messages.success(request, "Thank you for your report. A moderator will review it soon.")
+            return redirect('comments:single_comment', comment_id=comment.id)
+    else:
+        form = CommentReportForm()
+    
+    return render(request, 'report_comment.html', {
+        'form': form,
+        'comment': comment
+    })
 
 
 def load_replies(request, comment_id):
@@ -120,3 +177,54 @@ def add_comment(request):
         })
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+def is_moderator(user):
+    """Check if user is a moderator"""
+    return user.is_authenticated and (user.is_staff or user.is_superuser or getattr(user, 'is_moderator', False))
+
+
+@user_passes_test(is_moderator)
+def report_list_view(request):
+    """
+    Display a list of all reports for moderators to review.
+    """
+    all_reports = CommentReport.objects.all().select_related('comment', 'reportee', 'reported', 'reviewed_by')
+    
+    # Count pending reports for the badge
+    pending_count = all_reports.filter(status=ReportStatus.PENDING).count()
+    
+    # Filter by status if provided
+    status_filter = request.GET.get('status')
+    if status_filter:
+        reports = all_reports.filter(status=status_filter)
+    else:
+        reports = all_reports
+    
+    return render(request, 'report_list.html', {
+        'reports': reports,
+        'statuses': ReportStatus,
+        'pending_count': pending_count,
+    })
+
+
+@user_passes_test(is_moderator)
+def report_detail_view(request, report_id):
+    """
+    Detail view for a specific report, allowing moderators to review and update it.
+    """
+    report = get_object_or_404(CommentReport, id=report_id)
+    
+    if request.method == 'POST':
+        form = ModeratorReviewForm(request.POST, instance=report, moderator=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Report has been marked as {report.get_status_display()}")
+            return redirect('comments:report_list')
+    else:
+        form = ModeratorReviewForm(instance=report)
+    
+    return render(request, 'report_detail.html', {
+        'report': report,
+        'form': form,
+    })

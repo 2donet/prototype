@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Review Report #{{ report.id }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <h3>Report #{{ report.id }}</h3>
+            <div class="breadcrumb">
+                <a href="/">Home</a> &gt;
+                <a href="{% url 'comments:report_list' %}">Reports</a> &gt;
+                #{{ report.id }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Summary -->
+    <div class="row">
+        <div class="col s12 m6">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Report Details</span>
+                    <table class="report-info">
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                <span class="status-badge status-{{ report.status|lower }}">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Type:</th>
+                            <td>{{ report.get_report_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>Reported by:</th>
+                            <td>
+                                {% if report.reportee %}
+                                    <a href="/u/{{ report.reportee.id }}">{{ report.reportee.username }}</a>
+                                {% else %}
+                                    Anonymous
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Reported user:</th>
+                            <td>
+                                {% if report.reported %}
+                                    <a href="/u/{{ report.reported.id }}">{{ report.reported.username }}</a>
+                                {% else %}
+                                    Anonymous
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Date reported:</th>
+                            <td>{{ report.created_at|date:"F j, Y, P" }}</td>
+                        </tr>
+                        {% if report.reviewed_by %}
+                        <tr>
+                            <th>Reviewed by:</th>
+                            <td>{{ report.reviewed_by.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>Last updated:</th>
+                            <td>{{ report.updated_at|naturaltime }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col s12 m6">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Reporter's Description</span>
+                    {% if report.description %}
+                        <div class="reporter-description">
+                            <p>{{ report.description }}</p>
+                        </div>
+                    {% else %}
+                        <p class="grey-text">No additional details provided by the reporter.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reported Comment -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Reported Comment</span>
+                    
+                    <div class="reported-comment">
+                        <div class="comment-meta">
+                            <strong>
+                                {% if report.comment.user %}
+                                    {{ report.comment.user.username }}
+                                {% else %}
+                                    Anonymous
+                                {% endif %}
+                            </strong>
+                            <span class="time grey-text">{{ report.comment.created_at|naturaltime }}</span>
+                        </div>
+                        
+                        <div class="comment-content">
+                            <p>{{ report.comment.content }}</p>
+                        </div>
+                        
+                        <div class="comment-actions">
+                            <a href="{% url 'comments:single_comment' report.comment.id %}" class="btn-small" target="_blank">
+                                View Comment in Context
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Moderator Action Form -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Moderator Actions</span>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="error-container">
+                                {% for error in form.non_field_errors %}
+                                    <p class="error-message red-text">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="form-group report-status-group">
+                            <label>{{ form.status.label }}</label>
+                            {% if form.status.errors %}
+                                <div class="error-message red-text">
+                                    {{ form.status.errors }}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="radio-options">
+                                {% for value, text in form.status.field.choices %}
+                                    <p>
+                                        <label>
+                                            <input type="radio" name="{{ form.status.name }}" value="{{ value }}" 
+                                            {% if form.status.value == value %}checked{% endif %}>
+                                            <span>{{ text }}</span>
+                                        </label>
+                                    </p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.moderator_notes.id_for_label }}">{{ form.moderator_notes.label }}</label>
+                            {% if form.moderator_notes.errors %}
+                                <div class="error-message red-text">
+                                    {{ form.moderator_notes.errors }}
+                                </div>
+                            {% endif %}
+                            <div class="input-field">
+                                {{ form.moderator_notes }}
+                            </div>
+                            {% if form.moderator_notes.help_text %}
+                                <span class="help-text grey-text">{{ form.moderator_notes.help_text }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn waves-effect waves-light">Submit Decision</button>
+                            <a href="{% url 'comments:report_list' %}" class="btn-flat waves-effect">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-info {
+        width: 100%;
+    }
+    
+    .report-info th {
+        width: 150px;
+        text-align: left;
+        padding: 8px 0;
+        color: #757575;
+        vertical-align: top;
+    }
+    
+    .report-info td {
+        padding: 8px 0;
+    }
+    
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.85em;
+        display: inline-block;
+    }
+    
+    .status-pending {
+        background-color: #FFC107;
+        color: #333;
+    }
+    
+    .status-reviewed {
+        background-color: #2196F3;
+        color: white;
+    }
+    
+    .status-rejected {
+        background-color: #9E9E9E;
+        color: white;
+    }
+    
+    .status-resolved {
+        background-color: #4CAF50;
+        color: white;
+    }
+    
+    .reported-comment {
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 3px solid #ff5252;
+    }
+    
+    .comment-meta {
+        margin-bottom: 10px;
+    }
+    
+    .comment-content {
+        margin-bottom: 15px;
+    }
+    
+    .time {
+        margin-left: 10px;
+        font-size: 0.9em;
+    }
+    
+    .radio-options {
+        margin: 15px 0;
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .reporter-description {
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 3px solid #2196F3;
+    }
+    
+    .form-actions {
+        margin-top: 30px;
+    }
+</style>
+{% endblock %}
