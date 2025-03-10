@@ -1,149 +1,169 @@
 {% extends "base.html" %}
+{% load humanize %}
+
 {% block title %}
 2do.net - {{ project.name }} - Members
 {% endblock %}
+
 {% block content %}
-{% load humanize %}
-
 <div class="container">
-    <div class="breadcrumbs">
-        <a href="{% url 'project:index' %}">Projects</a> &gt;
-        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> &gt;
-        <span>Members</span>
-    </div>
-
     <div class="row">
         <div class="col s12">
+            <h2>{{ project.name }} - Members</h2>
+            
+            {% if can_manage_members %}
+            <div class="right-align">
+                <a href="{% url 'project:add_member' project.id %}" class="btn waves-effect waves-light">
+                    <i class="material-icons left">person_add</i>Add Member
+                </a>
+            </div>
+            {% endif %}
+            
             <div class="card">
                 <div class="card-content">
-                    <span class="card-title">Project Members: {{ project.name }}</span>
-                    {% if can_manage_members %}
-                    <div class="action-buttons">
-                        <a href="{% url 'project:add_member' project.id %}" class="btn waves-effect waves-light">
-                            <i class="material-icons left">person_add</i>Add Member
-                        </a>
-                    </div>
-                    {% endif %}
+                    <span class="card-title">👥 Project Members</span>
+                    
+                    <!-- Administrators group -->
+                    <details open>
+                        <summary class="user-group-summary">
+                            <span class="user-group-title">👑 Administrators</span>
+                            <span class="user-count">{{ admin_users|length }}</span>
+                        </summary>
+                        <div class="user-group-content">
+                            <p class="user-group-desc">Project administrators have full control over the project, including managing members and settings.</p>
+                            
+                            <ul class="user-list">
+                                {% for user in admin_users %}
+                                <li class="user-item">
+                                    <div class="user-info">
+                                        <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
+                                        <div class="user-details">
+                                            <span class="user-name">{{ user.username }}</span>
+                                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="user-actions">
+                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
+                                            Manage
+                                        </a>
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="empty-list-message">No administrators found</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </details>
+                    
+                    <!-- Moderators group -->
+                    <details>
+                        <summary class="user-group-summary">
+                            <span class="user-group-title">🛡️ Moderators</span>
+                            <span class="user-count">{{ moderator_users|length }}</span>
+                        </summary>
+                        <div class="user-group-content">
+                            <p class="user-group-desc">Moderators help manage project content and comments.</p>
+                            
+                            <ul class="user-list">
+                                {% for user in moderator_users %}
+                                <li class="user-item">
+                                    <div class="user-info">
+                                        <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                        <div class="user-details">
+                                            <span class="user-name">{{ user.username }}</span>
+                                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="user-actions">
+                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
+                                            Manage
+                                        </a>
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="empty-list-message">No moderators found</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </details>
+                    
+                    <!-- Contributors group -->
+                    <details>
+                        <summary class="user-group-summary">
+                            <span class="user-group-title">🔨 Contributors</span>
+                            <span class="user-count">{{ contributor_users|length }}</span>
+                        </summary>
+                        <div class="user-group-content">
+                            <p class="user-group-desc">Contributors actively help build and develop the project.</p>
+                            
+                            <ul class="user-list">
+                                {% for user in contributor_users %}
+                                <li class="user-item">
+                                    <div class="user-info">
+                                        <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                        <div class="user-details">
+                                            <span class="user-name">{{ user.username }}</span>
+                                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="user-actions">
+                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
+                                            Manage
+                                        </a>
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="empty-list-message">No contributors found</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </details>
+                    
+                    <!-- Members/Supporters group -->
+                    <details>
+                        <summary class="user-group-summary">
+                            <span class="user-group-title">👥 Members</span>
+                            <span class="user-count">{{ member_users|length }}</span>
+                        </summary>
+                        <div class="user-group-content">
+                            <p class="user-group-desc">Project members who follow and support the project.</p>
+                            
+                            <ul class="user-list">
+                                {% for user in member_users %}
+                                <li class="user-item">
+                                    <div class="user-info">
+                                        <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                        <div class="user-details">
+                                            <span class="user-name">{{ user.username }}</span>
+                                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="user-actions">
+                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
+                                            Manage
+                                        </a>
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="empty-list-message">No members found</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </details>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col s12">
-            <!-- Administrators group -->
-            <div class="card">
-                <div class="card-content">
-                    <span class="card-title">👑 Administrators ({{ admin_users|length }})</span>
-                    <p class="user-group-desc">Project administrators have full control over the project, including managing members and settings.</p>
-                    
-                    <ul class="collection">
-                        {% for user in admin_users %}
-                        <li class="collection-item avatar">
-                            <img src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}" class="circle">
-                            <span class="title"><a href="{% url 'project:member_detail' project.id user.id %}">{{ user.username }}</a></span>
-                            <p>
-                                Joined {{ user.date_joined|naturaltime }}<br>
-                                {% if user.id == project.created_by.id %}
-                                <span class="chip">Project Owner</span>
-                                {% endif %}
-                            </p>
-                            <div class="secondary-content">
-                                <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
-                                    <i class="material-icons">edit</i>
-                                </a>
-                            </div>
-                        </li>
-                        {% empty %}
-                        <li class="collection-item">No administrators found</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Moderators group -->
-            <div class="card">
-                <div class="card-content">
-                    <span class="card-title">🛡️ Moderators ({{ moderator_users|length }})</span>
-                    <p class="user-group-desc">Moderators help manage project content and comments.</p>
-                    
-                    <ul class="collection">
-                        {% for user in moderator_users %}
-                        <li class="collection-item avatar">
-                            <img src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}" class="circle">
-                            <span class="title"><a href="{% url 'project:member_detail' project.id user.id %}">{{ user.username }}</a></span>
-                            <p>Joined {{ user.date_joined|naturaltime }}</p>
-                            <div class="secondary-content">
-                                <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
-                                    <i class="material-icons">edit</i>
-                                </a>
-                            </div>
-                        </li>
-                        {% empty %}
-                        <li class="collection-item">No moderators found</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Contributors group -->
-            <div class="card">
-                <div class="card-content">
-                    <span class="card-title">🔨 Contributors ({{ contributor_users|length }})</span>
-                    <p class="user-group-desc">Contributors actively help build and develop the project.</p>
-                    
-                    <ul class="collection">
-                        {% for user in contributor_users %}
-                        <li class="collection-item avatar">
-                            <img src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}" class="circle">
-                            <span class="title"><a href="{% url 'project:member_detail' project.id user.id %}">{{ user.username }}</a></span>
-                            <p>Joined {{ user.date_joined|naturaltime }}</p>
-                            <div class="secondary-content">
-                                <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
-                                    <i class="material-icons">edit</i>
-                                </a>
-                            </div>
-                        </li>
-                        {% empty %}
-                        <li class="collection-item">No contributors found</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Members/Supporters group -->
-            <div class="card">
-                <div class="card-content">
-                    <span class="card-title">👥 Members ({{ member_users|length }})</span>
-                    <p class="user-group-desc">Project members who follow and support the project.</p>
-                    
-                    <ul class="collection">
-                        {% for user in member_users %}
-                        <li class="collection-item avatar">
-                            <img src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}" class="circle">
-                            <span class="title"><a href="{% url 'project:member_detail' project.id user.id %}">{{ user.username }}</a></span>
-                            <p>Joined {{ user.date_joined|naturaltime }}</p>
-                            <div class="secondary-content">
-                                <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
-                                    <i class="material-icons">edit</i>
-                                </a>
-                            </div>
-                        </li>
-                        {% empty %}
-                        <li class="collection-item">No members found</li>
-                        {% endfor %}
-                    </ul>
-                </div>
+            
+            <!-- Back to project button -->
+            <div class="center-align">
+                <a href="{% url 'project:project' project.id %}" class="btn waves-effect waves-light">
+                    <i class="material-icons left">arrow_back</i>Back to Project
+                </a>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var elems = document.querySelectorAll('.dropdown-trigger');
-        var instances = M.Dropdown.init(elems);
-    });
-</script>
-
 {% endblock %}

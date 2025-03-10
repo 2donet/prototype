@@ -1,92 +1,94 @@
 {% extends "base.html" %}
-{% block title %}
-2do.net - {{ project.name }} - {{ user_profile.username }}
-{% endblock %}
-{% block content %}
 {% load humanize %}
 
-<div class="container">
-    <div class="breadcrumbs">
-        <a href="{% url 'project:index' %}">Projects</a> &gt;
-        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> &gt;
-        <a href="{% url 'project:project_members' project.id %}">Members</a> &gt;
-        <span>{{ user_profile.username }}</span>
-    </div>
+{% block title %}
+2do.net - {{ project.name }} - Member: {{ user_profile.username }}
+{% endblock %}
 
+{% block content %}
+<div class="container">
     <div class="row">
-        <div class="col s12 m8 offset-m2">
+        <div class="col s12 m10 offset-m1 l8 offset-l2">
             <div class="card">
                 <div class="card-content">
-                    <div class="center-align">
-                        <img src="{{ user_profile.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user_profile.username }}" class="circle responsive-img" style="max-width: 150px;">
-                        <h4>{{ user_profile.username }}</h4>
-                        
-                        <p class="member-meta">
-                            <strong>Role:</strong> {{ membership.get_role_display }}
-                            <br>
-                            <strong>Joined project:</strong> {{ membership.date_joined|date:"F j, Y" }} ({{ membership.date_joined|naturaltime }})
-                            {% if membership.is_owner %}
-                            <br>
-                            <span class="chip">Project Owner</span>
-                            {% endif %}
-                        </p>
-                    </div>
-
-                    {% if can_manage %}
-                    <div class="divider" style="margin: 20px 0;"></div>
+                    <span class="card-title">Member Details</span>
                     
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="input-field">
-                            <select name="role" id="role" class="validate" required>
-                                {% for role_value, role_display in role_choices %}
-                                <option value="{{ role_value }}" {% if membership.role == role_value %}selected{% endif %}>{{ role_display }}</option>
-                                {% endfor %}
-                            </select>
-                            <label for="role">Member Role</label>
+                    <div class="row">
+                        <div class="col s12 center-align">
+                            <img src="{{ user_profile.avatar|default:'/static/icons/default-avatar.svg' }}" 
+                                 alt="{{ user_profile.username }}" 
+                                 class="circle responsive-img" 
+                                 style="max-width: 100px;">
+                            <h4>{{ user_profile.username }}</h4>
+                            <p>Joined project {{ membership.date_joined|naturaltime }}</p>
+                            <div class="chip">
+                                {{ membership.get_role_display }}
+                            </div>
                         </div>
-                        
+                    </div>
+                    
+                    {% if can_manage %}
+                    <form method="post" class="col s12">
+                        {% csrf_token %}
                         <div class="row">
-                            <div class="role-info">
-                                <h6>Role permissions:</h6>
-                                <ul class="role-permissions">
-                                    <li><strong>Administrator:</strong> Full control over the project, can edit details, manage members, and moderate content.</li>
-                                    <li><strong>Moderator:</strong> Can moderate comments and content, but cannot change project settings.</li>
-                                    <li><strong>Contributor:</strong> Can contribute to the project and edit their own contributions.</li>
-                                    <li><strong>Mentor:</strong> Can contribute and provide guidance to other members.</li>
-                                    <li><strong>Supporter:</strong> Can engage with the project and provide feedback.</li>
-                                    <li><strong>Viewer:</strong> Basic access to view project content.</li>
-                                    <li><strong>Curator:</strong> Can organize and categorize project content.</li>
-                                    <li><strong>Stakeholder:</strong> Interested party with visibility into project progress.</li>
-                                </ul>
+                            <div class="input-field col s12 m6 offset-m3">
+                                <select name="role" id="role">
+                                    {% for role_code, role_name in role_choices %}
+                                    <option value="{{ role_code }}" {% if membership.role == role_code %}selected{% endif %}>
+                                        {{ role_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="role">Role</label>
                             </div>
                         </div>
                         
                         <div class="row">
-                            <div class="input-field col s12 center-align">
-                                <button class="btn waves-effect waves-light" type="submit">
-                                    <i class="material-icons left">save</i>Save Changes
+                            <div class="col s12 center-align">
+                                <button type="submit" class="btn waves-effect waves-light">
+                                    Update Role
+                                    <i class="material-icons right">save</i>
                                 </button>
-                                
-                                <a href="{% url 'project:remove_member' project.id user_profile.id %}" class="btn red waves-effect waves-light">
-                                    <i class="material-icons left">person_remove</i>Remove from Project
-                                </a>
                             </div>
                         </div>
                     </form>
-                    {% else %}
-                    <div class="divider" style="margin: 20px 0;"></div>
                     
-                    <div class="center-align">
-                        <p>This membership can only be modified by project administrators.</p>
-                        
-                        {% if user_profile.id == request.user.id %}
-                        <a href="{% url 'project:leave_project' project.id %}" class="btn red waves-effect waves-light">
-                            <i class="material-icons left">exit_to_app</i>Leave Project
-                        </a>
-                        {% endif %}
+                    {% if not membership.is_owner %}
+                    <div class="row">
+                        <div class="col s12 center-align">
+                            <a href="{% url 'project:remove_member' project.id user_profile.id %}" 
+                               class="btn waves-effect waves-light red">
+                                Remove from Project
+                                <i class="material-icons right">person_remove</i>
+                            </a>
+                        </div>
                     </div>
                     {% endif %}
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col s12">
+                            <h5>User Info</h5>
+                            <p>Username: {{ user_profile.username }}</p>
+                            {% if user_profile.email %}
+                            <p>Email: {{ user_profile.email }}</p>
+                            {% endif %}
+                            <p>Account created: {{ user_profile.date_joined|date }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col s12 center-align">
+                            <a href="{% url 'project:project_members' project.id %}" class="btn waves-effect waves-light">
+                                <i class="material-icons left">arrow_back</i>
+                                Back to Members List
+                            </a>
+                            <a href="{% url 'project:project' project.id %}" class="btn waves-effect waves-light">
+                                <i class="material-icons left">dashboard</i>
+                                Back to Project
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -99,5 +101,4 @@
         var instances = M.FormSelect.init(elems);
     });
 </script>
-
 {% endblock %}

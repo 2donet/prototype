@@ -89,7 +89,7 @@ def project_members(request, project_id):
         'role_choices': ProjectPermissionGroup.choices,
     }
     
-    return render(request, 'project/members.html', context)
+    return render(request, 'members.html', context)
 
 
 def project(request, project_id):
@@ -288,7 +288,7 @@ def member_detail(request, project_id, user_id):
         'role_choices': ProjectPermissionGroup.choices,
     }
     
-    return render(request, 'project/member_detail.html', context)
+    return render(request, 'member_detail.html', context)
 
 @login_required
 def add_member(request, project_id):
@@ -336,7 +336,7 @@ def add_member(request, project_id):
         'role_choices': ProjectPermissionGroup.choices,
     }
     
-    return render(request, 'project/add_member.html', context)
+    return render(request, 'add_member.html', context)
 
 @login_required
 def remove_member(request, project_id, user_id):
@@ -388,7 +388,7 @@ def remove_member(request, project_id, user_id):
         'membership': membership,
     }
     
-    return render(request, 'project/remove_member.html', context)
+    return render(request, 'remove_member.html', context)
 
 @login_required
 def join_project(request, project_id):
@@ -449,4 +449,4 @@ def leave_project(request, project_id):
         'project': project,
     }
     
-    return render(request, 'project/leave_project.html', context)
+    return render(request, 'leave_project.html', context)

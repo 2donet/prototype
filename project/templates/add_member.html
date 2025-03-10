@@ -1,69 +1,57 @@
 {% extends "base.html" %}
+
 {% block title %}
 2do.net - {{ project.name }} - Add Member
 {% endblock %}
+
 {% block content %}
-
 <div class="container">
-    <div class="breadcrumbs">
-        <a href="{% url 'project:index' %}">Projects</a> &gt;
-        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> &gt;
-        <a href="{% url 'project:project_members' project.id %}">Members</a> &gt;
-        <span>Add Member</span>
-    </div>
-
     <div class="row">
-        <div class="col s12 m8 offset-m2">
+        <div class="col s12 m8 offset-m2 l6 offset-l3">
             <div class="card">
                 <div class="card-content">
                     <span class="card-title">Add Member to {{ project.name }}</span>
                     
-                    <form method="post">
+                    <form method="post" class="col s12">
                         {% csrf_token %}
-                        
-                        <div class="input-field">
-                            <input id="username" type="text" name="username" class="validate" required>
-                            <label for="username">Username</label>
-                            <span class="helper-text">Enter the username of the person you want to add to the project</span>
-                        </div>
-                        
-                        <div class="input-field">
-                            <select name="role" id="role" class="validate" required>
-                                {% for role_value, role_display in role_choices %}
-                                <option value="{{ role_value }}" {% if role_value == 'VIEWER' %}selected{% endif %}>{{ role_display }}</option>
-                                {% endfor %}
-                            </select>
-                            <label for="role">Member Role</label>
-                        </div>
-                        
                         <div class="row">
-                            <div class="role-info">
-                                <h6>Role descriptions:</h6>
-                                <ul class="role-permissions">
-                                    <li><strong>Administrator:</strong> Full control over the project, can edit details, manage members, and moderate content.</li>
-                                    <li><strong>Moderator:</strong> Can moderate comments and content, but cannot change project settings.</li>
-                                    <li><strong>Contributor:</strong> Can contribute to the project and edit their own contributions.</li>
-                                    <li><strong>Mentor:</strong> Can contribute and provide guidance to other members.</li>
-                                    <li><strong>Supporter:</strong> Can engage with the project and provide feedback.</li>
-                                    <li><strong>Viewer:</strong> Basic access to view project content.</li>
-                                    <li><strong>Curator:</strong> Can organize and categorize project content.</li>
-                                    <li><strong>Stakeholder:</strong> Interested party with visibility into project progress.</li>
-                                </ul>
+                            <div class="input-field col s12">
+                                <input id="username" name="username" type="text" class="validate" required>
+                                <label for="username">Username</label>
+                                <span class="helper-text">Enter the username of the person you want to add</span>
                             </div>
                         </div>
                         
                         <div class="row">
-                            <div class="input-field col s12 center-align">
-                                <button class="btn waves-effect waves-light" type="submit">
-                                    <i class="material-icons left">person_add</i>Add Member
+                            <div class="input-field col s12">
+                                <select name="role" id="role">
+                                    {% for role_code, role_name in role_choices %}
+                                    <option value="{{ role_code }}" {% if role_code == 'VIEWER' %}selected{% endif %}>
+                                        {{ role_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="role">Role</label>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col s12 center-align">
+                                <button type="submit" class="btn waves-effect waves-light">
+                                    Add Member
+                                    <i class="material-icons right">person_add</i>
                                 </button>
-                                
-                                <a href="{% url 'project:project_members' project.id %}" class="btn grey waves-effect waves-light">
-                                    <i class="material-icons left">cancel</i>Cancel
-                                </a>
                             </div>
                         </div>
                     </form>
+                    
+                    <div class="row">
+                        <div class="col s12 center-align">
+                            <a href="{% url 'project:project_members' project.id %}" class="btn-flat waves-effect">
+                                Back to Members List
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -76,5 +64,4 @@
         var instances = M.FormSelect.init(elems);
     });
 </script>
-
 {% endblock %}
