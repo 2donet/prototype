@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 
 from . import views
 
@@ -8,7 +8,8 @@ urlpatterns = [
     path("<int:project_id>/", views.project, name="project"),
     path('create/', views.create_project, name='create_project'),
     path('skill/<str:skill_name>/', views.skill_projects, name='skill_detail'),
-    
+    path('api/', include('comment.api_urls')),
+
     # Member management URLs
     path('<int:project_id>/members/', views.project_members, name='project_members'),
     path('<int:project_id>/members/<int:user_id>/', views.member_detail, name='member_detail'),

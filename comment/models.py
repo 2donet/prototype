@@ -4,6 +4,9 @@ from django.dispatch import receiver
 from django.conf import settings
 from django.utils import timezone
 
+from django.db.models import Sum
+from django.utils.translation import gettext_lazy as _
+
 
 class CommentStatus(models.TextChoices):
     """Status options for comments"""
@@ -74,7 +77,14 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.content[:20]} by {self.user.username if self.user else self.author_name or 'Anonymous'}"
-
+    def get_reaction_counts(self):
+        """Get counts for each reaction type on this comment"""
+        reaction_counts = {}
+        for reaction_type, _ in ReactionType.choices:
+            count = self.reactions.filter(reaction_type=reaction_type).count()
+            if count > 0:
+                reaction_counts[reaction_type] = count
+        return reaction_counts
     def update_reply_count(self):
         """
         Recursively update the total_replies count for parent comments.
@@ -172,6 +182,9 @@ class Comment(models.Model):
             models.Index(fields=['created_at']),
         ]
 
+@property
+def reaction_counts(self):
+    return self.get_reaction_counts()
 
 # Signals to update `total_replies` automatically
 @receiver(post_save, sender=Comment)
@@ -299,3 +312,111 @@ class CommentReport(models.Model):
                 self.project = self.comment.to_need.to_project
                 
         super().save(*args, **kwargs)
+
+
+
+
+
+class VoteType(models.TextChoices):
+    """Type of votes a user can cast on a comment"""
+    UPVOTE = 'UPVOTE', _('Upvote')
+    DOWNVOTE = 'DOWNVOTE', _('Downvote')
+
+
+class ReactionType(models.TextChoices):
+    """Types of reactions a user can have to a comment"""
+    LIKE = 'LIKE', _('Like')
+    LOVE = 'LOVE', _('Love')
+    LAUGH = 'LAUGH', _('Laugh')
+    INSIGHTFUL = 'INSIGHTFUL', _('Insightful')
+    CONFUSED = 'CONFUSED', _('Confused')
+    SAD = 'SAD', _('Sad')
+    THANKS = 'THANKS', _('Thanks')
+
+
+class CommentVote(models.Model):
+    """Model to track votes on comments"""
+    comment = models.ForeignKey(
+        'comment.Comment',
+        on_delete=models.CASCADE,
+        related_name='votes'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='comment_votes'
+    )
+    vote_type = models.CharField(
+        max_length=10,
+        choices=VoteType.choices,
+        default=VoteType.UPVOTE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('comment', 'user')
+        verbose_name = _('Comment Vote')
+        verbose_name_plural = _('Comment Votes')
+        indexes = [
+            models.Index(fields=['comment', 'vote_type']),
+            models.Index(fields=['user']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username}'s {self.get_vote_type_display()} on comment {self.comment.id}"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update the comment's score
+        self.update_comment_score()
+        
+    def delete(self, *args, **kwargs):
+        comment = self.comment  # Store reference before deletion
+        super().delete(*args, **kwargs)
+        # Update score after deletion
+        self.update_comment_score(comment)
+        
+    def update_comment_score(self, comment=None):
+        """Update the score field on the associated comment"""
+        comment = comment or self.comment
+        
+        # Count upvotes and downvotes
+        upvotes = comment.votes.filter(vote_type=VoteType.UPVOTE).count()
+        downvotes = comment.votes.filter(vote_type=VoteType.DOWNVOTE).count()
+        
+        # Update the score
+        comment.score = upvotes - downvotes
+        comment.save(update_fields=['score'])
+
+
+class CommentReaction(models.Model):
+    """Model to track reactions on comments"""
+    comment = models.ForeignKey(
+        'comment.Comment',
+        on_delete=models.CASCADE,
+        related_name='reactions'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='comment_reactions'
+    )
+    reaction_type = models.CharField(
+        max_length=20,
+        choices=ReactionType.choices
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('comment', 'user', 'reaction_type')
+        verbose_name = _('Comment Reaction')
+        verbose_name_plural = _('Comment Reactions')
+        indexes = [
+            models.Index(fields=['comment', 'reaction_type']),
+            models.Index(fields=['user']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username}'s {self.get_reaction_type_display()} on comment {self.comment.id}"

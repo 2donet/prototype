@@ -39,7 +39,7 @@
             <!-- User information -->
             <div class="comment-header">
                 {% if comment.user %}
-                    <img class="miniavatar" src="{{ comment.user.avatar }}" alt="{{ comment.user.username }}">
+                    <img class="miniavatar" src="{{ comment.user.avatar | default:'/static/icons/default-avatar.svg'}}" alt="{{ comment.user.username }}">
                     <div class="comment-meta">
                         <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
                         <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
@@ -108,7 +108,7 @@
                     <!-- User information -->
                     <div class="comment-header">
                         {% if reply.user %}
-                            <img class="miniavatar" src="{{ reply.user.avatar }}" alt="{{ reply.user.username }}">
+                            <img class="miniavatar" src="{{ reply.user.avatar |default:'/static/icons/default-avatar.svg' }}" alt="{{ reply.user.username }}">
                             <div class="comment-meta">
                                 <a href="/u/{{ reply.user.id }}">{{ reply.user.username }}</a>
                                 <span class="time" title="{{ reply.pub_date }}">{{ reply.pub_date|naturaltime }}</span>

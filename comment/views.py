@@ -3,10 +3,54 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.urls import reverse
-from .models import Comment, CommentReport, ReportStatus
+from django.db.models import Count, Prefetch, Q
+import json
+import logging
+
+from .models import (
+    Comment, CommentReport, ReportStatus, 
+    CommentVote, CommentReaction, VoteType, ReactionType
+)
 from .forms import CommentReportForm, ModeratorReviewForm
 from project.models import Project
 from task.models import Task
+from need.models import Need
+
+logger = logging.getLogger(__name__)
+
+def get_comments_with_reactions(comments, user=None):
+    """
+    Enhance comments queryset with reaction counts and user vote status
+    
+    Args:
+        comments: A queryset of Comment objects
+        user: The current user (optional)
+    
+    Returns:
+        The enhanced comments queryset
+    """
+    # Prefetch related reactions and votes to avoid N+1 query problems
+    comments = comments.prefetch_related('reactions', 'votes')
+    
+    # For template-based views, we need to manually add the counts
+    for comment in comments:
+        # Set reaction_counts attribute on the comment
+        comment.reaction_counts = comment.get_reaction_counts()
+        
+        # If user is provided and authenticated, get their votes and reactions
+        if user and user.is_authenticated:
+            # User vote
+            try:
+                vote = comment.votes.get(user=user)
+                comment.user_vote = vote.vote_type
+            except CommentVote.DoesNotExist:
+                comment.user_vote = None
+                
+            # User reactions
+            reactions = comment.reactions.filter(user=user).values_list('reaction_type', flat=True)
+            comment.user_reactions = list(reactions)
+    
+    return comments
 
 
 def comment_list_view(request, object_type, object_id):
@@ -19,9 +63,15 @@ def comment_list_view(request, object_type, object_id):
     elif object_type == "task":
         comments = Comment.objects.filter(to_task=object_id, parent__isnull=True).select_related(
             "user").prefetch_related("replies__user")
+    elif object_type == "need":
+        comments = Comment.objects.filter(to_need=object_id, parent__isnull=True).select_related(
+            "user").prefetch_related("replies__user")
     else:
         return JsonResponse({"error": "Invalid object type"}, status=400)
 
+    # Enhance comments with reaction counts and user vote/reaction status
+    comments = get_comments_with_reactions(comments, request.user)
+    
     return render(request, "comments.html", {"comments": comments})
 
 
@@ -31,10 +81,33 @@ def single_comment_view(request, comment_id):
     """
     comment = get_object_or_404(Comment, id=comment_id)
     
+    # Get replies and enhance with reaction counts and user vote/reaction status
+    replies = comment.replies.select_related("user").all()
+    replies = get_comments_with_reactions(replies, request.user)
+    
+    # Also enhance the main comment
+    comment.reaction_counts = comment.get_reaction_counts()
+    
+    # If user is authenticated, get their vote and reactions for the main comment
+    if request.user.is_authenticated:
+        # User vote
+        try:
+            vote = CommentVote.objects.get(user=request.user, comment=comment)
+            comment.user_vote = vote.vote_type
+        except CommentVote.DoesNotExist:
+            comment.user_vote = None
+            
+        # User reactions
+        reactions = CommentReaction.objects.filter(
+            user=request.user, 
+            comment=comment
+        ).values_list('reaction_type', flat=True)
+        comment.user_reactions = list(reactions)
+    
     # Get the context based on what the comment is attached to
     context = {
         "comment": comment,
-        "replies": comment.replies.select_related("user").all(),
+        "replies": replies,
     }
     
     # Add the parent object to context if this is a reply
@@ -113,6 +186,22 @@ def report_comment_view(request, comment_id):
     else:
         form = CommentReportForm()
     
+    # Add reaction counts and user vote status to the comment
+    comment.reaction_counts = comment.get_reaction_counts()
+    
+    if request.user.is_authenticated:
+        try:
+            user_vote = CommentVote.objects.get(user=request.user, comment=comment)
+            comment.user_vote = user_vote.vote_type
+        except CommentVote.DoesNotExist:
+            comment.user_vote = None
+            
+        user_reactions = CommentReaction.objects.filter(
+            user=request.user, 
+            comment=comment
+        ).values_list('reaction_type', flat=True)
+        comment.user_reactions = list(user_reactions)
+    
     return render(request, 'report_comment.html', {
         'form': form,
         'comment': comment
@@ -125,30 +214,48 @@ def load_replies(request, comment_id):
     """
     parent_comment = get_object_or_404(Comment, id=comment_id)
     replies = parent_comment.replies.select_related("user").all()
-    return JsonResponse({
-        "replies": [
-            {
-                "id": reply.id,
-                "content": reply.content,
-                "user": reply.user.username,
-                "total_replies": reply.total_replies,
-            }
-            for reply in replies
-        ]
-    })
+    
+    # Enhance replies with reaction counts and user vote/reaction status
+    replies = get_comments_with_reactions(replies, request.user)
+    
+    reply_data = []
+    for reply in replies:
+        reply_info = {
+            "id": reply.id,
+            "content": reply.content,
+            "user": reply.user.username if reply.user else "Anonymous",
+            "total_replies": reply.total_replies,
+            "score": reply.score,
+            "reaction_counts": reply.reaction_counts,
+        }
+        
+        if request.user.is_authenticated:
+            reply_info["user_vote"] = getattr(reply, 'user_vote', None)
+            reply_info["user_reactions"] = getattr(reply, 'user_reactions', [])
+            
+        reply_data.append(reply_info)
+    
+    return JsonResponse({"replies": reply_data})
 
 
 def add_comment(request):
+    """
+    Add a new comment or reply.
+    """
     if request.method == "POST":
         content = request.POST.get("content", "").strip()
         parent_id = request.POST.get("parent_id")
         to_project_id = request.POST.get("to_project_id")
+        to_task_id = request.POST.get("to_task_id")
+        to_need_id = request.POST.get("to_need_id")
 
         if not content:
             return JsonResponse({"error": "Content is required"}, status=400)
 
         parent_comment = None
         to_project = None
+        to_task = None
+        to_need = None
 
         # Handle replies
         if parent_id:
@@ -157,6 +264,10 @@ def add_comment(request):
         # Handle top-level comments
         if to_project_id:
             to_project = get_object_or_404(Project, id=to_project_id)
+        elif to_task_id:
+            to_task = get_object_or_404(Task, id=to_task_id)
+        elif to_need_id:
+            to_need = get_object_or_404(Need, id=to_need_id)
 
         # Allow anonymous users
         user = request.user if request.user.is_authenticated else None
@@ -167,6 +278,11 @@ def add_comment(request):
             content=content,
             parent=parent_comment,
             to_project=to_project,
+            to_task=to_task,
+            to_need=to_need,
+            author_name=request.POST.get("author_name") if not user else None,
+            author_email=request.POST.get("author_email") if not user else None,
+            ip_address=get_client_ip(request),
         )
 
         return JsonResponse({
@@ -174,9 +290,218 @@ def add_comment(request):
             "content": comment.content,
             "user": comment.user.username if comment.user else "Anonymous",
             "total_replies": comment.total_replies,
+            "score": comment.score,
         })
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+def vote_comment(request, comment_id):
+    """
+    Vote on a comment (upvote or downvote)
+    """
+    logger.info(f"Vote request received for comment {comment_id}")
+    
+    if not request.user.is_authenticated:
+        logger.warning("Unauthenticated vote attempt")
+        return JsonResponse({"error": "Authentication required"}, status=401)
+        
+    if request.method != "POST":
+        logger.warning(f"Invalid method: {request.method}")
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+        
+    logger.info(f"Content type: {request.content_type}")
+    
+    comment = get_object_or_404(Comment, id=comment_id)
+    
+    # Handle both form data and JSON
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+            vote_type = data.get("vote_type")
+            logger.info(f"JSON data: {data}")
+        except json.JSONDecodeError:
+            logger.error("Invalid JSON data")
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+    else:
+        vote_type = request.POST.get("vote_type")
+        logger.info(f"Form data - vote_type: {vote_type}")
+    
+    logger.info(f"Vote type: {vote_type}")
+    
+    if vote_type not in [VoteType.UPVOTE, VoteType.DOWNVOTE]:
+        logger.warning(f"Invalid vote type: {vote_type}")
+        return JsonResponse({"error": "Invalid vote type"}, status=400)
+        
+    # Create or update the vote
+    vote, created = CommentVote.objects.update_or_create(
+        comment=comment,
+        user=request.user,
+        defaults={"vote_type": vote_type}
+    )
+    
+    # Manually update comment score to ensure it's current
+    upvotes = comment.votes.filter(vote_type=VoteType.UPVOTE).count()
+    downvotes = comment.votes.filter(vote_type=VoteType.DOWNVOTE).count()
+    comment.score = upvotes - downvotes
+    comment.save(update_fields=['score'])
+    
+    logger.info(f"Vote processed. New score: {comment.score}")
+    
+    # Return updated comment info
+    return JsonResponse({
+        "id": comment.id,
+        "score": comment.score,
+        "vote_type": vote_type
+    })
+
+
+def remove_vote(request, comment_id):
+    """
+    Remove a vote from a comment
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
+        
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+        
+    comment = get_object_or_404(Comment, id=comment_id)
+    
+    # Delete the vote if it exists
+    try:
+        vote = CommentVote.objects.get(comment=comment, user=request.user)
+        vote.delete()
+        
+        # Manually update comment score
+        upvotes = comment.votes.filter(vote_type=VoteType.UPVOTE).count()
+        downvotes = comment.votes.filter(vote_type=VoteType.DOWNVOTE).count()
+        comment.score = upvotes - downvotes
+        comment.save(update_fields=['score'])
+        
+        # Return updated comment info
+        return JsonResponse({
+            "id": comment.id,
+            "score": comment.score,
+            "vote_removed": True
+        })
+    except CommentVote.DoesNotExist:
+        return JsonResponse({"error": "No vote to remove"}, status=404)
+
+
+def toggle_reaction(request, comment_id):
+    """
+    Toggle a reaction on a comment
+    """
+    logger.info(f"Reaction toggle request received for comment {comment_id}")
+    
+    if not request.user.is_authenticated:
+        logger.warning("Unauthenticated reaction attempt")
+        return JsonResponse({"error": "Authentication required"}, status=401)
+        
+    if request.method != "POST":
+        logger.warning(f"Invalid method: {request.method}")
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+    
+    logger.info(f"Content type: {request.content_type}")
+    
+    comment = get_object_or_404(Comment, id=comment_id)
+    logger.info(f"Comment found: {comment.id}")
+    
+    # Handle both form data and JSON
+    if request.content_type == 'application/json':
+        try:
+            body = request.body.decode('utf-8')
+            logger.info(f"Raw JSON: {body}")
+            data = json.loads(body)
+            reaction_type = data.get("reaction_type")
+            logger.info(f"JSON data: {data}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON data: {e}")
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+        except Exception as e:
+            logger.error(f"Error parsing JSON: {str(e)}")
+            return JsonResponse({"error": f"Error: {str(e)}"}, status=400)
+    else:
+        reaction_type = request.POST.get("reaction_type")
+        logger.info(f"Form data - reaction_type: {reaction_type}")
+    
+    logger.info(f"Reaction type: {reaction_type}")
+    
+    # Make sure ReactionType.choices is properly defined
+    all_choices = dict(ReactionType.choices)
+    logger.info(f"Available reaction types: {all_choices}")
+    
+    if reaction_type not in all_choices:
+        logger.warning(f"Invalid reaction type: {reaction_type}")
+        return JsonResponse({"error": f"Invalid reaction type. Must be one of: {list(all_choices.keys())}"}, status=400)
+    
+    try:    
+        # Try to get the existing reaction
+        try:
+            reaction = CommentReaction.objects.get(
+                comment=comment,
+                user=request.user,
+                reaction_type=reaction_type
+            )
+            # If it exists, delete it (toggle off)
+            logger.info(f"Removing existing reaction {reaction.id}")
+            reaction.delete()
+            action = "removed"
+        except CommentReaction.DoesNotExist:
+            # If it doesn't exist, create it
+            logger.info(f"Creating new reaction")
+            CommentReaction.objects.create(
+                comment=comment,
+                user=request.user,
+                reaction_type=reaction_type
+            )
+            action = "added"
+        
+        # Get updated reaction counts
+        reaction_counts = comment.get_reaction_counts()
+        logger.info(f"Updated reaction counts: {reaction_counts}")
+        
+        # Return updated comment info
+        response_data = {
+            "id": comment.id,
+            "action": action,
+            "reaction_type": reaction_type,
+            "reaction_counts": reaction_counts
+        }
+        logger.info(f"Sending response: {response_data}")
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in toggle_reaction: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return JsonResponse({"error": f"Server error: {str(e)}"}, status=500)
+
+
+def get_reactions_summary(request, comment_id):
+    """
+    Get a summary of all reactions on a comment
+    """
+    comment = get_object_or_404(Comment, id=comment_id)
+    
+    # Count reactions by type
+    reaction_counts = CommentReaction.objects.filter(comment=comment) \
+        .values('reaction_type') \
+        .annotate(count=Count('reaction_type')) \
+        .order_by('-count')
+    
+    return JsonResponse(list(reaction_counts), safe=False)
+
+
+def get_client_ip(request):
+    """Get the client IP address from the request"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 
 def is_moderator(user):
@@ -214,6 +539,9 @@ def report_detail_view(request, report_id):
     Detail view for a specific report, allowing moderators to review and update it.
     """
     report = get_object_or_404(CommentReport, id=report_id)
+    
+    # Add reaction counts and user vote status to the comment
+    report.comment = get_comments_with_reactions([report.comment], request.user)[0]
     
     if request.method == 'POST':
         form = ModeratorReviewForm(request.POST, instance=report, moderator=request.user)
