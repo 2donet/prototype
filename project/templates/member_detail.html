@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}
+2do.net - {{ project.name }} - {{ user_profile.username }}
+{% endblock %}
+{% block content %}
+{% load humanize %}
+
+<div class="container">
+    <div class="breadcrumbs">
+        <a href="{% url 'project:index' %}">Projects</a> &gt;
+        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> &gt;
+        <a href="{% url 'project:project_members' project.id %}">Members</a> &gt;
+        <span>{{ user_profile.username }}</span>
+    </div>
+
+    <div class="row">
+        <div class="col s12 m8 offset-m2">
+            <div class="card">
+                <div class="card-content">
+                    <div class="center-align">
+                        <img src="{{ user_profile.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user_profile.username }}" class="circle responsive-img" style="max-width: 150px;">
+                        <h4>{{ user_profile.username }}</h4>
+                        
+                        <p class="member-meta">
+                            <strong>Role:</strong> {{ membership.get_role_display }}
+                            <br>
+                            <strong>Joined project:</strong> {{ membership.date_joined|date:"F j, Y" }} ({{ membership.date_joined|naturaltime }})
+                            {% if membership.is_owner %}
+                            <br>
+                            <span class="chip">Project Owner</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    {% if can_manage %}
+                    <div class="divider" style="margin: 20px 0;"></div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="input-field">
+                            <select name="role" id="role" class="validate" required>
+                                {% for role_value, role_display in role_choices %}
+                                <option value="{{ role_value }}" {% if membership.role == role_value %}selected{% endif %}>{{ role_display }}</option>
+                                {% endfor %}
+                            </select>
+                            <label for="role">Member Role</label>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="role-info">
+                                <h6>Role permissions:</h6>
+                                <ul class="role-permissions">
+                                    <li><strong>Administrator:</strong> Full control over the project, can edit details, manage members, and moderate content.</li>
+                                    <li><strong>Moderator:</strong> Can moderate comments and content, but cannot change project settings.</li>
+                                    <li><strong>Contributor:</strong> Can contribute to the project and edit their own contributions.</li>
+                                    <li><strong>Mentor:</strong> Can contribute and provide guidance to other members.</li>
+                                    <li><strong>Supporter:</strong> Can engage with the project and provide feedback.</li>
+                                    <li><strong>Viewer:</strong> Basic access to view project content.</li>
+                                    <li><strong>Curator:</strong> Can organize and categorize project content.</li>
+                                    <li><strong>Stakeholder:</strong> Interested party with visibility into project progress.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="input-field col s12 center-align">
+                                <button class="btn waves-effect waves-light" type="submit">
+                                    <i class="material-icons left">save</i>Save Changes
+                                </button>
+                                
+                                <a href="{% url 'project:remove_member' project.id user_profile.id %}" class="btn red waves-effect waves-light">
+                                    <i class="material-icons left">person_remove</i>Remove from Project
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="divider" style="margin: 20px 0;"></div>
+                    
+                    <div class="center-align">
+                        <p>This membership can only be modified by project administrators.</p>
+                        
+                        {% if user_profile.id == request.user.id %}
+                        <a href="{% url 'project:leave_project' project.id %}" class="btn red waves-effect waves-light">
+                            <i class="material-icons left">exit_to_app</i>Leave Project
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var elems = document.querySelectorAll('select');
+        var instances = M.FormSelect.init(elems);
+    });
+</script>
+
+{% endblock %}
