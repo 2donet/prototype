@@ -1,0 +1,13 @@
+{% if user.is_authenticated %}
+    {% if is_member %}
+        <a href="{% url 'project:leave_project' content.id %}" class="btn waves-effect waves-light red">
+            <i class="material-icons left">exit_to_app</i>Leave Project
+        </a>
+    {% else %}
+        {% if content.visibility != 'private' %}
+            <a href="{% url 'project:join_project' content.id %}" class="btn waves-effect waves-light green">
+                <i class="material-icons left">group_add</i>Join Project
+            </a>
+        {% endif %}
+    {% endif %}
+{% endif %}

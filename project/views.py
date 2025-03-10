@@ -136,6 +136,20 @@ def project(request, project_id):
             contributor_users.append(user)
         else:
             member_users.append(user)
+    
+    # Check if current user is a member of this project
+    is_member = False
+    can_manage_members = False
+    if request.user.is_authenticated:
+        is_member = Membership.objects.filter(project=content, user=request.user).exists()
+        
+        # Check if user can manage members
+        if request.user == content.created_by:
+            can_manage_members = True
+        else:
+            user_membership = Membership.objects.filter(project=content, user=request.user).first()
+            if user_membership and (user_membership.is_administrator or user_membership.is_moderator):
+                can_manage_members = True
 
     context = {
         "content": content,
@@ -148,6 +162,8 @@ def project(request, project_id):
         "moderator_users": moderator_users,
         "contributor_users": contributor_users,
         "member_users": member_users,
+        "is_member": is_member,
+        "can_manage_members": can_manage_members,
     }
     return render(request, "details.html", context=context)
 

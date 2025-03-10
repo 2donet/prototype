@@ -69,9 +69,17 @@
         </div>
 
         <div class="members-container card">
+            {% include "components/join_or_leave.html" %}
             <div class="card-content">
                 <span class="card-title">👥 Project Members</span>
-                
+                {% if can_manage_members %}
+                <a href="{% url 'project:project_members' content.id %}" class="btn waves-effect waves-light blue">
+                    <i class="material-icons left">group</i>Manage Members
+                </a>
+                <a href="{% url 'project:add_member' content.id %}" class="btn waves-effect waves-light green">
+                    <i class="material-icons left">person_add</i>Add Member
+                </a>
+                {% endif %}
                 <!-- Administrators group -->
                 <details open>
                     <summary class="user-group-summary">
@@ -126,7 +134,7 @@
                             {% for user in moderator_users %}
                             <li class="user-item">
                                 <div class="user-info">
-                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
                                     <div class="user-details">
                                         <span class="user-name">{{ user.username }}</span>
                                         <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
@@ -361,4 +369,24 @@
 <script src="{% static 'js/project/comments.js' %}"></script>
 
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize all dropdowns
+        var dropdowns = document.querySelectorAll('.dropdown-trigger');
+        var dropdownOptions = {
+            constrainWidth: false,
+            coverTrigger: false,
+            alignment: 'right'
+        };
+        M.Dropdown.init(dropdowns, dropdownOptions);
+        
+        // Initialize tabs
+        var tabs = document.querySelectorAll('.tabs');
+        M.Tabs.init(tabs);
+        
+        // Initialize select inputs
+        var selects = document.querySelectorAll('select');
+        M.FormSelect.init(selects);
+    });
+</script>
 {% endblock %}
