@@ -20,8 +20,7 @@
                 University of Warsaw, Pasteura 5 Warszawa, Poland
             </a>
             <br>
-            <h5>Status</h5>
-            nie zrobiliśmy jeszcze nic
+{% include "components/status.html" %}
             <h5>Goal</h5>
             <p>
                 Creating MVP/Prototype showcasing main ideas being splitting big pieces of work into smaller and smaller parts. 
@@ -29,238 +28,9 @@
             <p>
 
             </p>
-
-            <h5>Plan</h5>
-            When adding/updating the project Users can add 
-            <ol>
-                <li>
-                    <a class=" modal-trigger" href="#plan123">Plan stage</a>
-                </li>
-                <li>
-                    <a class=" modal-trigger" href="#tasks-plan">Tasks</a>
-                </li>
-                <li>
-                    <a class=" modal-trigger" href="#goals-plan">Goals</a>
-                </li>
-                <li>
-                    <a class=" modal-trigger" href="#status-plan">Status</a>
-                </li>
-                <li>
-                    <a class=" modal-trigger" href="#needs-plan">Needs</a>
-
-                </li>
-                <li>
-                    <a class=" modal-trigger" href="#comments-plan">Comments</a>
-                </li>
-                <li>
-                    <a class=" modal-trigger" href="#ideas-plan">Ideas</a>
-
-                </li>
-                <li>
-                    <a class=" modal-trigger" href="#intros-plan">Intro</a>
-                </li>
-            </ol>
+            {% include "components/plan.html" %}
 
 
-            <!-- supporters popup -->
-            <div id="plan123" class="modal modal-fixed-footer">
-                <div class="modal-content">
-
-                    <h4>Plan for showing plans</h4>
-                    <p>It's important to show plans. Plan is a part of project. </p>
-                    <h4>Requirements</h4>
-                    <ul>
-                        <li>displayed as ordered list</li>
-                        <li>can have set of tasks, needs, problems </li>
-                        <li>can be commented</li>
-                        <li>has version control</li>
-
-                    </ul>
-                    <h4>Ordered List</h4>
-                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
-                    <p></p>
-                    <a href="/about">asd</a>
-                </div>
-                <div class="modal-footer">
-                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                </div>
-            </div>
-
-            <div id="tasks-plan" class="modal modal-fixed-footer">
-                <div class="modal-content">
-
-                    <h4>Plan for tasks</h4>
-                    <p>Tasks are so important. They are basically projects with few differences. </p>
-                <h5>Example</h5>
-                    <p>At specific time, go to a location, do stuff. </p>
-                    <p>Must register for that task at registration_end_date.</p>
-                    <p>There may be rewards for that task</p>
-                    <p>might have Requirements e.g. University of Warsaw Student, project member, etc</p>
-                    
-                <h4>Requirements</h4>
-                    <ul>
-                        <li>Has open_to_grab boolean indicating if Users can do tasks</li>
-                        <li>can have set of tasks, needs, problems </li>
-
-                    </ul>
-                    <h4>Ordered List</h4>
-                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
-                    <p></p>
-                    <a href="/about">asd</a>
-                </div>
-                <div class="modal-footer">
-                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                </div>
-            </div>
-            <div id="goals-plan" class="modal modal-fixed-footer">
-                <div class="modal-content">
-
-                    <h4>Plan for Goals</h4>
-                    <p>
-                        
-                    </p>
-
-                <h4>Requirements</h4>
-                    <ul>
-                        <li>
-                            can be described using one text
-                        </li>
-                        <li>
-                            may be made of multiple goal_objects 
-                        </li>
-                        <li>
-                            may have start/end_date 
-                        </li>
-                    </ul>
-                    <h4>Ordered List</h4>
-                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
-                    <p></p>
-                    <a href="/about">asd</a>
-                </div>
-                <div class="modal-footer">
-                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                </div>
-            </div>
-            <div id="status-plan" class="modal modal-fixed-footer">
-                <div class="modal-content">
-
-                    <h4>Plan for status</h4>
-                    <p>
-
-                    </p>
-
-                <h4>Requirements</h4>
-                    <ul>
-                        <li>
-
-                        </li>
-                        <li>
-                        </li>
-                    </ul>
-
-                </div>
-                <div class="modal-footer">
-                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                </div>
-            </div>
-            <div id="needs-plan" class="modal modal-fixed-footer">
-                <div class="modal-content">
-
-                    <h4>Plan for needs</h4>
-                    <p>
-
-                    </p>
-
-                <h4>Requirements</h4>
-                    <ul>
-                        <li>
-
-                        </li>
-                        <li>
-                        </li>
-                    </ul>
-
-                </div>
-                <div class="modal-footer">
-                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                </div>
-            </div>
-            <div id="comments-plan" class="modal modal-fixed-footer">
-                <div class="modal-content">
-
-                    <h4>Plan for comments</h4>
-                    <p>
-
-                    </p>
-
-                <h4>Requirements</h4>
-                    <ul>
-                        <li>
-                            Moderators should be able to move comments to more suitable places (e.g., comment on Task X should be in Task X, not general discussion)
-                        </li>
-                    </ul>
-
-                    <h4>Comment moderation</h4>
-                    <p>Members have the abilty to moderate comments from anonymous users</p>
-                    <ol>
-                        <li>new comment posted by anonymous. It is visible only to project members.</li>
-                        <li>Members </li>
-                    </ol>
-                </div>
-                <div class="modal-footer">
-                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                </div>
-            </div>
-            <div id="ideas-plan" class="modal modal-fixed-footer">
-                <div class="modal-content">
-
-                    <h4>What is an idea?</h4>
-                    <p>
-                        It is a discussion thread for a content.
-                    </p>
-                    <p>
-                        Its goal is to facilitate discussion for a certain, <b>usually not yet specifically defined</b>, development decision
-                    </p>
-                    <p>
-                        distinguished from other content by its potential to become new content object .
-                    </p>
-
-                    <h4>Examples</h4>
-                    <ul>
-                        <li>changing foundamental</li>
-                    </ul>
-                <h4>Requirements</h4>
-                    <ul>
-                        <li>
-                            Members have the abilty to moderate comments from anonymous users
-                        </li>
-                        <li>
-
-                        </li>
-                    </ul>
-
-                </div>
-                <div class="modal-footer">
-                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                </div>
-            </div>
-            <div id="intros-plan" class="modal modal-fixed-footer">
-                <div class="modal-content">
-
-                    <h2>Introductions</h2>
-                    <ul>
-                        <li>FAQ</li>
-                        <li>Justification?</li>
-                        <li>Theoretical Introduction - e.g., collection of onboarding materials</li>
-                    </ul>
-                </div>
-                <div class="modal-footer">
-                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                </div>
-            </div>
-            <p>
-                {{ content.content_type}}
-            </p>
 
         </div>
 
@@ -298,29 +68,170 @@
             {% endfor %}
         </div>
 
-        <ul class="tabs">
-            <li class="tab col s4"><a href="#members">Members</a></li>
-            <li class="tab col s4 "><a href="#admins">Admins</a></li>
-            <li class="tab col s4"><a href="#sponsors">Sponsors</a></li>
-        </ul>
-        <div id="members">
-            <h4>Total: Nm</h4>
-            <p>
-                user
-            </p>
-            <p>user</p>
-        </div>
-        <div id="admins">
-            <h4>Total: Nm</h4>
-            <p>
-                admin
-            </p>
-            <p>user</p>
-        </div>
-        <div id="sponsors">
-            <h5>Sponsors</h5>
-            <div class="chip">
-                <img src="{% static "icons/thispersondoesnotexist.jpg" %}" alt="Contact Person">20$ Jane Doe
+        <div class="members-container card">
+            <div class="card-content">
+                <span class="card-title">👥 Project Members</span>
+                
+                <!-- Administrators group -->
+                <details open>
+                    <summary class="user-group-summary">
+                        <span class="user-group-title">👑 Administrators</span>
+                        <span class="user-count">{{ admin_users|length }}</span>
+                    </summary>
+                    <div class="user-group-content">
+                        <p class="user-group-desc">Project administrators have full control over the project, including managing members and settings.</p>
+                        
+                        <ul class="user-list">
+                            {% for user in admin_users %}
+                            <li class="user-item">
+                                <div class="user-info">
+                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                    <div class="user-details">
+                                        <span class="user-name">{{ user.username }}</span>
+                                        <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="user-actions dropdown-trigger" data-target="admin-actions-{{ user.id }}">
+                                    <span class="user-menu-icon">⋮</span>
+                                </div>
+                                
+                                <!-- Dropdown menu -->
+                                <ul id="admin-actions-{{ user.id }}" class="dropdown-content">
+                                    <li><a href="/u/{{ user.id }}/">🧑 Profile</a></li>
+                                    <li><a href="/project/{{ content.id }}/members/{{ user.id }}/">👥 Membership Details</a></li>
+                                    <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                                    <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
+                                    <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
+                                </ul>
+                            </li>
+                            {% empty %}
+                            <li class="empty-list-message">No administrators found</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </details>
+                
+                <!-- Moderators group -->
+                <details>
+                    <summary class="user-group-summary">
+                        <span class="user-group-title">🛡️ Moderators</span>
+                        <span class="user-count">{{ moderator_users|length }}</span>
+                    </summary>
+                    <div class="user-group-content">
+                        <p class="user-group-desc">Moderators help manage project content and comments.</p>
+                        
+                        <ul class="user-list">
+                            {% for user in moderator_users %}
+                            <li class="user-item">
+                                <div class="user-info">
+                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                    <div class="user-details">
+                                        <span class="user-name">{{ user.username }}</span>
+                                        <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="user-actions dropdown-trigger" data-target="mod-actions-{{ user.id }}">
+                                    <span class="user-menu-icon">⋮</span>
+                                </div>
+                                
+                                <!-- Dropdown menu -->
+                                <ul id="mod-actions-{{ user.id }}" class="dropdown-content">
+                                    <li><a href="/u/{{ user.id }}/">🧑 Profile</a></li>
+                                    <li><a href="/project/{{ content.id }}/members/{{ user.id }}/">👥 Membership Details</a></li>
+                                    <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                                    <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
+                                    <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
+                                </ul>
+                            </li>
+                            {% empty %}
+                            <li class="empty-list-message">No moderators found</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </details>
+                
+                <!-- Contributors group -->
+                <details>
+                    <summary class="user-group-summary">
+                        <span class="user-group-title">🔨 Contributors</span>
+                        <span class="user-count">{{ contributor_users|length }}</span>
+                    </summary>
+                    <div class="user-group-content">
+                        <p class="user-group-desc">Contributors actively help build and develop the project.</p>
+                        
+                        <ul class="user-list">
+                            {% for user in contributor_users %}
+                            <li class="user-item">
+                                <div class="user-info">
+                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                    <div class="user-details">
+                                        <span class="user-name">{{ user.username }}</span>
+                                        <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                    </div>
+                                </div>
+                            
+                                <div class="user-actions dropdown-trigger" data-target="contrib-actions-{{ user.id }}">
+                                    <button></button>
+                                    <span class="user-menu-icon">⋮</span>
+                                </div>
+                            
+                                <!-- Dropdown menu -->
+                                <ul id="contrib-actions-{{ user.id }}" class="dropdown-content">
+                                    <li><a href="/u/{{ user.id }}/">🧑 Profile</a></li>
+                                    <li><a href="/project/{{ content.id }}/members/{{ user.id }}/">👥 Membership Details</a></li>
+                                    <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                                    <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
+                                    <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
+                                </ul>
+                            </li>
+                            {% empty %}
+                            <li class="empty-list-message">No contributors found</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </details>
+                
+                <!-- Members/Supporters group -->
+                <details>
+                    <summary class="user-group-summary">
+                        <span class="user-group-title">👥 Members</span>
+                        <span class="user-count">{{ member_users|length }}</span>
+                    </summary>
+                    <div class="user-group-content">
+                        <p class="user-group-desc">Project members who follow and support the project.</p>
+                        
+                        <ul class="user-list">
+                            {% for user in member_users %}
+                            <li class="user-item">
+                                <div class="user-info">
+                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                    <div class="user-details">
+                                        <span class="user-name">{{ user.username }}</span>
+                                        <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="user-actions dropdown-trigger" data-target="member-actions-{{ user.id }}">
+                                    <span class="user-menu-icon">⋮</span>
+                                </div>
+                                
+                                <!-- Dropdown menu -->
+                                <ul id="member-actions-{{ user.id }}" class="dropdown-content">
+                                    <li><a href="/u/{{ user.id }}/">🧑 Profile</a></li>
+                                    <li><a href="/project/{{ content.id }}/members/{{ user.id }}/">👥 Membership Details</a></li>
+                                    <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                                    <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
+                                    <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
+                                </ul>
+                            </li>
+                            {% empty %}
+                            <li class="empty-list-message">No members found</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </details>
             </div>
         </div>
 
@@ -339,98 +250,7 @@
             {% include "components/hint.html" with hint=1 %}
         </div>
         <div id="tasks" class="tab col s12">
-
-
-
-            <div class="row">
-
-                <div class="input-field col s12 m3">
-                    <select>
-                        <option value="" disabled>Sorting by</option>
-                        <option value="1" selected>Most important</option>
-                        <option value="2">Newest</option>
-                        <option value="3">Most comments</option>
-                        <option value="4">Highest reward</option>
-                    </select>
-
-                    <label>Sorting by</label>
-                </div>
-
-                <div class="input-field col s12 m4">
-                    <select>
-                        <option value="" disabled>Choose your option</option>
-                        <option value="1" selected>Doing</option>
-                        <option value="2">To do</option>
-                        <option value="3">Done</option>
-                        <option value="4">Pending</option>
-                    </select>
-
-                    <label>All / To do / Doing / Done </label>
-                </div>
-                <div class="input-field">
-                    <p>
-                        <label>
-                          <input type="checkbox" class="filled-in" checked="checked" />
-                          <span>Show tasks without reviews</span>
-                        </label>
-                      </p>
-                      <p>
-                        <label>
-                          <input type="checkbox" class="filled-in" checked="checked" />
-                          <span>Show tasks without comments</span>
-                        </label>
-                      </p>
-                </div>
-            </div>
-
-            <div class="needs-new">
-
-                {%for need in needs%}
-                <div class="child-card">
-
-                    <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
-                        <div class="priority">priority: {{need.priority}}</div>
-
-                        <img src="{% static 'icons/menu.svg' %}" alt="idea">
-                    </a>
-
-                    <!-- Dropdown Structure -->
-                    <ul id='dropdown1' class='dropdown-content'>
-                        <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
-                        </li>
-                        <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
-                        </li>
-                        <li class="divider" tabindex="-1"></li>
-                        <li> <a href="/{{ project.id }}/add_task/">add task</a>
-                        </li>
-
-                    </ul>
-                    <div class="child-detials">
-
-
-                        <h5><a href="{% url 'need:need' need.id %}">{{ need.name }}</a></h5>
-                        <p class="child-summary">
-                            {{ need.desc|default_if_none:"" }}
-                        </p>
-                    </div>
-
-                </div>
-
-
-
-
-
-
-                {% empty %}
-                <div class="g12note" style="width: 30%; flex: none; padding: 20px;">
-                    <!-- dodać nową klasę, która będzie responsywna, bo inline css... dziąsło -->
-                    <h3>No needs published</h3>
-                    <p>You can change that {% lorem 1 b random %}</p>
-                </div>
-
-                <!-- ^closed needs-new -->
-                {% endfor %}
-            </div>
+            {%include "components/tasks.html"%}
         </div>
 
         <div id="ideas" class="col s12">
@@ -466,55 +286,7 @@
 
         </div>
         <div id="needs" class="col s12">
-            <!-- needs -->
-            <div class="needs-new">
-
-                {%for need in needs%}
-                <div class="child-card">
-
-                    <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
-                        <div class="priority">priority: {{need.priority}}</div>
-
-                        <img src="{% static 'icons/menu.svg' %}" alt="idea">
-                    </a>
-
-                    <!-- Dropdown Structure -->
-                    <ul id='dropdown1' class='dropdown-content'>
-                        <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
-                        </li>
-                        <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
-                        </li>
-                        <li class="divider" tabindex="-1"></li>
-                        <li> <a href="/{{ project.id }}/add_task/">add task</a>
-                        </li>
-
-                    </ul>
-                    <div class="child-detials">
-
-
-                        <h5><a href="{% url 'need:need' need.id %}">{{ need.name }}</a></h5>
-                        <p class="child-summary">
-                            {{ need.desc|default_if_none:"" }}
-                        </p>
-                    </div>
-
-                </div>
-
-
-
-
-
-
-                {% empty %}
-                <div class="g12note" style="width: 30%; flex: none; padding: 20px;">
-                    <!-- dodać nową klasę, która będzie responsywna, bo inline css... dziąsło -->
-                    <h3>No needs published</h3>
-                    <p>You can change that {% lorem 1 b random %}</p>
-                </div>
-
-                <!-- ^closed needs-new -->
-                {% endfor %}
-            </div>
+{%include "components/needs.html"%}
         </div>
 
 
@@ -579,16 +351,11 @@
 
 <!--    <script src="{% static 'project/js/script.js' %}"></script>-->
 
-<!-- <div class="nav-wrapper"> bedzie czesto bardzo szerokie. trzeba inaczejc
-      <div class="col s12">
-        <a href="#!" class="breadcrumb">First</a>
-        <a href="#!" class="breadcrumb">Second</a>
-        <a href="#!" class="breadcrumb">Third</a>
-      </div>
-    </div> -->
+
 
 </div>
 
+ 
 
 <script src="{% static 'js/project/comments.js' %}"></script>
 

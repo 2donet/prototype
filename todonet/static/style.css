@@ -1760,3 +1760,108 @@ align-self: flex-start;            }
         ;
     }
   }
+
+
+
+
+
+  .members-container {
+    margin: 20px 0;
+}
+
+.user-group-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: var(--bg-light);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 5px;
+    transition: background-color 0.2s;
+}
+
+.user-group-summary:hover {
+    background-color: var(--bg-color3)
+}
+
+.user-group-title {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.user-count {
+    background-color: #2196F3;
+    color: white;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.9em;
+}
+
+.user-group-content {
+    padding: 0 15px 15px 15px;
+}
+
+.user-group-desc {
+    color: #757575;
+    margin-bottom: 15px;
+}
+
+.user-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+
+.user-name {
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+.user-joined {
+    color: #757575;
+    font-size: 0.85em;
+}
+
+.user-menu-icon {
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0 10px;
+}
+
+.empty-list-message {
+    color: #757575;
+    font-style: italic;
+    padding: 10px 0;
+}
+
+/* For MaterializeCSS compatibility */
+details[open] .user-group-summary {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: 0;
+}
+
+details:not([open]) .user-group-summary {
+    margin-bottom: 10px;
+}

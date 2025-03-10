@@ -1,0 +1,52 @@
+{%load static%}
+{% block tasks %}
+            <!-- needs -->
+            <div class="needs-new">
+
+                {%for need in needs%}
+                <div class="child-card">
+
+                    <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
+                        <div class="priority">priority: {{need.priority}}</div>
+
+                        <img src="{% static 'icons/menu.svg' %}" alt="idea">
+                    </a>
+
+                    <!-- Dropdown Structure -->
+                    <ul id='dropdown1' class='dropdown-content'>
+                        <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
+                        </li>
+                        <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
+                        </li>
+                        <li class="divider" tabindex="-1"></li>
+                        <li> <a href="/{{ project.id }}/add_task/">add task</a>
+                        </li>
+
+                    </ul>
+                    <div class="child-detials">
+
+
+                        <h5><a href="{% url 'need:need' need.id %}">{{ need.name }}</a></h5>
+                        <p class="child-summary">
+                            {{ need.desc|default_if_none:"" }}
+                        </p>
+                    </div>
+
+                </div>
+
+
+
+
+
+
+                {% empty %}
+                <div class="g12note" style="width: 30%; flex: none; padding: 20px;">
+                    <!-- dodać nową klasę, która będzie responsywna, bo inline css... dziąsło -->
+                    <h3>No needs published</h3>
+                    <p>You can change that {% lorem 1 b random %}</p>
+                </div>
+
+                <!-- ^closed needs-new -->
+                {% endfor %}
+            </div>
+            {% endblock %}

@@ -1,0 +1,232 @@
+{% block plan %}
+
+<h5>Plan</h5>
+            When adding/updating the project Users can add 
+            <ol>
+                <li>
+                    <a class=" modal-trigger" href="#plan123">Plan stage</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#tasks-plan">Tasks</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#goals-plan">Goals</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#status-plan">Status</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#needs-plan">Needs</a>
+
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#comments-plan">Comments</a>
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#ideas-plan">Ideas</a>
+
+                </li>
+                <li>
+                    <a class=" modal-trigger" href="#intros-plan">Intro</a>
+                </li>
+            </ol>
+
+
+            <!-- supporters popup -->
+            <div id="plan123" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for showing plans</h4>
+                    <p>It's important to show plans. Plan is a part of project. </p>
+                    <h4>Requirements</h4>
+                    <ul>
+                        <li>displayed as ordered list</li>
+                        <li>can have set of tasks, needs, problems </li>
+                        <li>can be commented</li>
+                        <li>has version control</li>
+
+                    </ul>
+                    <h4>Ordered List</h4>
+                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
+                    <p></p>
+                    <a href="/about">asd</a>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+
+            <div id="tasks-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for tasks</h4>
+                    <p>Tasks are so important. They are basically projects with few differences. </p>
+                <h5>Example</h5>
+                    <p>At specific time, go to a location, do stuff. </p>
+                    <p>Must register for that task at registration_end_date.</p>
+                    <p>There may be rewards for that task</p>
+                    <p>might have Requirements e.g. University of Warsaw Student, project member, etc</p>
+                    
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>Has open_to_grab boolean indicating if Users can do tasks</li>
+                        <li>can have set of tasks, needs, problems </li>
+
+                    </ul>
+                    <h4>Ordered List</h4>
+                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
+                    <p></p>
+                    <a href="/about">asd</a>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="goals-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for Goals</h4>
+                    <p>
+                        
+                    </p>
+
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+                            can be described using one text
+                        </li>
+                        <li>
+                            may be made of multiple goal_objects 
+                        </li>
+                        <li>
+                            may have start/end_date 
+                        </li>
+                    </ul>
+                    <h4>Ordered List</h4>
+                    <p>When adding/updating a project, Users can add a plan_stage object, that has index integer by which plan_stage objects are sorted (e.g. p_s with index 1 is displayed first).</p>
+                    <p></p>
+                    <a href="/about">asd</a>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="status-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for status</h4>
+                    <p>
+
+                    </p>
+
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+
+                        </li>
+                        <li>
+                        </li>
+                    </ul>
+
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="needs-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for needs</h4>
+                    <p>
+
+                    </p>
+
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+
+                        </li>
+                        <li>
+                        </li>
+                    </ul>
+
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="comments-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>Plan for comments</h4>
+                    <p>
+
+                    </p>
+
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+                            Moderators should be able to move comments to more suitable places (e.g., comment on Task X should be in Task X, not general discussion)
+                        </li>
+                    </ul>
+
+                    <h4>Comment moderation</h4>
+                    <p>Members have the abilty to moderate comments from anonymous users</p>
+                    <ol>
+                        <li>new comment posted by anonymous. It is visible only to project members.</li>
+                        <li>Members </li>
+                    </ol>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="ideas-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h4>What is an idea?</h4>
+                    <p>
+                        It is a discussion thread for a content.
+                    </p>
+                    <p>
+                        Its goal is to facilitate discussion for a certain, <b>usually not yet specifically defined</b>, development decision
+                    </p>
+                    <p>
+                        distinguished from other content by its potential to become new content object .
+                    </p>
+
+                    <h4>Examples</h4>
+                    <ul>
+                        <li>changing foundamental</li>
+                    </ul>
+                <h4>Requirements</h4>
+                    <ul>
+                        <li>
+                            Members have the abilty to moderate comments from anonymous users
+                        </li>
+                        <li>
+
+                        </li>
+                    </ul>
+
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+            <div id="intros-plan" class="modal modal-fixed-footer">
+                <div class="modal-content">
+
+                    <h2>Introductions</h2>
+                    <ul>
+                        <li>FAQ</li>
+                        <li>Justification?</li>
+                        <li>Theoretical Introduction - e.g., collection of onboarding materials</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+
+            {% endblock %}

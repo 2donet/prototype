@@ -4,7 +4,7 @@ from django.shortcuts import render
 
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
-from project.models import Project, Connection
+from project.models import Project, Connection, Membership
 from comment.models import Comment
 from task.models import Task
 from need.models import Need
@@ -16,7 +16,7 @@ import json
 from skills.models import Skill
 
 from django.contrib.auth import get_user_model
-
+User = get_user_model()
 def index(request):
     """
         Display a list of the latest projects.
@@ -29,13 +29,55 @@ def index(request):
     context = {"latest_projects_list": latest_projects_list,}
     return render(request, "index.html", context=context)
 
+def project_members(request, project_id):
+    """View to display project members organized by role"""
+    project = get_object_or_404(Project, pk=project_id)
+    
+    # Get all memberships for this project
+    memberships = Membership.objects.filter(project=project).select_related('user')
+    
+    # Organize users by role
+    admin_users = []
+    moderator_users = []
+    contributor_users = []
+    member_users = []
+    
+    for membership in memberships:
+        user = membership.user
+        # Add date_joined field from membership to the user object
+        user.date_joined = membership.date_joined
+        
+        if membership.is_administrator:
+            admin_users.append(user)
+        elif membership.is_moderator:
+            moderator_users.append(user)
+        elif membership.is_contributor:
+            contributor_users.append(user)
+        else:
+            member_users.append(user)
+    
+    # Sort each list by date_joined
+    admin_users.sort(key=lambda u: u.date_joined)
+    moderator_users.sort(key=lambda u: u.date_joined)
+    contributor_users.sort(key=lambda u: u.date_joined)
+    member_users.sort(key=lambda u: u.date_joined)
+    
+    context = {
+        'project': project,
+        'admin_users': admin_users,
+        'moderator_users': moderator_users,
+        'contributor_users': contributor_users,
+        'member_users': member_users,
+    }
+    
+    return render(request, 'project_members.html', context)
+
+
 def project(request, project_id):
     content = get_object_or_404(Project, pk=project_id)
     tasks = Task.objects.filter(to_project=project_id)
     needs = Need.objects.filter(to_project=project_id).order_by('-priority', 'id')
-
     comments = Comment.objects.filter(to_project=project_id)
-
 
     # Get all child projects
     child_connections = Connection.objects.filter(
@@ -44,7 +86,8 @@ def project(request, project_id):
         status='approved'
     ).select_related('to_project')
     child_projects = [connection.to_project for connection in child_connections]
-    # get parents
+    
+    # Get parent projects
     parent_connections = Connection.objects.filter(
         to_project=content, 
         type='child', 
@@ -52,26 +95,42 @@ def project(request, project_id):
     ).select_related('from_project')
     parent_projects = [connection.from_project for connection in parent_connections]
     
- 
+    # Get project members for the member list
+    memberships = Membership.objects.filter(project=content).select_related('user')
+    
+    # Organize users by role
+    admin_users = []
+    moderator_users = []
+    contributor_users = []
+    member_users = []
+    
+    for membership in memberships:
+        user = membership.user
+        # Add date_joined field from membership to the user object
+        user.date_joined = membership.date_joined
+        
+        if membership.is_administrator:
+            admin_users.append(user)
+        elif membership.is_moderator:
+            moderator_users.append(user)
+        elif membership.is_contributor:
+            contributor_users.append(user)
+        else:
+            member_users.append(user)
 
     context = {
         "content": content,
-        "child_projects": child_projects, #list of project's children 
-        "parent_projects": parent_projects, #list of project's parents
+        "child_projects": child_projects,
+        "parent_projects": parent_projects,
         "comments": comments,
         "tasks": tasks,
         "needs": needs,
+        "admin_users": admin_users,
+        "moderator_users": moderator_users,
+        "contributor_users": contributor_users,
+        "member_users": member_users,
     }
     return render(request, "details.html", context=context)
-
-
-# @login_required
-def project_details(request, project_id):
-    # Pobierz instancję użytkownika na podstawie request.user
-    # user = User.objects.get(name=request.user.name)
-    user = User.objects.get(name='tester-1')
-    project = get_object_or_404(Project, id=project_id, created_by=user)
-    return render(request, 'project_details.html', {'project': project})
 
 
 
