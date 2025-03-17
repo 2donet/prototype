@@ -11,7 +11,10 @@ from .views import (
     vote_comment,
     remove_vote,
     toggle_reaction,
-    get_reactions_summary
+    get_reactions_summary,
+    delete_comment,
+    ban_user,
+    edit_comment
 )
 
 app_name = "comments"
@@ -30,4 +33,7 @@ urlpatterns = [
     path("<int:comment_id>/remove-vote/", csrf_exempt(remove_vote), name="remove_vote"),
     path("<int:comment_id>/reaction/", csrf_exempt(toggle_reaction), name="toggle_reaction"),
     path("<int:comment_id>/reactions/", get_reactions_summary, name="reactions_summary"),
+    path("<int:comment_id>/delete/", delete_comment, name="delete_comment"),
+    path("user/<int:user_id>/ban/", ban_user, name="ban_user"),
+    path("<int:comment_id>/edit/", edit_comment, name="edit_comment"),
 ]

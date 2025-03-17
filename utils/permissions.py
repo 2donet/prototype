@@ -4,7 +4,6 @@ from django.http import HttpResponseForbidden
 from django.contrib import messages
 from project.models import Project, Membership
 
-
 def user_has_project_permission(user, project, permission_type):
     """
     Check if a user has a specific permission for a project.
@@ -167,3 +166,95 @@ def get_user_moderation_projects(user):
         membership__user=user,
         membership__is_moderator=True
     ).distinct()
+
+
+def user_can_moderate_need(user, need):
+    """Check if user has permission to moderate a need"""
+    if not user.is_authenticated:
+        return False
+        
+    # Site-wide admin or moderator
+    if user.is_superuser or user.is_staff:
+        return True
+        
+    # If need is connected to a project, check project permissions
+    if need.to_project:
+        return user_has_project_permission(user, need.to_project, 'can_moderate')
+    
+    # If need is connected to a task, check the task's project permissions
+    if need.to_task and need.to_task.to_project:
+        return user_has_project_permission(user, need.to_task.to_project, 'can_moderate')
+            
+    # Creator of the need has permission
+    return need.created_by == user
+
+# If you need to reference Need elsewhere in the file, do it inside functions:
+def get_need_by_id(need_id):
+    from need.models import Need  # Import inside function to avoid circular import
+    return get_object_or_404(Need, id=need_id)
+def user_has_need_permission(user, need, permission_type):
+    """
+    Check if a user has a specific permission for a need.
+    
+    Args:
+        user: The user to check
+        need: The need object or ID
+        permission_type: String identifying the permission to check
+            ('can_view', 'can_edit', 'can_moderate', etc.)
+    
+    Returns:
+        Boolean indicating if user has permission
+    """
+    if not user.is_authenticated:
+        return False
+        
+    # Site-wide admin can do anything
+    if user.is_superuser:
+        return True
+        
+    # Get need instance if an ID was passed
+    if isinstance(need, int):
+        try:
+            need = Need.objects.get(id=need)
+        except Need.DoesNotExist:
+            return False
+            
+    # Need creator has full permissions
+    if need.created_by == user:
+        return True
+        
+    # If need is associated with a project, check project permissions
+    if need.to_project:
+        # For viewing, check project visibility
+        if permission_type == 'can_view':
+            if need.to_project.visibility == 'public':
+                return True
+            elif need.to_project.visibility == 'logged_in':
+                return user.is_authenticated
+            else:
+                return user_has_project_permission(user, need.to_project, 'can_view')
+        
+        # For other permissions, map to project permissions
+        permission_map = {
+            'can_edit': 'can_contribute',
+            'can_moderate': 'can_moderate',
+            'can_comment': 'can_comment'
+        }
+        
+        if permission_type in permission_map:
+            return user_has_project_permission(user, need.to_project, permission_map[permission_type])
+    
+    # Check task permissions if need is associated with a task
+    if need.to_task and need.to_task.to_project:
+        # Similar permission mapping for tasks
+        return user_has_project_permission(user, need.to_task.to_project, permission_map.get(permission_type, 'can_view'))
+            
+    # Default permissions based on need visibility
+    if permission_type == 'can_view':
+        if need.visibility == 'public':
+            return True
+        elif need.visibility == 'members' and need.to_project:
+            return Membership.objects.filter(project=need.to_project, user=user).exists()
+            
+    # Default deny for other permissions
+    return False

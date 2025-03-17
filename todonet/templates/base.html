@@ -15,6 +15,7 @@
     <link rel="shortcut icon" type="image/png" href="{% static 'icons/favicon.ico' %}"/>
 
     <script src="{% static 'js/actionsmenu.js' %}"></script>
+    <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/materialize.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/nouislider.js' %}"></script>
@@ -90,7 +91,9 @@
     <div class="row">
         <div class="s12 m8">
             <div class="contentBASE">
-                {% block content %}{% endblock %}
+                {% block content %}
+
+                {% endblock %}
                 
             </div>
             <div class="s12 m4">

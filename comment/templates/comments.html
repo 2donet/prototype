@@ -45,9 +45,9 @@
                     {% if comment.reaction_counts %}
                         {% for reaction_type, count in comment.reaction_counts.items %}
                             {% if count > 0 %}
-                                <div class="reaction-count-container" data-reaction-type="{{ reaction_type }}" style="display: inline-flex;">
+                                <div class="reaction-count-container" data-reaction-type="{{ reaction_type }}">
                                     <span class="reaction-emoji">{{ reaction_type|reaction_emoji }}</span>
-                                    <span class="reaction-count" data-reaction-type="{{ reaction_type }}">{{ count }}</span>
+                                    <span class="reaction-count">{{ count }}</span>
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -67,7 +67,9 @@
                         <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
                     </li>
                 {% endif %}
-
+                {% if request.user == comment.user or request.user.is_staff %}
+                <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
+                {% endif %}
                 <li>
                     <a href="/{{ project.id }}/add_task/">add task</a>
                 </li>

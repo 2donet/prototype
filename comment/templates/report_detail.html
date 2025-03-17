@@ -183,6 +183,27 @@
                             <a href="{% url 'comments:report_list' %}" class="btn-flat waves-effect">Cancel</a>
                         </div>
                     </form>
+                    <div class="moderation-buttons">
+                        <a href="#delete-comment-modal" class="btn red waves-effect waves-light modal-trigger">
+                            Delete Comment
+                        </a>
+                        <a href="#ban-user-modal" class="btn orange waves-effect waves-light modal-trigger">
+                            Ban User
+                        </a>
+                    </div>
+                    
+                    <!-- Add corresponding modals for confirmation -->
+                    <div id="delete-comment-modal" class="modal">
+                        <div class="modal-content">
+                            <h4>Delete Comment?</h4>
+                            <p>Are you sure you want to delete this comment? This cannot be undone.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="{% url 'comments:delete_comment' report.comment.id %}?report_id={{ report.id }}" 
+                               class="btn red">Yes, Delete</a>
+                            <a href="#!" class="modal-close btn-flat">Cancel</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

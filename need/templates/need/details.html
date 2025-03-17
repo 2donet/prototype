@@ -1,24 +1,95 @@
-<h4>{{ content.name }}</h4>
-{% if needs %}
-    <br>
-    <strong>Needs:</strong>
-    {% for need in needs %}
-        <div>
-            <h5>{{ need.name }}</h5>
-            <p>{{ need.desc }}</p>
-            <strong>Comments:</strong>
-            <ul>
-                {% for comment in need.comment_list %}
-                    <li>
-                        <strong>{{ comment.user.username }}</strong>: {{ comment.content }}
-                    </li>
-                {% empty %}
-                    <li>No comments for this need.</li>
-                {% endfor %}
-            </ul>
+{% extends "base.html" %}
+{% block title %}
+2do.net - {{ content.name }} (Need)
+{% endblock %}
+
+{% block content %}
+{% load static %}
+{% load humanize %}
+
+<div class="grid2">
+    <div class="ncard">
+        <div class="box">
+            <h2>{{ content.name }}</h2>
+            <span class="priority-badge">Priority: {{ content.priority }}</span>
+            <span class="status-badge">Status: {{ content.get_status_display }}</span>
+            <p class="need-summary">{{ content.desc }}</p>
+            
+            {% if can_edit %}
+            <a href="{% url 'need:edit_need' content.id %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">edit</i>Edit Need
+            </a>
+            {% endif %}
+            
+            {% if content.to_project %}
+            <p>Part of project: <a href="{% url 'project:project' content.to_project.id %}">{{ content.to_project.name }}</a></p>
+            {% endif %}
+            
+            {% if content.to_task %}
+            <p>Related to task: <a href="{% url 'task:task' content.to_task.id %}">{{ content.to_task.name }}</a></p>
+            {% endif %}
         </div>
-        <br>
-    {% endfor %}
-{% else %}
-    <p>No needs available.</p>
-{% endif %}
+    </div>
+    
+    <div class="ninfo">
+        <div class="user-info-card">
+            <h4>Created by</h4>
+            <a href="/u/{{content.created_by.id}}">{{content.created_by.username}}</a>
+            <p>Created: {{ content.created_date|naturaltime }}</p>
+            {% if content.tags %}
+            <div class="tags">
+                {% for tag in content.tags.split(',') %}
+                <span class="chip">{{ tag.strip }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="ntab">
+        <ul class="tabs">
+            <li class="tab col s3"><a class="active" href="#discussion">Discussion</a></li>
+            <li class="tab col s3"><a href="#contributions">Contributions</a></li>
+            <li class="tab col s3"><a href="#history">History</a></li>
+        </ul>
+        
+        <div id="discussion" class="tab-content">
+            <!-- Comments section -->
+            <div class="comments-section">
+                <h4>Comments</h4>
+                {% if comments %}
+                {% include "comments.html" with comments=comments %}
+                {% else %}
+                <p>No comments yet.</p>
+                {% endif %}
+                
+                <form id="add-comment-form" method="post" action="{% url 'comment:add_comment' %}">
+                    {% csrf_token %}
+                    <textarea name="content" placeholder="Add a comment..."></textarea>
+                    <input type="hidden" name="to_need_id" value="{{ content.id }}">
+                    <button type="submit" class="btn">Submit</button>
+                </form>
+            </div>
+        </div>
+        
+        <div id="contributions" class="tab-content">
+            <h4>Contributions</h4>
+            <p>This section will show who has contributed to addressing this need.</p>
+            <!-- Future content for contributions -->
+        </div>
+        
+        <div id="history" class="tab-content">
+            <h4>Change History</h4>
+            <p>This section will track changes to the need over time.</p>
+            <!-- Future content for history -->
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tabs = document.querySelectorAll('.tabs');
+        M.Tabs.init(tabs);
+    });
+</script>
+{% endblock %}

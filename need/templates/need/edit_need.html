@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}
+2do.net - {% if mode == 'create' %}Create{% else %}Edit{% endif %} Need
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12 m8 offset-m2">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">
+                        {% if mode == 'create' %}
+                            {% if project %}
+                            Create Need for {{ project.name }}
+                            {% elif task %}
+                            Create Need for Task: {{ task.name }}
+                            {% endif %}
+                        {% else %}
+                            Edit Need: {{ need.name }}
+                        {% endif %}
+                    </span>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="input-field">
+                            <input id="name" name="name" type="text" class="validate" required 
+                                   {% if need %}value="{{ need.name }}"{% endif %}>
+                            <label for="name">Need Name</label>
+                        </div>
+                        
+                        <div class="input-field">
+                            <textarea id="desc" name="desc" class="materialize-textarea">{% if need %}{{ need.desc }}{% endif %}</textarea>
+                            <label for="desc">Description</label>
+                        </div>
+                        
+                        <div class="input-field">
+                            <input id="priority" name="priority" type="number" min="0" max="10" class="validate" 
+                                   value="{% if need %}{{ need.priority }}{% else %}0{% endif %}">
+                            <label for="priority">Priority (0-10)</label>
+                        </div>
+                        
+                        <div class="card-action">
+                            <button type="submit" class="btn waves-effect waves-light">
+                                {% if mode == 'create' %}Create{% else %}Update{% endif %} Need
+                                <i class="material-icons right">send</i>
+                            </button>
+                            
+                            {% if mode == 'create' %}
+                                {% if project %}
+                                <a href="{% url 'project:project' project.id %}" class="btn-flat waves-effect">
+                                    Cancel
+                                </a>
+                                {% elif task %}
+                                <a href="{% url 'task:task' task.id %}" class="btn-flat waves-effect">
+                                    Cancel
+                                </a>
+                                {% endif %}
+                            {% else %}
+                                <a href="{% url 'need:need' need.id %}" class="btn-flat waves-effect">
+                                    Cancel
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

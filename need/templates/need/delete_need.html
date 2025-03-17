@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}
+2do.net - Delete Need: {{ need.name }}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12 m8 offset-m2 l6 offset-l3">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Delete Need</span>
+                    
+                    <div class="row">
+                        <div class="col s12 center-align">
+                            <h5>{{ need.name }}</h5>
+                            <p>
+                                Are you sure you want to delete this need? This action cannot be undone.
+                            </p>
+                            
+                            <div class="card-panel amber lighten-4">
+                                <span class="card-title">Description:</span>
+                                <p>{{ need.desc }}</p>
+                                <p><strong>Priority:</strong> {{ need.priority }}</p>
+                                {% if need.to_project %}
+                                <p><strong>Project:</strong> {{ need.to_project.name }}</p>
+                                {% endif %}
+                                {% if need.to_task %}
+                                <p><strong>Task:</strong> {{ need.to_task.name }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <form method="post" class="center-align">
+                                {% csrf_token %}
+                                <button type="submit" class="btn waves-effect waves-light red">
+                                    Confirm Delete
+                                    <i class="material-icons right">delete</i>
+                                </button>
+                                
+                                {% if need.to_project %}
+                                <a href="{% url 'project:project' need.to_project.id %}" class="btn-flat waves-effect">
+                                    Cancel
+                                </a>
+                                {% elif need.to_task %}
+                                <a href="{% url 'task:task' need.to_task.id %}" class="btn-flat waves-effect">
+                                    Cancel
+                                </a>
+                                {% else %}
+                                <a href="{% url 'need:need' need.id %}" class="btn-flat waves-effect">
+                                    Cancel
+                                </a>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

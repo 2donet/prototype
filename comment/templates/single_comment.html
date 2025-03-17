@@ -39,50 +39,54 @@
             <!-- User information -->
             <div class="comment-header">
                 {% if comment.user %}
-                    <img class="miniavatar" src="{{ comment.user.avatar | default:'/static/icons/default-avatar.svg'}}" alt="{{ comment.user.username }}">
-                    <div class="comment-meta">
-                        <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
-                        <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
-                    </div>
+                <img class="miniavatar" src="{{ comment.user.avatar | default:'/static/icons/default-avatar.svg'}}"
+                    alt="{{ comment.user.username }}">
+                <div class="comment-meta">
+                    <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
+                    <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
+                </div>
                 {% else %}
-                    <div class="comment-meta">
-                        <span>Anonymous</span>
-                        <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
-                    </div>
+                <div class="comment-meta">
+                    <span>Anonymous</span>
+                    <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
+                </div>
                 {% endif %}
-                
+        
                 <!-- Comment actions -->
                 <div class="comment-actions">
                     <a href="#" class="upvote">+</a>
                     <span class="score">{{ comment.score }}</span>
                     <a href="#" class="downvote">-</a>
                     <a href="#" title="reward" class="reward">🎁</a>
-                    
+        
                     <div class="dropdown">
                         <a class="dropdown-trigger btn-flat" href="#" data-target="actions-{{ comment.id }}">
                             <img src="{% static 'icons/menu.svg' %}" alt="menu">
                         </a>
                         <ul id="actions-{{ comment.id }}" class="dropdown-content">
                             {% if request.user.is_staff %}
-                                <li><a href="/admin/comment/comment/{{ comment.id }}/change/">[ ADMIN ]</a></li>
+                            <li><a href="/admin/comment/comment/{{ comment.id }}/change/">[ ADMIN ]</a></li>
+                            {% endif %}
+                            {% if request.user == comment.user or request.user.is_staff %}
+                            <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
                             {% endif %}
                             <li><a href="#" class="report-link">Report</a></li>
                         </ul>
                     </div>
                 </div>
             </div>
-            
+        
             <!-- Comment content -->
             <div class="comment-content">
                 <p>{{ comment.content }}</p>
             </div>
-            
+        
             <!-- Reply button -->
             <div class="comment-footer">
                 <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
                 <span class="reply-count">{{ comment.total_replies }} replies</span>
             </div>
-            
+        
             <!-- Reply form (initially hidden) -->
             <div class="reply-form-container" style="display: none;">
                 <form class="reply-form" data-parent-id="{{ comment.id }}">

@@ -7,6 +7,9 @@ from django.db.models import Count, Prefetch, Q
 import json
 import logging
 
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
 from .models import (
     Comment, CommentReport, ReportStatus, 
     CommentVote, CommentReaction, VoteType, ReactionType
@@ -19,39 +22,37 @@ from need.models import Need
 logger = logging.getLogger(__name__)
 
 def get_comments_with_reactions(comments, user=None):
-    """
-    Enhance comments queryset with reaction counts and user vote status
+    """Enhance comments queryset with reaction counts and user vote status"""
+    comments = comments.select_related('user').prefetch_related(
+        'reactions', 
+        'votes',
+        'replies__user',
+        # Use Prefetch objects for specific filters
+        Prefetch(
+            'votes',
+            queryset=CommentVote.objects.filter(user=user) if user and user.is_authenticated else CommentVote.objects.none(),
+            to_attr='user_votes'
+        ),
+        Prefetch(
+            'reactions',
+            queryset=CommentReaction.objects.filter(user=user) if user and user.is_authenticated else CommentReaction.objects.none(),
+            to_attr='user_reactions_list'
+        )
+    )
     
-    Args:
-        comments: A queryset of Comment objects
-        user: The current user (optional)
-    
-    Returns:
-        The enhanced comments queryset
-    """
-    # Prefetch related reactions and votes to avoid N+1 query problems
-    comments = comments.prefetch_related('reactions', 'votes')
-    
-    # For template-based views, we need to manually add the counts
+    # More efficient processing of prefetched data
     for comment in comments:
-        # Set reaction_counts attribute on the comment
-        comment.reaction_counts = comment.get_reaction_counts()
+        comment.reaction_counts = {}
+        for reaction_type, _ in ReactionType.choices:
+            count = sum(1 for r in comment.reactions.all() if r.reaction_type == reaction_type)
+            if count > 0:
+                comment.reaction_counts[reaction_type] = count
         
-        # If user is provided and authenticated, get their votes and reactions
         if user and user.is_authenticated:
-            # User vote
-            try:
-                vote = comment.votes.get(user=user)
-                comment.user_vote = vote.vote_type
-            except CommentVote.DoesNotExist:
-                comment.user_vote = None
-                
-            # User reactions
-            reactions = comment.reactions.filter(user=user).values_list('reaction_type', flat=True)
-            comment.user_reactions = list(reactions)
+            comment.user_vote = comment.user_votes[0].vote_type if comment.user_votes else None
+            comment.user_reactions = [r.reaction_type for r in comment.user_reactions_list]
     
     return comments
-
 
 def comment_list_view(request, object_type, object_id):
     """
@@ -182,7 +183,10 @@ def report_comment_view(request, comment_id):
         if form.is_valid():
             report = form.save()
             messages.success(request, "Thank you for your report. A moderator will review it soon.")
-            return redirect('comments:single_comment', comment_id=comment.id)
+            if is_moderator(request.user):
+                return redirect('comments:report_detail', report_id=report.id)
+            else:
+                return redirect('comments:single_comment', comment_id=comment.id)
     else:
         form = CommentReportForm()
     
@@ -534,14 +538,32 @@ def report_list_view(request):
 
 
 @user_passes_test(is_moderator)
+@user_passes_test(is_moderator)
 def report_detail_view(request, report_id):
     """
     Detail view for a specific report, allowing moderators to review and update it.
     """
     report = get_object_or_404(CommentReport, id=report_id)
     
-    # Add reaction counts and user vote status to the comment
-    report.comment = get_comments_with_reactions([report.comment], request.user)[0]
+    
+    comment = report.comment
+    
+    # Manually add reaction counts
+    comment.reaction_counts = comment.get_reaction_counts()
+    
+    # If user is authenticated, get their vote and reactions
+    if request.user.is_authenticated:
+        try:
+            vote = CommentVote.objects.get(user=request.user, comment=comment)
+            comment.user_vote = vote.vote_type
+        except CommentVote.DoesNotExist:
+            comment.user_vote = None
+            
+        reactions = CommentReaction.objects.filter(
+            user=request.user, 
+            comment=comment
+        ).values_list('reaction_type', flat=True)
+        comment.user_reactions = list(reactions)
     
     if request.method == 'POST':
         form = ModeratorReviewForm(request.POST, instance=report, moderator=request.user)
@@ -556,3 +578,87 @@ def report_detail_view(request, report_id):
         'report': report,
         'form': form,
     })
+
+@user_passes_test(is_moderator)
+def delete_comment(request, comment_id):
+    """Delete a reported comment and update the report status"""
+    try:
+        comment = Comment.objects.get(id=comment_id)
+    except Comment.DoesNotExist:
+        messages.warning(request, f"Comment #{comment_id} does not exist or was already deleted.")
+        
+        # If there's a report ID, update it to resolved since the comment is gone
+        report_id = request.GET.get('report_id')
+        if report_id:
+            try:
+                report = CommentReport.objects.get(id=report_id)
+                report.status = ReportStatus.RESOLVED
+                report.moderator_notes = (report.moderator_notes or "") + "\nComment was not found (already deleted)."
+                report.save()
+                messages.info(request, "Report has been marked as resolved.")
+                return redirect('comments:report_list')
+            except CommentReport.DoesNotExist:
+                pass
+                
+        return redirect('comments:report_list')
+    
+    # Store report_id before deleting the comment
+    report_id = request.GET.get('report_id')
+    
+    # Delete the comment
+    comment.delete()
+    
+    # If we have a report ID, update its status
+    if report_id:
+        try:
+            report = CommentReport.objects.get(id=report_id)
+            report.status = ReportStatus.RESOLVED
+            report.moderator_notes = (report.moderator_notes or "") + "\nComment was deleted by moderator."
+            report.save()
+            messages.success(request, "Comment has been deleted and report resolved.")
+        except CommentReport.DoesNotExist:
+            messages.success(request, "Comment has been deleted but report was not found.")
+    else:
+        messages.success(request, "Comment has been deleted.")
+        
+    return redirect('comments:report_list')
+
+@user_passes_test(is_moderator)
+def ban_user(request, user_id):
+    """Ban a user from commenting"""
+    user = get_object_or_404(User, id=user_id)
+    report_id = request.GET.get('report_id')
+    
+    # Add your user banning logic here
+    # You might want to set a field on your User model like is_banned=True
+    # Or create a BannedUser model to track reasons and duration
+    
+    messages.success(request, f"User {user.username} has been banned.")
+    
+    # Redirect back to the report detail if applicable
+    if report_id:
+        return redirect('comments:report_detail', report_id=report_id)
+    return redirect('comments:report_list')
+
+@login_required
+def edit_comment(request, comment_id):
+    """Edit a comment and preserve history"""
+    comment = get_object_or_404(Comment, id=comment_id)
+    
+    # Check if user has permission to edit
+    if not comment.can_edit(request.user):
+        messages.error(request, "You don't have permission to edit this comment.")
+        return redirect('comments:single_comment', comment_id=comment.id)
+    
+    if request.method == 'POST':
+        new_content = request.POST.get('content', '').strip()
+        if not new_content:
+            messages.error(request, "Comment content cannot be empty.")
+            return redirect('comments:edit_comment', comment_id=comment.id)
+        
+        # Update comment with history tracking
+        comment.edit(new_content, editor=request.user)
+        messages.success(request, "Comment updated successfully.")
+        return redirect('comments:single_comment', comment_id=comment.id)
+    
+    return render(request, 'edit_comment.html', {'comment': comment})

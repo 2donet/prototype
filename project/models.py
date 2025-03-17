@@ -125,7 +125,19 @@ class Project(models.Model):
             
         # For restricted and private, check membership
         return Membership.objects.filter(project=self, user=user).exists()
-    
+    def user_can_contribute(self, user):
+        if not user.is_authenticated:
+            return False
+        
+    # Project owners and admins can contribute
+        if user == self.created_by:
+            return True
+            # Check membership
+        membership = Membership.objects.filter(project=self, user=user).first()
+        if membership and (membership.is_administrator or membership.is_contributor or membership.is_moderator):
+            return True
+        
+        return False
     def __str__(self):
         return self.name
 
