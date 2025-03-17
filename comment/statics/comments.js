@@ -6,6 +6,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault(); // Prevent page reload on form submission
             const formData = new FormData(e.target);
             
+            // Log form data for debugging
+            console.log('Submitting comment with data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            
             // Send the form data to the server
             const response = await fetch('/comments/add/', {
                 method: 'POST',
@@ -18,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 // Parse the response (new comment data)
                 const newComment = await response.json();
+                console.log('New comment created:', newComment);
 
                 // Generate HTML for the new comment (match the structure in comment.html)
                 const newCommentHtml = `
@@ -41,11 +48,50 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
 
-                // Append the new comment to the comments container
-                document.getElementById('comments-container').insertAdjacentHTML('beforeend', newCommentHtml);
+                // Find the comments container
+                const commentsContainer = document.getElementById('comments-container');
+                if (commentsContainer) {
+                    // Append the new comment to the comments container
+                    commentsContainer.insertAdjacentHTML('beforeend', newCommentHtml);
+                } else {
+                    // If no container exists, look for the general comments section and insert there
+                    const commentsSection = document.querySelector('.comments-section');
+                    if (commentsSection) {
+                        // Create container if none exists
+                        const newContainer = document.createElement('div');
+                        newContainer.id = 'comments-container';
+                        newContainer.innerHTML = newCommentHtml;
+                        
+                        // Insert before the form
+                        const form = commentsSection.querySelector('form');
+                        if (form) {
+                            commentsSection.insertBefore(newContainer, form);
+                        } else {
+                            commentsSection.appendChild(newContainer);
+                        }
+                    } else {
+                        console.error('No comments container found');
+                    }
+                }
 
                 // Clear the form after successful submission
                 e.target.reset();
+                
+                // The key part - after successful comment creation and UI update,
+                // refresh the page to ensure proper backend associations are loaded
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000); // Give the user a moment to see their comment was added
+            } else {
+                // Handle error
+                try {
+                    const errorData = await response.json();
+                    console.error('Error submitting comment:', errorData);
+                    alert('Error: ' + (errorData.error || 'Unknown error occurred'));
+                } catch (e) {
+                    console.error('Error parsing error response:', e);
+                    alert('An error occurred while submitting your comment.');
+                }
             }
         });
     }
@@ -81,6 +127,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData(this);
             const parentId = this.getAttribute('data-parent-id');
             
+            // Log form data for debugging
+            console.log('Submitting reply with data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            
             try {
                 const response = await fetch('/comments/add/', {
                     method: 'POST',
@@ -92,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Reply created:', data);
                     
                     if (data.status === 'flagged') {
                         // Display message for flagged comments
@@ -143,6 +196,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         const currentCount = parseInt(replyCountElement.textContent.split(' ')[0], 10);
                         replyCountElement.textContent = `${currentCount + 1} replies`;
                     }
+                    
+                    // The key part - after successful reply creation and UI update,
+                    // refresh the page to ensure proper backend associations are loaded
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000); // Give the user a moment to see their reply was added
                 } else {
                     const error = await response.json();
                     alert('Error: ' + error.error);

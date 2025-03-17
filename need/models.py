@@ -45,3 +45,6 @@ class Need(models.Model):
             return user_has_project_permission(user, self.to_task.to_project, 'can_contribute')
             
         return False
+    
+    def __str__(self):
+        return self.name

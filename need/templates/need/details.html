@@ -63,7 +63,7 @@
                 <p>No comments yet.</p>
                 {% endif %}
                 
-                <form id="add-comment-form" method="post" action="{% url 'comment:add_comment' %}">
+                <form id="add-comment-form" method="post" action="{% url 'comments:add_comment' %}">
                     {% csrf_token %}
                     <textarea name="content" placeholder="Add a comment..."></textarea>
                     <input type="hidden" name="to_need_id" value="{{ content.id }}">

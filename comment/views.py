@@ -247,11 +247,15 @@ def add_comment(request):
     Add a new comment or reply.
     """
     if request.method == "POST":
+        print("POST data:", request.POST)  # Debug output
+        
         content = request.POST.get("content", "").strip()
         parent_id = request.POST.get("parent_id")
         to_project_id = request.POST.get("to_project_id")
         to_task_id = request.POST.get("to_task_id")
         to_need_id = request.POST.get("to_need_id")
+        
+        print(f"Parsed IDs - project: {to_project_id}, task: {to_task_id}, need: {to_need_id}")  # Debug output
 
         if not content:
             return JsonResponse({"error": "Content is required"}, status=400)
@@ -264,14 +268,30 @@ def add_comment(request):
         # Handle replies
         if parent_id:
             parent_comment = get_object_or_404(Comment, id=parent_id)
+            print(f"Parent comment: {parent_comment.id}")  # Debug output
+            
+            # Inherit the parent's associations (important fix!)
+            if parent_comment.to_need_id:
+                to_need_id = parent_comment.to_need_id
+            elif parent_comment.to_task_id:
+                to_task_id = parent_comment.to_task_id
+            elif parent_comment.to_project_id:
+                to_project_id = parent_comment.to_project_id
 
-        # Handle top-level comments
-        if to_project_id:
-            to_project = get_object_or_404(Project, id=to_project_id)
+        # Handle top-level comments - PRIORITIZE NEED over others!
+        if to_need_id:
+            to_need = get_object_or_404(Need, id=to_need_id)
+            print(f"Found need: {to_need.id}")  # Debug output
+            # Explicitly set others to None to avoid conflicts
+            to_project = None
+            to_task = None
         elif to_task_id:
             to_task = get_object_or_404(Task, id=to_task_id)
-        elif to_need_id:
-            to_need = get_object_or_404(Need, id=to_need_id)
+            print(f"Found task: {to_task.id}")  # Debug output
+            to_project = None
+        elif to_project_id:
+            to_project = get_object_or_404(Project, id=to_project_id)
+            print(f"Found project: {to_project.id}")  # Debug output
 
         # Allow anonymous users
         user = request.user if request.user.is_authenticated else None
@@ -288,6 +308,8 @@ def add_comment(request):
             author_email=request.POST.get("author_email") if not user else None,
             ip_address=get_client_ip(request),
         )
+        
+        print(f"Created comment: {comment.id} with to_need_id: {comment.to_need_id}")  # Debug output
 
         return JsonResponse({
             "id": comment.id,
@@ -295,10 +317,11 @@ def add_comment(request):
             "user": comment.user.username if comment.user else "Anonymous",
             "total_replies": comment.total_replies,
             "score": comment.score,
+            # Include these in response to help debug
+            "to_need_id": comment.to_need_id,
+            "to_project_id": comment.to_project_id,
+            "to_task_id": comment.to_task_id
         })
-
-    return JsonResponse({"error": "Invalid request method"}, status=405)
-
 
 def vote_comment(request, comment_id):
     """
