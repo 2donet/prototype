@@ -1761,7 +1761,12 @@ align-self: flex-start;            }
     }
   }
 
-
+.modal{
+    background-color: var(--bgpopup);
+}
+.modal-footer{
+    background-color: var(--bg-color2) !important;
+}
 
 
 

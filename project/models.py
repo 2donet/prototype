@@ -27,6 +27,8 @@ class Project(models.Model):
     )
     connected_to = models.ManyToManyField('self', through='Connection', symmetrical=False)
 
+    # add
+    
     VISIBILITY_CHOICES = [
         ('public', 'Public'),
         ('logged_in', 'Only Logged-In Users'),
@@ -142,7 +144,31 @@ class Project(models.Model):
         return self.name
 
 
+# class ProjectDescriptions(models.Model):
+#     of = models.ForeignKey(Project, on_delete=models.CASCADE) 
+#     content_type = models.CharField(max_length=64) #providing model
+#     object_id = models.PositiveIntegerField #storing id here
+
+#     class Meta:
+#         constraints = [
+#             models.CheckConstraint(
+#                 check=models.Q(content_type__in=[
+#                     name="check_valid_model_types"
+#                 ])
+#             )
+#         ]
+
+#     def get_project_ingredients(self):
+#         model_map = {
+#             'need': Need,
+#         }
+
+
 class Connection(models.Model):
+    
+    from_project = models.ForeignKey(Project, related_name='outgoing_connections', on_delete=models.CASCADE)
+    to_project = models.ForeignKey(Project, related_name='incoming_connections', on_delete=models.CASCADE)
+
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),
@@ -154,9 +180,6 @@ class Connection(models.Model):
         ('parent', 'Parent'),
         ('linked', 'Linked'),
     ]
-
-    from_project = models.ForeignKey(Project, related_name='outgoing_connections', on_delete=models.CASCADE)
-    to_project = models.ForeignKey(Project, related_name='incoming_connections', on_delete=models.CASCADE)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     added_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='added_connections', 
