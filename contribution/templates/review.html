@@ -1,109 +1,796 @@
+
 {% extends "base.html" %}
 {% load static %}
-{% block title %}2do.net | Review{% endblock %}
+{% block title %}2do.net | Contribution Review{% endblock %}
 {% block content %}
 
-hi
-
-<div class="container">
-    slider here
-    <p>
-    <form action="#">
-        <div id="test-slider"></div>
-        <p>
-            <label>
-                <input type="checkbox" class="filled-in" checked="checked" />
-                <span>Filled in</span>
-            </label>
-        </p>
-        <p>
-            <label>
-                <input type="checkbox" class="filled-in" />
-                <span>Filled in</span>
-            </label>
-        </p>
-        <h4>Group1</h4>
-        <p>
-            <label>
-                <input name="group1" type="radio" checked />
-                <span>Red</span>
-            </label>
-        </p>
-        <p>
-            <label>
-                <input name="group1" type="radio" />
-                <span>Red</span>
-            </label>
-        </p>
-        <h4>Group2</h4>
-        <p>
-            <label>
-                <input name="group2" type="radio" />
-                <span>Red</span>
-            </label>
-        </p>
-        <p>
-            <label>
-                <input name="group2" type="radio" />
-                <span>Red</span>
-            </label>
-        </p>
-        <p>
-            <label>
-                <input name="group2" type="radio" />
-                <span>        <a class="waves-effect waves-light btn modal-trigger" href="#modal1">Modal</a>
-                </span>
-            </label>
-        </p>
-
-
-
-        <!-- Modal Structure -->
-        <div id="modal1" class="modal modal-fixed-footer">
-            <div class="modal-content">
-              <h4>Modal Header</h4>
-              <p>A bunch of text</p>
+<div class="container review-container">
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">Work Review: <span class="contribution-title">{{ contribution.title|default:"UI Component Development" }}</span></span>
+            <div class="contribution-meta">
+                <div class="meta-item">
+                    <i class="material-icons">person</i>
+                    <span>Contributor: <a href="/u/{{ contribution.user_id|default:1 }}">{{ contribution.user|default:"JaneDoe123" }}</a></span>
+                </div>
+                <div class="meta-item">
+                    <i class="material-icons">work</i>
+                    <span>Project: <a href="/{{ contribution.project_id|default:1 }}">{{ contribution.project|default:"Comment System Overhaul" }}</a></span>
+                </div>
+                <div class="meta-item">
+                    <i class="material-icons">access_time</i>
+                    <span>Submitted: {{ contribution.submitted_at|default:"March 15, 2025" }}</span>
+                </div>
             </div>
-            <div class="modal-footer">
-                <a href="#!" class="modal-close waves-effect waves-green btn-flat">Disagree</a>
-              <a href="#!" class="modal-close waves-effect  waves-light btn">Agree</a>
-
+            
+            <div class="divider"></div>
+            
+            <div class="contribution-description">
+                <h5>Description</h5>
+                <p>{{ contribution.description|default:"Implementation of the new comment reaction system with emoji support. Added a hover menu for selecting reactions and displaying reaction counts. Optimized for mobile devices and tested for accessibility." }}</p>
             </div>
-          </div>
-
-
-
-
-        <p>
-            <label>
-                <input name="group2" type="radio" />
-                <span><a href="/u/1">Dupa</a></span>
-            </label>
-        </p>
-        <div class="input-field col s12">
-            <select>
-              <optgroup label="team 1">
-                <option value="1">Option 1</option>
-                <option value="2">Option 2</option>
-              </optgroup>
-              <optgroup label="team 2">
-                <option value="3">Option 3</option>
-                <option value="4">Option 4</option>
-              </optgroup>
-            </select>
-            <label>Optgroups</label>
-          </div>
-          
-    </form>
-    </p>
-
-
-    <div class="chips chips-autocomplete"></div>
-
-
-
+            
+            <div class="divider"></div>
+            
+            <form id="review-form" class="review-form">
+                {% csrf_token %}
+                <input type="hidden" name="contribution_id" value="{{ contribution.id|default:123 }}">
+                
+                <!-- Time Assessment Section -->
+                <div class="review-section">
+                    <h5>Time Assessment</h5>
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <input id="estimated_hours" name="estimated_hours" type="number" min="0" step="0.5" value="{{ contribution.estimated_hours|default:8 }}" class="validate" readonly>
+                            <label for="estimated_hours" class="active">Estimated Hours</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            <input id="actual_hours" name="actual_hours" type="number" min="0" step="0.5" value="{{ contribution.actual_hours|default:'8.5' }}" class="validate" readonly>
+                            <label for="actual_hours" class="active">Actual Hours</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col s12">
+                            <label>Time Efficiency Rating</label>
+                            <div class="range-field">
+                                <input type="range" id="time_efficiency" name="time_efficiency" min="-100" max="100" value="0" />
+                                <div class="range-labels">
+                                    <span class="range-label-min">Under Budget (-100)</span>
+                                    <span class="range-label-mid">On Target (0)</span>
+                                    <span class="range-label-max">Over Budget (+100)</span>
+                                </div>
+                                <div class="range-value">
+                                    <span id="time_efficiency_value">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quality Assessment Section -->
+                <div class="review-section">
+                    <h5>Quality Assessment</h5>
+                    <div class="row">
+                        <div class="col s12">
+                            <label>Overall Quality Rating</label>
+                            <div class="range-field quality-range">
+                                <input type="range" id="quality_rating" name="quality_rating" min="-100" max="100" value="0" />
+                                <div class="range-labels">
+                                    <span class="range-label-min">Needs Improvement (-100)</span>
+                                    <span class="range-label-mid">Meets Expectations (0)</span>
+                                    <span class="range-label-max">Exceptional (+100)</span>
+                                </div>
+                                <div class="range-value">
+                                    <span id="quality_rating_value">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row quality-dimensions">
+                        <div class="col s12 m6">
+                            <div class="quality-dimension">
+                                <label>Functionality</label>
+                                <div class="range-field">
+                                    <input type="range" id="functionality" name="functionality" min="0" max="10" value="7" />
+                                    <div class="dimension-value">
+                                        <span id="functionality_value">7</span>/10
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col s12 m6">
+                            <div class="quality-dimension">
+                                <label>Code Quality</label>
+                                <div class="range-field">
+                                    <input type="range" id="code_quality" name="code_quality" min="0" max="10" value="8" />
+                                    <div class="dimension-value">
+                                        <span id="code_quality_value">8</span>/10
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col s12 m6">
+                            <div class="quality-dimension">
+                                <label>Documentation</label>
+                                <div class="range-field">
+                                    <input type="range" id="documentation" name="documentation" min="0" max="10" value="6" />
+                                    <div class="dimension-value">
+                                        <span id="documentation_value">6</span>/10
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col s12 m6">
+                            <div class="quality-dimension">
+                                <label>Testing</label>
+                                <div class="range-field">
+                                    <input type="range" id="testing" name="testing" min="0" max="10" value="7" />
+                                    <div class="dimension-value">
+                                        <span id="testing_value">7</span>/10
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Priority Section -->
+                <div class="review-section">
+                    <h5>Priority Classification</h5>
+                    <div class="row">
+                        <div class="col s12">
+                            <p>Select the most appropriate type for this work:</p>
+                            <div class="priority-options">
+                                <p>
+                                    <label>
+                                        <input name="priority_type" type="radio" value="feature" checked />
+                                        <span class="priority-label">
+                                            <i class="material-icons">star</i>
+                                            Feature Implementation
+                                        </span>
+                                    </label>
+                                </p>
+                                <p>
+                                    <label>
+                                        <input name="priority_type" type="radio" value="bugfix" />
+                                        <span class="priority-label">
+                                            <i class="material-icons">bug_report</i>
+                                            Bug Fix
+                                        </span>
+                                    </label>
+                                </p>
+                                <p>
+                                    <label>
+                                        <input name="priority_type" type="radio" value="enhancement" />
+                                        <span class="priority-label">
+                                            <i class="material-icons">trending_up</i>
+                                            Enhancement
+                                        </span>
+                                    </label>
+                                </p>
+                                <p>
+                                    <label>
+                                        <input name="priority_type" type="radio" value="maintenance" />
+                                        <span class="priority-label">
+                                            <i class="material-icons">build</i>
+                                            Maintenance
+                                        </span>
+                                    </label>
+                                </p>
+                                <p>
+                                    <label>
+                                        <input name="priority_type" type="radio" value="documentation" />
+                                        <span class="priority-label">
+                                            <i class="material-icons">description</i>
+                                            Documentation
+                                        </span>
+                                    </label>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Skill Evaluation Section -->
+                <div class="review-section">
+                    <h5>Skill Evaluation</h5>
+                    <p class="helper-text">Rate the skills demonstrated in this work. Add skills that are relevant to the contribution.</p>
+                    
+                    <div class="skills-list">
+                        <!-- Example pre-filled skill -->
+                        <div class="skill-evaluation-item">
+                            <div class="skill-name">
+                                <span>JavaScript</span>
+                                <a href="#" class="remove-skill"><i class="material-icons tiny">close</i></a>
+                            </div>
+                            <div class="skill-rating">
+                                <div class="range-field">
+                                    <input type="range" name="skill_rating_1" min="0" max="10" value="8" />
+                                    <div class="dimension-value">
+                                        <span class="skill-rating-value">8</span>/10
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="skill_id_1" value="javascript">
+                        </div>
+                        
+                        <div class="skill-evaluation-item">
+                            <div class="skill-name">
+                                <span>UI/UX Design</span>
+                                <a href="#" class="remove-skill"><i class="material-icons tiny">close</i></a>
+                            </div>
+                            <div class="skill-rating">
+                                <div class="range-field">
+                                    <input type="range" name="skill_rating_2" min="0" max="10" value="7" />
+                                    <div class="dimension-value">
+                                        <span class="skill-rating-value">7</span>/10
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="skill_id_2" value="uiux">
+                        </div>
+                    </div>
+                    
+                    <div class="add-skill-container">
+                        <div class="input-field">
+                            <div class="chips chips-autocomplete chips-placeholder" id="skills-chips"></div>
+                        </div>
+                        <button type="button" id="add-skill-btn" class="btn waves-effect waves-light">
+                            <i class="material-icons left">add</i>Add Skill
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Collaboration Assessment -->
+                <div class="review-section">
+                    <h5>Collaboration Assessment</h5>
+                    
+                    <div class="row">
+                        <div class="col s12 m6">
+                            <label>AI Assistance Level</label>
+                            <div class="range-field">
+                                <input type="range" id="ai_assistance" name="ai_assistance" min="0" max="100" value="30" />
+                                <div class="range-labels">
+                                    <span class="range-label-min">None (0%)</span>
+                                    <span class="range-label-max">Significant (100%)</span>
+                                </div>
+                                <div class="range-value">
+                                    <span id="ai_assistance_value">30</span>%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col s12 m6">
+                            <label>Team Collaboration Level</label>
+                            <div class="range-field">
+                                <input type="range" id="team_collaboration" name="team_collaboration" min="0" max="100" value="40" />
+                                <div class="range-labels">
+                                    <span class="range-label-min">Individual (0%)</span>
+                                    <span class="range-label-max">Team Effort (100%)</span>
+                                </div>
+                                <div class="range-value">
+                                    <span id="team_collaboration_value">40</span>%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col s12">
+                            <div class="input-field">
+                                <textarea id="collaboration_notes" name="collaboration_notes" class="materialize-textarea"></textarea>
+                                <label for="collaboration_notes">Collaboration Notes</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Improvement Suggestions -->
+                <div class="review-section">
+                    <h5>Improvement Suggestions</h5>
+                    
+                    <div class="row">
+                        <div class="col s12">
+                            <div class="issues-container">
+                                <div class="issue-list" id="issue-list">
+                                    <!-- Example issue -->
+                                    <div class="issue-item">
+                                        <div class="issue-header">
+                                            <div class="issue-type">
+                                                <i class="material-icons">bug_report</i>
+                                                <span>Bug</span>
+                                            </div>
+                                            <div class="issue-title">
+                                                <span>Reaction display overflows on mobile</span>
+                                            </div>
+                                            <div class="issue-actions">
+                                                <a href="#" class="remove-issue"><i class="material-icons">close</i></a>
+                                            </div>
+                                        </div>
+                                        <div class="issue-description">
+                                            <p>The reaction emoji display overflows its container on mobile screens smaller than 320px width.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button type="button" class="btn waves-effect waves-light modal-trigger" data-target="add-issue-modal">
+                                    <i class="material-icons left">add</i>Add Issue Ticket
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sticky Notes / Ideas -->
+                <div class="review-section">
+                    <h5>Ideas & Suggestions</h5>
+                    <p class="helper-text">Add quick notes with ideas for improving the work.</p>
+                    
+                    <div class="row">
+                        <div class="col s12">
+                            <div class="sticky-notes-container" id="sticky-notes-container">
+                                <!-- Example sticky note -->
+                                <div class="sticky-note yellow">
+                                    <div class="sticky-note-content">
+                                        <p>Consider adding a hover effect to make the reaction buttons more intuitive.</p>
+                                    </div>
+                                    <div class="sticky-note-footer">
+                                        <a href="#" class="remove-sticky-note"><i class="material-icons tiny">close</i></a>
+                                    </div>
+                                </div>
+                                
+                                <!-- Example sticky note -->
+                                <div class="sticky-note blue">
+                                    <div class="sticky-note-content">
+                                        <p>The reaction counter animation is a nice touch, but could be smoother.</p>
+                                    </div>
+                                    <div class="sticky-note-footer">
+                                        <a href="#" class="remove-sticky-note"><i class="material-icons tiny">close</i></a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn waves-effect waves-light modal-trigger" data-target="add-sticky-note-modal">
+                                <i class="material-icons left">note_add</i>Add Note
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Overall Comments -->
+                <div class="review-section">
+                    <h5>Overall Assessment</h5>
+                    
+                    <div class="row">
+                        <div class="col s12">
+                            <div class="input-field">
+                                <textarea id="overall_comments" name="overall_comments" class="materialize-textarea"></textarea>
+                                <label for="overall_comments">Overall Comments</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="review-section submit-section">
+                    <div class="row">
+                        <div class="col s12 center-align">
+                            <button type="submit" class="btn-large waves-effect waves-light">
+                                <i class="material-icons left">check</i>Submit Review
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
-<script type="text/javascript" src="{% static 'js/review.js' %}"></script>
+<!-- Add Issue Modal -->
+<div id="add-issue-modal" class="modal">
+    <div class="modal-content">
+        <h4>Add Issue Ticket</h4>
+        
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="issue-type">
+                    <option value="bug">Bug</option>
+                    <option value="improvement">Improvement</option>
+                    <option value="feature">Missing Feature</option>
+                    <option value="refactor">Code Refactor</option>
+                    <option value="documentation">Documentation</option>
+                </select>
+                <label>Issue Type</label>
+            </div>
+            
+            <div class="input-field col s12">
+                <input id="issue-title" type="text" class="validate">
+                <label for="issue-title">Title</label>
+            </div>
+            
+            <div class="input-field col s12">
+                <textarea id="issue-description" class="materialize-textarea"></textarea>
+                <label for="issue-description">Description</label>
+            </div>
+            
+            <div class="input-field col s12">
+                <select id="issue-priority">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                </select>
+                <label>Priority</label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-light btn-flat">Cancel</a>
+        <a href="#!" id="create-issue-btn" class="waves-effect waves-light btn">Create</a>
+    </div>
+</div>
+
+<!-- Add Sticky Note Modal -->
+<div id="add-sticky-note-modal" class="modal">
+    <div class="modal-content">
+        <h4>Add Suggestion Note</h4>
+        
+        <div class="row">
+            <div class="input-field col s12">
+                <textarea id="sticky-note-content" class="materialize-textarea"></textarea>
+                <label for="sticky-note-content">Your suggestion</label>
+            </div>
+            
+            <div class="input-field col s12">
+                <p>Choose color:</p>
+                <div class="sticky-note-colors">
+                    <div class="sticky-note-color yellow active" data-color="yellow"></div>
+                    <div class="sticky-note-color blue" data-color="blue"></div>
+                    <div class="sticky-note-color green" data-color="green"></div>
+                    <div class="sticky-note-color pink" data-color="pink"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-light btn-flat">Cancel</a>
+        <a href="#!" id="create-sticky-note-btn" class="waves-effect waves-light btn">Add</a>
+    </div>
+</div>
+
+<style>
+/* Review Container */
+.review-container {
+    max-width: 1000px;
+    margin: 30px auto;
+}
+
+.review-container .card {
+    border-radius: 8px;
+}
+
+/* Contribution Header */
+.contribution-title {
+    font-weight: 500;
+}
+
+.contribution-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin: 15px 0;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+}
+
+.meta-item i {
+    margin-right: 8px;
+    color: var(--highlight);
+}
+
+.contribution-description {
+    margin: 20px 0;
+}
+
+.divider {
+    margin: 20px 0;
+}
+
+/* Review Sections */
+.review-section {
+    margin: 30px 0;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--bg-color3);
+}
+
+.review-section h5 {
+    margin-bottom: 15px;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.helper-text {
+    color: var(--text2ndary);
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+/* Range Sliders */
+.range-field {
+    position: relative;
+    margin: 15px 0 25px;
+}
+
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text2ndary);
+    margin-top: 5px;
+}
+
+.range-value {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 3px 8px;
+    background-color: var(--highlight);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.quality-dimensions {
+    margin-top: 30px;
+}
+
+.quality-dimension {
+    margin-bottom: 20px;
+}
+
+.dimension-value {
+    text-align: right;
+    font-size: 0.9rem;
+    color: var(--text2ndary);
+    margin-top: 5px;
+}
+
+/* Priority Section */
+.priority-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.priority-options p {
+    margin: 0;
+    min-width: 180px;
+}
+
+.priority-label {
+    display: flex;
+    align-items: center;
+}
+
+.priority-label i {
+    margin-right: 8px;
+}
+
+/* Skill Evaluation */
+.skills-list {
+    margin: 20px 0;
+}
+
+.skill-evaluation-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: var(--bg-color2);
+    border-radius: 8px;
+    border: 1px solid var(--bg-color3);
+}
+
+.skill-name {
+    min-width: 150px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.skill-rating {
+    flex-grow: 1;
+}
+
+.remove-skill {
+    color: var(--text2ndary);
+}
+
+.add-skill-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Issues List */
+.issues-container {
+    margin: 15px 0;
+}
+
+.issue-list {
+    margin-bottom: 20px;
+}
+
+.issue-item {
+    margin-bottom: 15px;
+    padding: 15px;
+    background-color: var(--bg-color2);
+    border-radius: 8px;
+    border-left: 3px solid #ff5252;
+}
+
+.issue-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.issue-type {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+    color: #ff5252;
+}
+
+.issue-type i {
+    margin-right: 5px;
+    font-size: 18px;
+}
+
+.issue-title {
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.issue-actions {
+    display: flex;
+    align-items: center;
+}
+
+.remove-issue {
+    color: var(--text2ndary);
+}
+
+.issue-description {
+    color: var(--text);
+    font-size: 0.95rem;
+    margin-left: 25px;
+}
+
+/* Sticky Notes */
+.sticky-notes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.sticky-note {
+    width: 200px;
+    min-height: 180px;
+    padding: 15px;
+    border-radius: 3px;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transform: rotate(-1deg);
+}
+
+.sticky-note.yellow {
+    background-color: #fff9c4;
+    color: #333;
+}
+
+.sticky-note.blue {
+    background-color: #e3f2fd;
+    color: #333;
+}
+
+.sticky-note.green {
+    background-color: #e8f5e9;
+    color: #333;
+}
+
+.sticky-note.pink {
+    background-color: #fce4ec;
+    color: #333;
+}
+
+.sticky-note-content {
+    flex-grow: 1;
+}
+
+.sticky-note-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.remove-sticky-note {
+    color: rgba(0,0,0,0.4);
+}
+
+.sticky-note-colors {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.sticky-note-color {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.sticky-note-color.active {
+    border-color: var(--highlight);
+}
+
+.sticky-note-color.yellow {
+    background-color: #fff9c4;
+}
+
+.sticky-note-color.blue {
+    background-color: #e3f2fd;
+}
+
+.sticky-note-color.green {
+    background-color: #e8f5e9;
+}
+
+.sticky-note-color.pink {
+    background-color: #fce4ec;
+}
+
+/* Submit Section */
+.submit-section {
+    margin-top: 40px;
+    border-bottom: none;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .contribution-meta {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .skill-evaluation-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .skill-name {
+        margin-bottom: 10px;
+    }
+    
+    .priority-options {
+        flex-direction: column;
+    }
+}
+</style>
+
 
 {% endblock %}
