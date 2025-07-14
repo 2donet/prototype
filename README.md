@@ -4,7 +4,8 @@
 python3 -m venv 2donet
 cd 2donet/bin
 source activate
-pip install django 
+pip install django
+pip install djangorestframework
 ```
 
 2. Run server:
