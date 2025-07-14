@@ -59,22 +59,28 @@
             <li><a href="/">Home</a></li>
             <li><a href="/1">2do.net</a></li>
             <li><a href="/admin">admin</a></li>
-            <li><a class="dropdown-trigger" href="#!" data-target="dropdown-users-nav">Users</a></li>
+            
+            {% if user.is_authenticated %}
+              <!-- Authenticated user dropdown -->
+              <li><a class="dropdown-trigger" href="#!" data-target="dropdown-user-nav">User</a></li>
+            {% else %}
+              <!-- Non-authenticated user buttons -->
+              <li><a href="/u/signin">Login</a></li>
+              <li><a href="/u/signup">Register</a></li>
+            {% endif %}
 
             <li><a class="dropdown-trigger" href="#!" data-target="dropdown-add-nav">Add</a></li>
           </ul>
         </div>
       </nav>
       
-      <!-- Dropdown for Desktop -->
-      <ul id="dropdown-users-nav" class="dropdown-content">
-        <li><a href="/u/signin">Login</a></li>
-        <li><a href="/u/signup">Register</a></li>
+      <!-- Dropdown for Authenticated Users -->
+      {% if user.is_authenticated %}
+      <ul id="dropdown-user-nav" class="dropdown-content">
+        <li><a href="/u/{{ user.id }}">Profile</a></li>
         <li><a href="/u/logout">Logout</a></li>
-
       </ul>
-
-
+      {% endif %}
 
       <ul id="dropdown-add-nav" class="dropdown-content">
         <li><a href="/create">Project</a></li>
@@ -84,11 +90,21 @@
       </ul>
       
       <!-- Sidenav for Mobile -->
-       <!-- needs update -->
       <ul class="sidenav" id="mobile-demo">
         <li><a href="/">Home</a></li>
         <li><a href="/1">2do.net</a></li>
         <li><a href="/admin">admin</a></li>
+        
+        {% if user.is_authenticated %}
+          <!-- Authenticated user mobile menu -->
+          <li><a href="/u/{{ user.id }}">Profile</a></li>
+          <li><a href="/u/logout">Logout</a></li>
+        {% else %}
+          <!-- Non-authenticated user mobile menu -->
+          <li><a href="/u/signin">Login</a></li>
+          <li><a href="/u/signup">Register</a></li>
+        {% endif %}
+        
         <li><a class="dropdown-trigger" href="#!" data-target="dropdown-add-nav-mobile">Add</a></li>
       </ul>
       
@@ -125,5 +141,3 @@
 </body>
 
 </html>
-
-
