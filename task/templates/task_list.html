@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}2do.net | Task List{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Task List</h2>
+    <div class="row">
+        {% for task in tasks %}
+        <div class="col s12 m6">
+            <div class="card blue-grey darken-1">
+                <div class="card-content white-text">
+                    <span class="card-title">{{ task.name }}</span>
+                    <p>{{ task.description|default_if_none:"No description available" }}</p>
+                    <div class="priority">Priority: {{ task.priority|default:"Not set" }}</div>
+                    <a href="{% url 'task:task_detail' task.id %}" class="btn-small waves-effect waves-light">View Details</a>
+                </div>
+                <div class="card-action">
+                    <a href="#">Edit</a>
+                    <a href="#">Delete</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">No Tasks Found</span>
+                    <p>There are no tasks to display.</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

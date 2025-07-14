@@ -14,3 +14,13 @@ def task_detail(request, task_id):
         "comments": comments,
     }
     return render(request, "task_detail.html", context=context)
+
+def task_list(request):
+    """
+    Display a list of all tasks.
+    """
+    tasks = Task.objects.all()
+    context = {
+        "tasks": tasks,
+    }
+    return render(request, "task_list.html", context=context)

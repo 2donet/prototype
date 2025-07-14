@@ -1,13 +1,19 @@
+# views.py
+
+
+
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import path, reverse
 from django.db.models import Prefetch
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from comment.models import Comment
 from decisions.models import Decision
 from user.models import Membership, UserProfile, Post
+from django.contrib.auth.decorators import login_required
 from user.models import Person
-from user.signup import SignupForm
-from user.signin import SignInForm
+
+from .forms import SignInForm, SignupForm
 from django.contrib.auth import get_user_model
 
 def userprofile(request, user_id):
@@ -72,24 +78,84 @@ def membership_details(request, membership_id):
     return render(request, 'person_membership_details.html', context)
 
 def signup(request):
+    """
+    Handle user registration with improved form including terms acceptance
+    """
+    if request.user.is_authenticated:
+        return redirect('project:index')  # Redirect if already logged in
+    
     if request.method == 'POST':
         form = SignupForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('/u/signin')  # Redirect to login or another page after signup
+            try:
+                user = form.save()
+                
+                # Log the user in immediately after registration
+                login(request, user)
+                
+                # Store newsletter preference (you might want to create a model for this)
+                newsletter_opt_in = form.cleaned_data.get('newsletter', False)
+                if newsletter_opt_in:
+                    # Handle newsletter subscription
+                    # This could be a separate model or service
+                    pass
+                
+                messages.success(request, 
+                    f'Welcome to 2do.net, {user.username}! Your account has been created successfully.')
+                
+                return redirect('project:index')  # Redirect to home or dashboard
+                
+            except Exception as e:
+                messages.error(request, 'An error occurred while creating your account. Please try again.')
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"User registration error: {e}")
+        else:
+            # Form validation errors will be displayed in the template
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = SignupForm()
+    
     return render(request, 'signup.html', {'form': form})
 
-def signin_view(request):
+
+
+def signin(request):
+    """
+    Handle user sign in with the improved form
+    """
+    if request.user.is_authenticated:
+        return redirect('project:index')  # Redirect if already logged in
+    
     if request.method == 'POST':
-        form = SignInForm(data=request.POST)
+        form = SignInForm(request, data=request.POST)
         if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            return redirect('/')
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            remember_me = form.cleaned_data.get('remember_me', False)
+            
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                
+                # Handle remember me functionality (when implemented)
+                if not remember_me:
+                    request.session.set_expiry(0)  # Session expires on browser close
+                
+                messages.success(request, f'Welcome back, {user.username}!')
+                
+                # Redirect to next page or home
+                next_page = request.GET.get('next', 'project:index')
+                return redirect(next_page)
+            else:
+                messages.error(request, 'Invalid username or password.')
+        else:
+            # Form validation errors will be displayed in the template
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = SignInForm()
+    
     return render(request, 'signin.html', {'form': form})
 
 def custom_logout(request):

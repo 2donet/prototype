@@ -1,14 +1,406 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Sign In</title>
+{% extends "base.html" %}
+{% block title %}
+Sign in - 2do.net 
+{% endblock %}
+{% block content %}
+{% load static %}
+
+<style>
+        :root {
+            --highlight: #e5c129;
+            --text: #ffffff;
+            --highlightdark: #3B4139;
+            --bg-color:#141622;
+            --bg-light:#1d1e2d;
+            --bg-color2: #1f2234;
+            --bg-color3: #30344a;
+            --confirm: #5ce65c;
+            --danger: #ff2c2c;
+            --warning: #db9200;
+            --bg-menu:#222434;
+            --information: #305cde;
+            --risk: #FC6C85;
+            --refuse--calm: #ff7081;
+            --confirm--highlight: #2cff05;
+            --confirm--: #2cff05;
+            --text2ndary: #d1d1d1;
+            --bgpopup: #222434;
+            --highlight-dark: #d5d370;
+            --highlightmenu: #4B4E5F;
+            --status-red-dark: rgb(170, 21, 63);
+            --status-yellow: rgb(232, 186, 78);
+            --status-pink: rgb(198, 43, 174);
+            --status-purple: rgb(105, 31, 138);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-color2) 100%);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .signin-container {
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 2rem;
+            margin-top: 5vh;
+        }
+
+        .card {
+            background: var(--bg-light) !important;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .card-content {
+            padding: 2rem !important;
+        }
+
+        .card-title {
+            color: var(--highlight) !important;
+            font-size: 2rem !important;
+            margin-bottom: 1.5rem !important;
+            text-align: center;
+        }
+
+        .input-field input[type=text]:focus + label,
+        .input-field input[type=password]:focus + label,
+        .input-field input[type=email]:focus + label {
+            color: var(--highlight) !important;
+        }
+
+        .input-field input[type=text]:focus,
+        .input-field input[type=password]:focus,
+        .input-field input[type=email]:focus {
+            border-bottom: 1px solid var(--highlight) !important;
+            box-shadow: 0 1px 0 0 var(--highlight) !important;
+        }
+
+        .input-field input[type=text],
+        .input-field input[type=password],
+        .input-field input[type=email] {
+            color: var(--text) !important;
+            border-bottom: 1px solid var(--text2ndary) !important;
+        }
+
+        .input-field label {
+            color: var(--text2ndary) !important;
+        }
+
+        .btn-signin {
+            background: var(--highlight) !important;
+            color: var(--bg-color) !important;
+            border-radius: 8px !important;
+            width: 100%;
+            height: 48px;
+            font-weight: 500 !important;
+            text-transform: none !important;
+            font-size: 1.1rem !important;
+            margin-top: 1rem !important;
+        }
+
+        .btn-signin:hover {
+            background: var(--highlight-dark) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(229, 193, 41, 0.3);
+        }
+
+        .remember-me {
+            margin: 1rem 0;
+        }
+
+        .remember-me label {
+            color: var(--text2ndary) !important;
+        }
+
+        .remember-me [type="checkbox"]:checked + span:not(.lever):before {
+            border-right: 2px solid var(--highlight);
+            border-bottom: 2px solid var(--highlight);
+        }
+
+        .helper-links {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .helper-links a {
+            color: var(--highlight) !important;
+            text-decoration: none;
+            margin: 0 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .helper-links a:hover {
+            color: var(--highlight-dark) !important;
+            text-decoration: underline;
+        }
+
+        .divider {
+            margin: 1rem 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 1rem;
+            color: var(--text2ndary);
+        }
+
+        .signup-link a {
+            color: var(--highlight) !important;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .signup-link a:hover {
+            color: var(--highlight-dark) !important;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-section h1 {
+            color: var(--highlight);
+            font-size: 2.5rem;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        .logo-section p {
+            color: var(--text2ndary);
+            margin: 0.5rem 0 0 0;
+        }
+
+        /* Modal Styles */
+        .modal {
+            background: var(--bg-light) !important;
+            border-radius: 12px !important;
+        }
+
+        .modal-content {
+            color: var(--text) !important;
+        }
+
+        .modal-footer {
+            background: var(--bg-light) !important;
+            border-top: 1px solid rgba(255,255,255,0.1) !important;
+        }
+
+        .modal-footer .btn {
+            background: var(--highlight) !important;
+            color: var(--bg-color) !important;
+        }
+
+        /* Tooltip */
+        .material-tooltip {
+            background: var(--bgpopup) !important;
+            color: var(--text) !important;
+            font-size: 0.9rem !important;
+            padding: 8px 12px !important;
+            border-radius: 4px !important;
+        }
+
+        .not-available {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Error styles */
+        .errorlist {
+            color: var(--danger) !important;
+            list-style: none;
+            padding: 0;
+            margin: 0.5rem 0;
+        }
+
+        .errorlist li {
+            font-size: 0.9rem;
+            margin: 0.25rem 0;
+        }
+
+        .field-error {
+            border-bottom: 1px solid var(--danger) !important;
+        }
+
+        @media (max-width: 600px) {
+            .signin-container {
+                padding: 1rem;
+                margin-top: 2vh;
+            }
+            
+            .card-content {
+                padding: 1.5rem !important;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h2>Sign In</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Sign In</button>
-    </form>
-</body>
-</html>
+    <div class="signin-container">
+        <div class="logo-section">
+            <h1>2do.net</h1>
+            <p>Organize your projects, accomplish your goals</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Sign In</span>
+                
+                {% if form.non_field_errors %}
+                    <div class="card-panel red lighten-4">
+                        <span class="red-text text-darken-4">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </span>
+                    </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="input-field">
+                        <i class="material-icons prefix" style="color: var(--text2ndary);">person</i>
+                        {{ form.username }}
+                        <label for="{{ form.username.id_for_label }}">Username or Email</label>
+                        {% if form.username.errors %}
+                            <ul class="errorlist">
+                                {% for error in form.username.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="input-field">
+                        <i class="material-icons prefix" style="color: var(--text2ndary);">lock</i>
+                        {{ form.password }}
+                        <label for="{{ form.password.id_for_label }}">Password</label>
+                        {% if form.password.errors %}
+                            <ul class="errorlist">
+                                {% for error in form.password.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="remember-me">
+                        <label>
+                            {{ form.remember_me }}
+                            <span>Remember me</span>
+                        </label>
+                    </div>
+                    
+                    <button class="btn waves-effect waves-light btn-signin" type="submit">
+                        <i class="material-icons left">login</i>
+                        Sign In
+                    </button>
+                </form>
+                
+                <div class="helper-links">
+                    <a href="#" class="modal-trigger not-available tooltipped" 
+                       data-target="password-modal" 
+                       data-position="top" 
+                       data-tooltip="Password reset not available yet">
+                        Forgot Password?
+                    </a>
+                    |
+                    <a href="#terms-modal" class="modal-trigger">Terms & Conditions</a>
+                    |
+                    <a href="#privacy-modal" class="modal-trigger">Privacy Policy</a>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="signup-link">
+                    Don't have an account? <a href="/u/signup/">Sign up here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div id="password-modal" class="modal">
+        <div class="modal-content">
+            <h4 style="color: var(--highlight);">Password Reset</h4>
+            <p>Password reset functionality is not available yet. Please contact support if you need assistance.</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close btn">OK</a>
+        </div>
+    </div>
+
+    <!-- Terms Modal -->
+    <div id="terms-modal" class="modal">
+        <div class="modal-content">
+            <h4 style="color: var(--highlight);">Terms & Conditions</h4>
+            <p>By using 2do.net, you agree to our terms of service. This includes responsible use of our platform for project management and task organization.</p>
+            <p>Key points:</p>
+            <ul>
+                <li>Use the service responsibly and legally</li>
+                <li>Respect other users' privacy and data</li>
+                <li>Do not use for illegal activities</li>
+                <li>We reserve the right to modify these terms</li>
+            </ul>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close btn">Accept</a>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacy-modal" class="modal">
+        <div class="modal-content">
+            <h4 style="color: var(--highlight);">Privacy Policy</h4>
+            <p>We take your privacy seriously. This policy outlines how we collect, use, and protect your information.</p>
+            <p>What we collect:</p>
+            <ul>
+                <li>Account information (username, email)</li>
+                <li>Project and task data you create</li>
+                <li>Usage analytics to improve our service</li>
+            </ul>
+            <p>We do not sell your personal information to third parties.</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close btn">Understood</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize modals
+            const modals = document.querySelectorAll('.modal');
+            M.Modal.init(modals);
+            
+            // Initialize tooltips
+            const tooltips = document.querySelectorAll('.tooltipped');
+            M.Tooltip.init(tooltips);
+            
+            // Prevent disabled links from opening modals
+            document.querySelectorAll('.not-available').forEach(function(element) {
+                element.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+
+            // Add error classes to fields with errors
+            {% if form.username.errors %}
+                document.getElementById('{{ form.username.id_for_label }}').classList.add('field-error');
+            {% endif %}
+            {% if form.password.errors %}
+                document.getElementById('{{ form.password.id_for_label }}').classList.add('field-error');
+            {% endif %}
+        });
+    </script>
+
+
+
+
+{% endblock %}

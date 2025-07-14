@@ -50,17 +50,17 @@ tasks:
 
 <div class="needs-new">
 
-    {%for need in needs%}
+    {%for task in tasks%}
     <div class="child-card">
 
         <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
-            <div class="priority">priority: {{need.priority}}</div>
+            <div class="priority">priority: {{task.priority}}</div>
 
             <img src="{% static 'icons/menu.svg' %}" alt="idea">
         </a>
 
         <!-- Dropdown Structure -->
-        <ul id='dropdown1' class='dropdown-content'>
+        <ul id='dropdown-t-{{ task.id }}' class='dropdown-content'>
             <li> <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
             </li>
             <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
@@ -73,9 +73,9 @@ tasks:
         <div class="child-detials">
 
 
-            <h5><a href="{% url 'need:need' need.id %}">{{ need.name }}</a></h5>
+            <h5><a href="{% url 'task:task_detail' task.id %}">{{ task.name }}</a></h5>
             <p class="child-summary">
-                {{ need.desc|default_if_none:"" }}
+                {{ task.desc|default_if_none:"" }}
             </p>
         </div>
 

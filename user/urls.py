@@ -10,7 +10,8 @@ urlpatterns = [
     path("<int:user_id>/", views.userprofile, name="userprofile"),
     path('<int:person_id>/memberships', person_memberships, name='person_memberships'),
     path('membership/<int:membership_id>/', membership_details, name='membership_details'),
-    path('signin/', views.signin_view, name='signin'),
+    path('signin/', views.signin, name='signin'),
     path('signup/', views.signup, name='signup'),
     path('logout/', views.custom_logout, name='logout'),
+    
 ]
