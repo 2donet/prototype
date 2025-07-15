@@ -4,13 +4,14 @@ from django.shortcuts import render
 
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
+from django.db import models
 from project.models import Project, Connection, Membership, ProjectPermissionGroup
 from comment.models import Comment
 from task.models import Task
 from need.models import Need
 from django.urls import path, reverse
 from django.db.models import Prefetch
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.urls import reverse
 import json
@@ -19,14 +20,28 @@ from skills.models import Skill
 
 from django.contrib.auth import get_user_model
 User = get_user_model()
+
+
 def index(request):
     """
-        Display a list of the latest projects.
-        """
-    # latest_projects_list = Project.objects.filter().order_by('id')
-    latest_projects_list = Project.objects.exclude(
-        incoming_connections__type='child'
-    ).order_by('-id') # getting only standalone projects (excluding children)
+    Display a list of the latest projects.
+    """
+    # Filter projects based on visibility
+    if request.user.is_authenticated:
+        # For logged-in users, show public projects and projects visible to logged-in users
+        latest_projects_list = Project.objects.exclude(
+            incoming_connections__type='child'
+        ).filter(
+            models.Q(visibility='public') | 
+            models.Q(visibility='logged_in') |
+            models.Q(membership__user=request.user) |
+            models.Q(created_by=request.user)
+        ).distinct().order_by('-id')
+    else:
+        # For anonymous users, only show public projects
+        latest_projects_list = Project.objects.exclude(
+            incoming_connections__type='child'
+        ).filter(visibility='public').order_by('-id')
 
     context = {"latest_projects_list": latest_projects_list,}
     return render(request, "index.html", context=context)
@@ -94,6 +109,33 @@ def project_members(request, project_id):
 
 def project(request, project_id):
     content = get_object_or_404(Project, pk=project_id)
+    
+    # Check if user has permission to view this project
+    can_view = False
+    
+    if content.visibility == 'public':
+        can_view = True
+    elif content.visibility == 'logged_in' and request.user.is_authenticated:
+        can_view = True
+    elif content.visibility == 'restricted' and request.user.is_authenticated:
+        # Check if user is a member or the creator
+        if request.user == content.created_by or Membership.objects.filter(project=content, user=request.user).exists():
+            can_view = True
+    elif content.visibility == 'private' and request.user.is_authenticated:
+        # Only the creator can view
+        if request.user == content.created_by:
+            can_view = True
+    
+    # If user doesn't have permission, show error or redirect
+    if not can_view:
+        if not request.user.is_authenticated:
+            messages.error(request, "You need to log in to view this project.")
+            return redirect('user:signin')  # Fixed URL name
+        else:
+            messages.error(request, "You don't have permission to view this project.")
+            return redirect('project:index')
+    
+    # Continue with the rest of the view logic
     tasks = Task.objects.filter(to_project=project_id)
     needs = Need.objects.filter(to_project=project_id).order_by('-priority', 'id')
     comments = Comment.objects.filter(to_project=project_id)
@@ -166,7 +208,6 @@ def project(request, project_id):
         "can_manage_members": can_manage_members,
     }
     return render(request, "details.html", context=context)
-
 
 
 # @login_required
