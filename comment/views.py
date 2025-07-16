@@ -247,18 +247,21 @@ def add_comment(request):
     Add a new comment or reply.
     """
     if request.method == "POST":
-        print("POST data:", request.POST)  # Debug output
+        # Check if it's an AJAX request
+        is_ajax = request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
         
         content = request.POST.get("content", "").strip()
         parent_id = request.POST.get("parent_id")
         to_project_id = request.POST.get("to_project_id")
         to_task_id = request.POST.get("to_task_id")
         to_need_id = request.POST.get("to_need_id")
-        
-        print(f"Parsed IDs - project: {to_project_id}, task: {to_task_id}, need: {to_need_id}")  # Debug output
 
         if not content:
-            return JsonResponse({"error": "Content is required"}, status=400)
+            if is_ajax:
+                return JsonResponse({"error": "Content is required"}, status=400)
+            else:
+                messages.error(request, "Content is required")
+                return redirect(request.META.get('HTTP_REFERER', '/'))
 
         parent_comment = None
         to_project = None
@@ -268,9 +271,8 @@ def add_comment(request):
         # Handle replies
         if parent_id:
             parent_comment = get_object_or_404(Comment, id=parent_id)
-            print(f"Parent comment: {parent_comment.id}")  # Debug output
             
-            # Inherit the parent's associations (important fix!)
+            # Inherit the parent's associations
             if parent_comment.to_need_id:
                 to_need_id = parent_comment.to_need_id
             elif parent_comment.to_task_id:
@@ -281,17 +283,13 @@ def add_comment(request):
         # Handle top-level comments - PRIORITIZE NEED over others!
         if to_need_id:
             to_need = get_object_or_404(Need, id=to_need_id)
-            print(f"Found need: {to_need.id}")  # Debug output
-            # Explicitly set others to None to avoid conflicts
             to_project = None
             to_task = None
         elif to_task_id:
             to_task = get_object_or_404(Task, id=to_task_id)
-            print(f"Found task: {to_task.id}")  # Debug output
             to_project = None
         elif to_project_id:
             to_project = get_object_or_404(Project, id=to_project_id)
-            print(f"Found project: {to_project.id}")  # Debug output
 
         # Allow anonymous users
         user = request.user if request.user.is_authenticated else None
@@ -308,21 +306,35 @@ def add_comment(request):
             author_email=request.POST.get("author_email") if not user else None,
             ip_address=get_client_ip(request),
         )
-        
-        print(f"Created comment: {comment.id} with to_need_id: {comment.to_need_id}")  # Debug output
 
-        return JsonResponse({
-            "id": comment.id,
-            "content": comment.content,
-            "user": comment.user.username if comment.user else "Anonymous",
-            "total_replies": comment.total_replies,
-            "score": comment.score,
-            # Include these in response to help debug
-            "to_need_id": comment.to_need_id,
-            "to_project_id": comment.to_project_id,
-            "to_task_id": comment.to_task_id
-        })
-
+        # Return appropriate response based on request type
+        if is_ajax:
+            return JsonResponse({
+                "id": comment.id,
+                "content": comment.content,
+                "user": comment.user.username if comment.user else "Anonymous",
+                "user_id": comment.user.id if comment.user else None,
+                "total_replies": comment.total_replies,
+                "score": comment.score,
+                "to_need_id": comment.to_need_id,
+                "to_project_id": comment.to_project_id,
+                "to_task_id": comment.to_task_id
+            })
+        else:
+            # For non-AJAX requests, redirect back to the referring page
+            messages.success(request, "Comment added successfully!")
+            
+            # Determine where to redirect based on what the comment is attached to
+            if comment.to_task:
+                return redirect('task:task_detail', task_id=comment.to_task.id)
+            elif comment.to_need:
+                return redirect('need:need', need_id=comment.to_need.id)
+            elif comment.to_project:
+                return redirect('project:project', project_id=comment.to_project.id)
+            else:
+                return redirect(request.META.get('HTTP_REFERER', '/'))
+    
+    return JsonResponse({"error": "Method not allowed"}, status=405)
 def vote_comment(request, comment_id):
     """
     Vote on a comment (upvote or downvote)

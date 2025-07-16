@@ -6,7 +6,7 @@ class Task(models.Model):
     desc = models.TextField("description")
     priority = models.IntegerField(null=True)
     created_by = models.ForeignKey("user.User", on_delete=models.CASCADE)
-    
+    created_at = models.DateTimeField(auto_now_add=True)
     contributions = models.JSONField(
         null=True
     ) 

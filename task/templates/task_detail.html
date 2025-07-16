@@ -1,64 +1,186 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}2do.net | Home{% endblock %}
-{% block content %}
+{% load humanize %}
+{% block title %}Task: {{ task.name }} | 2do.net{% endblock %}
 
+{% block content %}
 <div class="container">
-  
-  
-  <div class="row">
-      <div class="col s12 m6">
-        <div class="card blue-grey darken-1">
-          <div class="card-content">asdasd</div>
-          <a class="btn-small halfway-fab waves-effect waves-light red"><i class="material-icons">add</i></a>
-          <a class="btn-small waves-effect waves-light red"><i class="material-icons">add</i></a>
-          <a class="btn-small"><i class="material-icons">add</i></a>
-          <div class="card-content white-text">
-            
-              <span class="card-title">{{ task.name }}
-                <a  href="/2 "><span class="new badge" data-badge-caption="custom caption">4</span></a>
-            </span>
-            <p>I am a very simple card. I am good at containing small bits of information.
-            I am convenient because I require little markup to use effectively.</p>
-            
-          </div>
-          <div class="card-content">
-              <div class="chip">Nonprofit    
-                <i><img class="close" src="{% static 'icons/close.svg' %}" alt=""></i>
-              </div>
-  <div class="chip"><a>Software</a></div>
-            <a href="#">This is a link</a>
-            <a href="#">This is a link</a>
-          </div>
+    <!-- Task Header with Back Button -->
+    <div class="row">
+        <div class="col s12">
+            <a href="{% if task.to_project %}/{{ task.to_project.id }}{% else %}/tasks{% endif %}" 
+               class="btn-flat waves-effect">
+                <i class="material-icons left">arrow_back</i>Back to {% if task.to_project %}{{ task.to_project.name }}{% else %}Tasks{% endif %}
+            </a>
         </div>
-      </div>
     </div>
-  
-  
-  
-  <h2>Task Details</h2>
-  
-  <h3>Comments</h3>
-  
-  <div id="comments">
-      {% for comment in comments %}
-          <div class="comment">
-              <p>{{ comment.user.username }}: {{ comment.content }}</p>
-              <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
-              <div class="replies">
-                  {% for reply in comment.replies.all %}
-                      <p>{{ reply.user.username }}: {{ reply.content }}</p>
-                  {% endfor %}
-              </div>
-          </div>
-      {% endfor %}
-  </div>
-  <form id="add-comment-form">
-      <textarea name="content" placeholder="Add a comment..."></textarea>
-      <input type="hidden" name="to_task_id" value="{{ task.id }}">
-      <button type="submit">Submit</button>
-  </form>
-  
+
+    <!-- Main Task Card -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card hoverable">
+                <div class="card-content">
+                    <div class="card-title-row">
+                        <span class="card-title">{{ task.name }}</span>
+                        <div class="right">
+                            {% if task.priority %}
+                            <span class="priority-badge new {% if task.priority == 'high' %}red{% elif task.priority == 'medium' %}orange{% else %}blue{% endif %}" 
+                                  data-badge-caption="{{ task.priority|title }}"></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="task-meta">
+                        <div class="chip">
+                            <i class="material-icons tiny">account_circle</i>
+                            <a href="/u/{{ task.created_by.id }}">{{ task.created_by.name }}</a>
+                        </div>
+                        <div class="chip">
+                            <i class="material-icons tiny">access_time</i>
+                            {{ task.created_at|naturaltime }}
+                        </div>
+                        {% if task.due_date %}
+                        <div class="chip {% if task.is_overdue %}red lighten-3{% endif %}">
+                            <i class="material-icons tiny">event</i>
+                            Due: {{ task.due_date|naturalday }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="divider" style="margin: 15px 0;"></div>
+                    
+                    <div class="task-description flow-text">
+                        {{ task.desc|default:"No description provided."|linebreaks }}
+                    </div>
+                    
+                    {% if task.to_project %}
+                    <div class="section">
+                        <p><strong>Project:</strong> 
+                            <a href="/{{ task.to_project.id }}" class="waves-effect waves-teal btn-flat">
+                                <i class="material-icons left">folder</i>{{ task.to_project.name }}
+                            </a>
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Task Actions -->
+                <div class="card-action">
+                    <a href="#!" class="waves-effect waves-light btn-small blue">
+                        <i class="material-icons left">edit</i>Edit
+                    </a>
+                    <a href="#!" class="waves-effect waves-light btn-small green">
+                        <i class="material-icons left">check</i>Complete
+                    </a>
+                    <a href="#!" class="waves-effect waves-light btn-small red right">
+                        <i class="material-icons left">delete</i>Delete
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comments Section -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card hoverable">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">comment</i>Comments
+                        <span class="badge blue white-text">{{ comments|length }}</span>
+                    </span>
+                    
+                    <div id="comments-container">
+                        {% if comments %}
+                            {% include "comments.html" with comments=comments %}
+                        {% else %}
+                            <div class="center-align" style="padding: 20px;">
+                                <i class="material-icons large grey-text">forum</i>
+                                <p class="grey-text">No comments yet. Be the first to comment!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="divider" style="margin: 20px 0;"></div>
+                    
+                    <h5><i class="material-icons left">add_comment</i>Add a Comment</h5>
+                    <form id="add-comment-form">
+                        {% csrf_token %}
+                        <div class="input-field">
+                            <textarea name="content" id="comment-content" class="materialize-textarea" 
+                                      placeholder="Write your comment here..." required></textarea>
+                            <label for="comment-content">Your Comment</label>
+                        </div>
+                        <input type="hidden" name="to_task_id" value="{{ task.id }}">
+                        <button type="submit" class="btn waves-effect waves-light blue">
+                            <i class="material-icons left">send</i>Post Comment
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Floating Action Button for Task Actions -->
+<div class="fixed-action-btn">
+    <a class="btn-floating btn-large blue">
+        <i class="large material-icons">menu</i>
+    </a>
+    <ul>
+        <li><a href="#!" class="btn-floating green"><i class="material-icons">check</i></a></li>
+        <li><a href="#!" class="btn-floating blue"><i class="material-icons">edit</i></a></li>
+        <li><a href="#!" class="btn-floating red"><i class="material-icons">delete</i></a></li>
+    </ul>
+</div>
+
+<!-- Include the comments JavaScript AFTER the form -->
+<script src="{% static 'comment/comments.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.textareaAutoResize($('#comment-content'));
+    M.FloatingActionButton.init(document.querySelector('.fixed-action-btn'));
+    
+    // Initialize tooltips
+    var elems = document.querySelectorAll('.tooltipped');
+    M.Tooltip.init(elems);
+    
+    // Add some animation to comment submission
+    var form = document.getElementById('add-comment-form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            var btn = this.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Posting...';
+            btn.disabled = true;
+        });
+    }
+});
+</script>
+
+<style>
+    .card-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .task-meta {
+        margin: 10px 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .task-description {
+        padding: 10px 0;
+    }
+    .priority-badge {
+        margin-left: 10px;
+    }
+    .chip i.material-icons {
+        vertical-align: middle;
+        margin-right: 5px;
+    }
+</style>
 {% endblock %}
