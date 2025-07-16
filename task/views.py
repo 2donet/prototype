@@ -1,11 +1,13 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.db.models import Prefetch
+from django.contrib import messages
 from comment.models import Comment, CommentVote, CommentReaction, ReactionType
 from task.models import Task
+from skills.models import Skill
 
 def task_detail(request, task_id):
     """
-    Display details of a specific task, including its comments and replies.
+    Display details of a specific task, including its comments, replies, and skills.
     """
     task = get_object_or_404(Task, pk=task_id)
     
@@ -21,30 +23,23 @@ def task_detail(request, task_id):
     
     # Add reaction counts and user vote/reaction status to comments
     for comment in comments:
-        # Get reaction counts
         comment.reaction_counts = comment.get_reaction_counts()
         
-        # If user is authenticated, get their vote and reactions
         if request.user.is_authenticated:
-            # Check for user vote
             user_vote = comment.votes.filter(user=request.user).first()
             comment.user_vote = user_vote.vote_type if user_vote else None
-            
-            # Get user reactions
             user_reactions = comment.reactions.filter(user=request.user).values_list('reaction_type', flat=True)
             comment.user_reactions = list(user_reactions)
         else:
             comment.user_vote = None
             comment.user_reactions = []
         
-        # Also process replies
         for reply in comment.replies.all():
             reply.reaction_counts = reply.get_reaction_counts()
             
             if request.user.is_authenticated:
                 reply_vote = reply.votes.filter(user=request.user).first()
                 reply.user_vote = reply_vote.vote_type if reply_vote else None
-                
                 reply_reactions = reply.reactions.filter(user=request.user).values_list('reaction_type', flat=True)
                 reply.user_reactions = list(reply_reactions)
             else:
@@ -57,6 +52,23 @@ def task_detail(request, task_id):
     }
     return render(request, "task_detail.html", context=context)
 
+def add_skill_to_task(request, task_id):
+    """Handle adding skills to tasks"""
+    if request.method == 'POST':
+        task = get_object_or_404(Task, pk=task_id)
+        if request.user != task.created_by:
+            messages.error(request, "You can only add skills to tasks you created")
+            return redirect('task:task_detail', task_id=task_id)
+            
+        skill_name = request.POST.get('skill_name', '').strip()
+        if skill_name:
+            try:
+                task.add_skill(skill_name)
+                messages.success(request, f"Added skill: {skill_name}")
+            except ValueError as e:
+                messages.error(request, str(e))
+        
+    return redirect('task:task_detail', task_id=task_id)
 def task_list(request):
     """
     Display a list of all tasks.

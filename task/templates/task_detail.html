@@ -62,6 +62,16 @@
                         </p>
                     </div>
                     {% endif %}
+
+<div class="chips" style="border-bottom: none;">
+    {% for skill in task.skills.all %}
+        <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+            {{ skill.name }}
+        </a>
+    {% empty %}
+        <p>No skills required for this task.</p>
+    {% endfor %}
+</div>
                 </div>
                 
                 <!-- Task Actions -->
