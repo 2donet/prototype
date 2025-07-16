@@ -17,6 +17,11 @@
 
     <!-- Main Task Card -->
     <div class="row">
+{% if user == task.created_by %}
+<div class="mb-3">
+    <a href="{% url 'task:task_update' task.id %}" class="btn btn-sm btn-outline-primary">Edit Task</a>
+</div>
+{% endif %}
         <div class="col s12">
             <div class="card hoverable">
                 <div class="card-content">

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <h4>{% if form.instance.pk %}Edit{% else %}Create{% endif %} Task</h4>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Name Field -->
+                <div class="input-field">
+                    {{ form.name }}
+                    <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                    {% if form.name.errors %}
+                        <div class="red-text">
+                            {{ form.name.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Description Field -->
+                <div class="input-field">
+                    {{ form.desc }}
+                    <label for="{{ form.desc.id_for_label }}">{{ form.desc.label }}</label>
+                    {% if form.desc.errors %}
+                        <div class="red-text">
+                            {{ form.desc.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Priority Field -->
+                <div class="input-field">
+                    {{ form.priority }}
+                    <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
+                    {% if form.priority.errors %}
+                        <div class="red-text">
+                            {{ form.priority.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Project Field -->
+                <div class="input-field">
+                    {{ form.to_project }}
+                    <label>{{ form.to_project.label }}</label>
+                    {% if form.to_project.errors %}
+                        <div class="red-text">
+                            {{ form.to_project.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Parent Task Field -->
+                <div class="input-field">
+                    {{ form.to_task }}
+                    <label>{{ form.to_task.label }}</label>
+                    {% if form.to_task.errors %}
+                        <div class="red-text">
+                            {{ form.to_task.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Skills Field -->
+                <div class="input-field">
+                    <select multiple name="{{ form.skills.name }}" id="{{ form.skills.id_for_label }}">
+                        {% for value, label in form.skills.field.choices %}
+                            <option value="{{ value }}" {% if value in form.skills.value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>{{ form.skills.label }}</label>
+                    {% if form.skills.errors %}
+                        <div class="red-text">
+                            {{ form.skills.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="section">
+                    <button type="submit" class="btn waves-effect waves-light">
+                        {% if form.instance.pk %}Update{% else %}Create{% endif %} Task
+                        <i class="material-icons right">send</i>
+                    </button>
+                    <a href="{% if form.instance.pk %}{% url 'task:task_detail' form.instance.pk %}{% else %}{% url 'task:task_list' %}{% endif %}" 
+                       class="btn waves-effect waves-light grey">
+                        Cancel
+                        <i class="material-icons right">cancel</i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    // Initialize Materialize select elements
+    document.addEventListener('DOMContentLoaded', function() {
+        var selects = document.querySelectorAll('select');
+        M.FormSelect.init(selects);
+    });
+</script>
+{% endblock %}

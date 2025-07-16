@@ -1,488 +1,510 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Existing comment form submission
-    const addCommentForm = document.getElementById('add-comment-form');
-    if (addCommentForm) {
-        addCommentForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Prevent page reload on form submission
+    // Add this helper function:
+    function getCSRFToken() {
+        const token = document.querySelector('[name=csrfmiddlewaretoken]');
+        return token ? token.value : '';
+    }
+
+    // Helper functions
+    const showToast = (message, classes = '') => {
+        if (typeof M !== 'undefined') {
+            M.toast({html: message, classes: classes});
+        } else {
+            alert(message);
+        }
+    };
+
+    const disableButton = (button, text = 'Processing...') => {
+        button.disabled = true;
+        button.innerHTML = `<i class="material-icons left">hourglass_empty</i>${text}`;
+    };
+
+    const enableButton = (button, text = 'Post Comment') => {
+        button.disabled = false;
+        button.innerHTML = `<i class="material-icons left">send</i>${text}`;
+    };
+
+    // Main comment form submission
+const addCommentForm = document.getElementById('add-comment-form');
+
+if (addCommentForm) {
+    addCommentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        disableButton(submitButton);
+
+        try {
             const formData = new FormData(e.target);
-            
-            // Log form data for debugging
-            console.log('Submitting comment with data:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: ${value}`);
-            }
-            
-            // Send the form data to the server
             const response = await fetch('/comments/add/', {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'error') {
+                throw new Error(data.error || 'Unknown error occurred');
+            }
+
+            if (data.status === 'success') {
+                // Create and append new comment
+                const commentHtml = createCommentHtml(data.comment);
+                let commentsContainer = document.getElementById('comments-container');
+
+                if (!commentsContainer) {
+                    commentsContainer = createCommentsContainer();
+                }
+
+                commentsContainer.insertAdjacentHTML('beforeend', commentHtml);
+                addCommentEventListeners(commentsContainer.lastElementChild);
+
+                // Reset form
+                e.target.reset();
+
+                // Manually clear and update the textarea (Materialize-specific)
+                const textarea = e.target.querySelector('textarea[name="content"]');
+                if (textarea) {
+                    textarea.value = '';
+                    if (typeof M !== 'undefined') {
+                        M.textareaAutoResize(textarea);
+                        M.updateTextFields();
+                    }
+                }
+
+                showToast('Comment posted successfully!', 'green');
+
+                // Scroll to the new comment
+                commentsContainer.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+            }
+
+        } catch (error) {
+            console.error('Comment submission error:', error);
+            showToast(error.message, 'red');
+        } finally {
+            enableButton(submitButton);
+        }
+    });
+}
+
+
+    // Reply form handling
+
+
+// Submit handler for reply forms
+document.addEventListener('submit', async (e) => {
+    if (e.target.classList.contains('reply-form')) {
+        e.preventDefault();
+
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        disableButton(submitButton, 'Posting Reply...');
+
+        try {
+            const formData = new FormData(e.target);
+            const response = await fetch('/comments/add/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'error') {
+                throw new Error(data.error || 'Error posting reply');
+            }
+
+            if (data.status === 'success') {
+                const replyHtml = createCommentHtml(data.comment, true);
+                const parentId = data.comment.parent_id;
+                const repliesContainer = document.querySelector(`.replies-container[data-comment-id="${parentId}"]`);
+
+                if (repliesContainer) {
+                    repliesContainer.insertAdjacentHTML('beforeend', replyHtml);
+                    repliesContainer.style.display = 'block';
+                    addCommentEventListeners(repliesContainer.lastElementChild);
+
+                    const replyCountElement = document.querySelector(`.comment[data-comment-id="${parentId}"] .reply-count`);
+                    if (replyCountElement) {
+                        const currentCount = parseInt(replyCountElement.textContent) || 0;
+                        replyCountElement.textContent = currentCount + 1;
+                    }
+                }
+
+                e.target.reset();
+                e.target.style.display = 'none';
+
+                const textarea = e.target.querySelector('textarea');
+                if (textarea) {
+                    textarea.value = '';
+                    if (typeof M !== 'undefined') {
+                        M.textareaAutoResize(textarea);
+                        M.updateTextFields();
+                    }
+                }
+
+                showToast('Reply posted successfully!', 'green');
+            }
+
+        } catch (error) {
+            console.error('Reply submission error:', error);
+            showToast(error.message, 'red');
+        } finally {
+            enableButton(submitButton, 'Post Reply');
+        }
+    }
+});
+
+// Toggle reply form (improved for nested icons inside buttons)
+document.addEventListener('click', (e) => {
+    // Open reply form
+    if (e.target.classList.contains('reply-btn') || e.target.parentElement?.classList.contains('reply-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const replyBtn = e.target.classList.contains('reply-btn') ? e.target : e.target.parentElement;
+        const commentId = replyBtn.getAttribute('data-comment-id');
+        const comment = replyBtn.closest('.comment');
+        const replyForm = comment.querySelector(`.reply-form-container[data-comment-id="${commentId}"]`);
+
+        if (replyForm) {
+            const isHidden = replyForm.style.display === 'none' || !replyForm.style.display;
+            replyForm.style.display = isHidden ? 'block' : 'none';
+
+            if (isHidden) {
+                const textarea = replyForm.querySelector('textarea');
+                if (textarea) {
+                    textarea.focus();
+                    if (typeof M !== 'undefined') {
+                        M.textareaAutoResize(textarea);
+                    }
+                }
+            }
+        }
+    }
+
+    // Cancel reply
+    if (e.target.classList.contains('cancel-reply')) {
+        e.preventDefault();
+        const replyForm = e.target.closest('.reply-form-container');
+        if (replyForm) {
+            replyForm.style.display = 'none';
+            const textarea = replyForm.querySelector('textarea');
+            if (textarea) textarea.value = '';
+        }
+    }
+});
+
+// View replies toggle
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('view-replies-btn')) {
+        e.preventDefault();
+        const commentId = e.target.getAttribute('data-comment-id');
+        const repliesContainer = document.querySelector(`.replies-container[data-comment-id="${commentId}"]`);
+
+        if (repliesContainer) {
+            const isHidden = repliesContainer.style.display === 'none' || !repliesContainer.style.display;
+
+            if (isHidden) {
+                if (!repliesContainer.hasChildNodes()) {
+                    await loadReplies(commentId, repliesContainer);
+                }
+                repliesContainer.style.display = 'block';
+                e.target.textContent = 'Hide Replies';
+            } else {
+                repliesContainer.style.display = 'none';
+                e.target.textContent = 'View Replies';
+            }
+        }
+    }
+});
+
+// Vote handling
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('upvote-btn') || e.target.classList.contains('downvote-btn')) {
+        e.preventDefault();
+        await handleVote(e.target);
+    }
+});
+
+// Reaction handling
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('reaction-btn')) {
+        e.preventDefault();
+        await handleReaction(e.target);
+    }
+});
+
+// Initialize Materialize components
+if (typeof M !== 'undefined') {
+    M.Dropdown.init(document.querySelectorAll('.dropdown-trigger'));
+    M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+    M.Modal.init(document.querySelectorAll('.modal'));
+}
+
+// Initialize all existing comments
+document.querySelectorAll('.comment').forEach(comment => {
+    addCommentEventListeners(comment);
+    initializeVoteState(comment);
+    initializeReactionState(comment);
+});
+
+// Helper to create comments container if missing
+function createCommentsContainer() {
+    const container = document.createElement('div');
+    container.id = 'comments-container';
+    const commentsSection = document.querySelector('.comments-section') || document.body;
+    const form = commentsSection.querySelector('form');
+
+    if (form) {
+        commentsSection.insertBefore(container, form);
+    } else {
+        commentsSection.appendChild(container);
+    }
+
+    return container;
+}
+    function createCommentHtml(commentData, isReply = false) {
+    return `
+        <div class="comment ${isReply ? 'reply' : ''}" data-comment-id="${commentData.id}"
+             data-user-vote="${commentData.user_vote || ''}"
+             data-user-reactions='${JSON.stringify(commentData.user_reactions || [])}'>
+            <img class="miniavatar" src="${commentData.author_avatar || '/static/icons/default-avatar.svg'}">
+            <div class="comment-content">
+                <div class="comment-header">
+                    <a href="/u/${commentData.user_id}">${commentData.user || 'Anonymous'}</a>
+                    <span class="comment-time">just now</span>
+                </div>
+                <p>${commentData.content}</p>
+                <div class="comment-actions">
+                    <div class="vote-container">
+                        <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
+                            <i>👍</i>
+                        </a>
+                        <span class="score">${commentData.score}</span>
+                        <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
+                            <i>👎</i>
+                        </a>
+                    </div>
+                    <button class="btn-flat reply-btn" data-comment-id="${commentData.id}">
+                        <i class="material-icons left">reply</i>Reply
+                    </button>
+                    <span class="reply-count">${commentData.total_replies || 0} replies</span>
+                    ${commentData.total_replies ? `
+                        <button class="btn-flat view-replies-btn" data-comment-id="${commentData.id}">
+                            View Replies
+                        </button>
+                    ` : ''}
+                </div>
+                <div class="replies-container" data-comment-id="${commentData.id}" style="display: none;"></div>
+                <div class="reply-form-container" data-comment-id="${commentData.id}" style="display: none;">
+                    <form class="reply-form">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${getCSRFToken()}">
+                        <div class="input-field">
+                            <textarea name="content" class="materialize-textarea" required></textarea>
+                            <label>Your reply</label>
+                        </div>
+                        <input type="hidden" name="parent_id" value="${commentData.id}">
+                        <input type="hidden" name="to_task_id" value="${commentData.to_task_id || ''}">
+                        <input type="hidden" name="to_project_id" value="${commentData.to_project_id || ''}">
+                        <input type="hidden" name="to_need_id" value="${commentData.to_need_id || ''}">
+                        <button type="submit" class="btn waves-effect waves-light blue">
+                            <i class="material-icons left">send</i>Post Reply
+                        </button>
+                        <button type="button" class="btn waves-effect waves-light grey cancel-reply">
+                            Cancel
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+}
+    async function loadReplies(commentId, container) {
+        try {
+            const response = await fetch(`/comments/load-replies/${commentId}/`);
+            if (response.ok) {
+                const data = await response.json();
+
+                if (data.replies && data.replies.length > 0) {
+                    container.innerHTML = data.replies.map(reply =>
+                        createCommentHtml(reply, true)
+                    ).join('');
+
+                    container.querySelectorAll('.comment').forEach(comment => {
+                        addCommentEventListeners(comment);
+                    });
+                } else {
+                    container.innerHTML = '<p class="grey-text">No replies yet</p>';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading replies:', error);
+            container.innerHTML = '<p class="red-text">Error loading replies</p>';
+        }
+    }
+
+    async function handleVote(button) {
+        const comment = button.closest('.comment');
+        if (!comment) return;
+
+        const commentId = comment.dataset.commentId;
+        const voteType = button.classList.contains('upvote-btn') ? 'UPVOTE' : 'DOWNVOTE';
+        const currentVote = comment.dataset.userVote;
+
+        try {
+            const url = currentVote === voteType ?
+                `/comments/${commentId}/remove-vote/` :
+                `/comments/${commentId}/vote/`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken(),
                 },
+                body: currentVote === voteType ? null : JSON.stringify({ vote_type: voteType })
             });
 
             if (response.ok) {
-                // Parse the response (new comment data)
-                const newComment = await response.json();
-                console.log('New comment created:', newComment);
+                const data = await response.json();
+                comment.querySelector('.score').textContent = data.score;
+                comment.dataset.userVote = currentVote === voteType ? '' : voteType;
 
-                // Generate HTML for the new comment (match the structure in comment.html)
-                const newCommentHtml = `
-                    <div class="comment" data-comment-id="${newComment.id}">
-                        <img class="miniavatar" src="${newComment.author_avatar || '/static/icons/default-avatar.svg'}">
-                        <span>
-                            <i title="${newComment.pub_date}" style="float: right;">just now</i>
-                        </span>
-                        <h4>
-                            <a href="/u/${newComment.user_id}">${newComment.user || 'Anonymous'}</a>
-                        </h4>
-                        <p>${newComment.content}</p>
-                        <br>
-                        <button class="reply-btn" data-comment-id="${newComment.id}">Reply</button>
-                        <span>0 replies</span>
-                        <br>
-                        <button class="view-replies-btn" data-comment-id="${newComment.id}">View Replies</button>
-                        <br>
-                        <div class="replies-container" data-comment-id="${newComment.id}" style="display: none;"></div>
-                        <br>
-                    </div>
-                `;
-
-                // Find the comments container
-                const commentsContainer = document.getElementById('comments-container');
-                if (commentsContainer) {
-                    // Append the new comment to the comments container
-                    commentsContainer.insertAdjacentHTML('beforeend', newCommentHtml);
-                } else {
-                    // If no container exists, look for the general comments section and insert there
-                    const commentsSection = document.querySelector('.comments-section');
-                    if (commentsSection) {
-                        // Create container if none exists
-                        const newContainer = document.createElement('div');
-                        newContainer.id = 'comments-container';
-                        newContainer.innerHTML = newCommentHtml;
-                        
-                        // Insert before the form
-                        const form = commentsSection.querySelector('form');
-                        if (form) {
-                            commentsSection.insertBefore(newContainer, form);
-                        } else {
-                            commentsSection.appendChild(newContainer);
-                        }
-                    } else {
-                        console.error('No comments container found');
-                    }
-                }
-
-                // Clear the form after successful submission
-                e.target.reset();
-                
-                // The key part - after successful comment creation and UI update,
-                // refresh the page to ensure proper backend associations are loaded
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000); // Give the user a moment to see their comment was added
-            } else {
-                // Handle error
-                try {
-                    const errorData = await response.json();
-                    console.error('Error submitting comment:', errorData);
-                    alert('Error: ' + (errorData.error || 'Unknown error occurred'));
-                } catch (e) {
-                    console.error('Error parsing error response:', e);
-                    alert('An error occurred while submitting your comment.');
-                }
-            }
-        });
-    }
-
-    // Handle reply button clicks
-    document.querySelectorAll('.reply-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const commentId = this.getAttribute('data-comment-id');
-            const replyForm = this.closest('.comment').querySelector('.reply-form-container');
-            
-            // Toggle form visibility
-            if (replyForm.style.display === 'none' || !replyForm.style.display) {
-                replyForm.style.display = 'block';
-            } else {
-                replyForm.style.display = 'none';
-            }
-        });
-    });
-    
-    // Handle cancel reply button clicks
-    document.querySelectorAll('.cancel-reply').forEach(button => {
-        button.addEventListener('click', function() {
-            const replyForm = this.closest('.reply-form-container');
-            replyForm.style.display = 'none';
-        });
-    });
-    
-    // Handle reply form submissions
-    document.querySelectorAll('.reply-form, #add-reply-form').forEach(form => {
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const parentId = this.getAttribute('data-parent-id');
-            
-            // Log form data for debugging
-            console.log('Submitting reply with data:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: ${value}`);
-            }
-            
-            try {
-                const response = await fetch('/comments/add/', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                    },
+                // Update UI
+                comment.querySelectorAll('.upvote-btn, .downvote-btn').forEach(btn => {
+                    btn.classList.remove('active');
                 });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Reply created:', data);
-                    
-                    if (data.status === 'flagged') {
-                        // Display message for flagged comments
-                        alert(data.message);
-                        this.reset();
-                        return;
-                    }
-                    
-                    // Create HTML for the new reply
-                    const replyHtml = `
-                        <div class="comment reply" data-comment-id="${data.id}">
-                            <div class="comment-header">
-                                <div class="comment-meta">
-                                    <a href="/u/${data.user_id}">${data.user || 'Anonymous'}</a>
-                                    <span class="time">just now</span>
-                                </div>
-                                <div class="comment-actions">
-                                    <a href="#" class="upvote-btn" data-position="top" data-tooltip="Upvote">👍</a>
-                                    <span class="score">0</span>
-                                    <a href="#" class="downvote-btn" data-position="top" data-tooltip="Downvote">👎</a>
-                                </div>
-                            </div>
-                            <div class="comment-content">
-                                <p>${data.content}</p>
-                            </div>
-                            <div class="comment-footer">
-                                <button class="reply-btn" data-comment-id="${data.id}">Reply</button>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Add to the replies container and hide the form
-                    const repliesContainer = document.querySelector(`.replies-container[data-comment-id="${parentId}"]`);
-                    if (repliesContainer) {
-                        repliesContainer.style.display = 'block';
-                        repliesContainer.insertAdjacentHTML('beforeend', replyHtml);
-                    }
-                    
-                    // Clear and hide form
-                    this.reset();
-                    const formContainer = this.closest('.reply-form-container');
-                    if (formContainer) {
-                        formContainer.style.display = 'none';
-                    }
-                    
-                    // Update reply count
-                    const replyCountElement = document.querySelector(`.comment[data-comment-id="${parentId}"] .reply-count`);
-                    if (replyCountElement) {
-                        const currentCount = parseInt(replyCountElement.textContent.split(' ')[0], 10);
-                        replyCountElement.textContent = `${currentCount + 1} replies`;
-                    }
-                    
-                    // The key part - after successful reply creation and UI update,
-                    // refresh the page to ensure proper backend associations are loaded
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000); // Give the user a moment to see their reply was added
-                } else {
-                    const error = await response.json();
-                    alert('Error: ' + error.error);
-                }
-            } catch (error) {
-                console.error('Error submitting reply:', error);
-                alert('An error occurred. Please try again.');
-            }
-        });
-    });
-    
-    // Handle View Replies button
-    document.querySelectorAll('.view-replies-btn').forEach(button => {
-        button.addEventListener('click', async function() {
-            const commentId = this.getAttribute('data-comment-id');
-            const repliesContainer = document.querySelector(`.replies-container[data-comment-id="${commentId}"]`);
-            
-            if (repliesContainer.style.display === 'none') {
-                // Show if already loaded
-                repliesContainer.style.display = 'block';
-                this.textContent = 'Hide Replies';
-            } else if (repliesContainer.style.display === 'block') {
-                // Hide if showing
-                repliesContainer.style.display = 'none';
-                this.textContent = 'View Replies';
-            } else {
-                // Load from server if not loaded yet
-                try {
-                    const response = await fetch(`/comments/load-replies/${commentId}/`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        
-                        // Only fetch if we have replies to show
-                        if (data.replies && data.replies.length > 0) {
-                            let repliesHtml = '';
-                            
-                            data.replies.forEach(reply => {
-                                repliesHtml += `
-                                    <div class="comment reply" data-comment-id="${reply.id}">
-                                        <div class="comment-header">
-                                            <div class="comment-meta">
-                                                <a href="/u/${reply.user_id}">${reply.user || 'Anonymous'}</a>
-                                                <span class="time">recently</span>
-                                            </div>
-                                            <div class="comment-actions">
-                                                <a href="#" class="upvote-btn">👍</a>
-                                                <span class="score">${reply.score}</span>
-                                                <a href="#" class="downvote-btn">👎</a>
-                                            </div>
-                                        </div>
-                                        <div class="comment-content">
-                                            <p>${reply.content}</p>
-                                        </div>
-                                        <div class="comment-footer">
-                                            <button class="reply-btn" data-comment-id="${reply.id}">Reply</button>
-                                            ${reply.total_replies > 0 ? 
-                                                `<a href="/comments/${reply.id}/">View ${reply.total_replies} nested replies</a>` : ''}
-                                        </div>
-                                    </div>
-                                `;
-                            });
-                            
-                            repliesContainer.innerHTML = repliesHtml;
-                            repliesContainer.style.display = 'block';
-                            this.textContent = 'Hide Replies';
-                            
-                            // Add event listeners to newly created reply buttons
-                            repliesContainer.querySelectorAll('.reply-btn').forEach(btn => {
-                                btn.addEventListener('click', function() {
-                                    const replyId = this.getAttribute('data-comment-id');
-                                    // Handle nested reply (redirect to single comment view)
-                                    window.location.href = `/comments/${replyId}/`;
-                                });
-                            });
-                        } else {
-                            repliesContainer.innerHTML = '<p class="no-replies">No replies yet.</p>';
-                            repliesContainer.style.display = 'block';
-                            this.textContent = 'Hide Replies';
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error loading replies:', error);
-                }
-            }
-        });
-    });
 
-    // Vote functionality
-    document.querySelectorAll('.upvote-btn, .downvote-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            e.preventDefault();
-            
-            // Get the comment element and ID
-            const commentElement = e.target.closest('.comment');
-            if (!commentElement) return;
-            
-            const commentId = commentElement.dataset.commentId;
-            const voteType = e.target.classList.contains('upvote-btn') ? 'UPVOTE' : 'DOWNVOTE';
-            
-            // Check if already voted
-            const userVote = commentElement.dataset.userVote;
-            
-            try {
-                // If already voted the same way, remove vote
-                if (userVote === voteType) {
-                    const response = await fetch(`/comments/${commentId}/remove-vote/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        commentElement.querySelector('.score').textContent = data.score;
-                        commentElement.dataset.userVote = '';
-                        e.target.classList.remove('active');
-                    }
-                } else {
-                    // Cast or change vote
-                    const response = await fetch(`/comments/${commentId}/vote/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                        },
-                        body: JSON.stringify({ vote_type: voteType }),
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        commentElement.querySelector('.score').textContent = data.score;
-                        commentElement.dataset.userVote = voteType;
-                        
-                        // Update active states
-                        commentElement.querySelectorAll('.upvote-btn, .downvote-btn').forEach(btn => {
-                            btn.classList.remove('active');
-                        });
-                        e.target.classList.add('active');
-                    }
+                if (currentVote !== voteType) {
+                    button.classList.add('active');
                 }
-            } catch (error) {
-                console.error('Error voting:', error);
             }
-        });
-    });
-    
-    // Reaction functionality
-    document.querySelectorAll('.reaction-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            e.preventDefault();
-            
-            // Get the comment element and ID
-            const commentElement = e.target.closest('.comment');
-            if (!commentElement) return;
-            
-            const commentId = commentElement.dataset.commentId;
-            const reactionType = e.target.dataset.reactionType;
-            
-            try {
-                const response = await fetch(`/comments/${commentId}/reaction/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                    },
-                    body: JSON.stringify({ reaction_type: reactionType }),
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Update reaction counts
-                    updateReactionCounts(commentElement, data.reaction_counts);
-                    
-                    // Toggle user reaction status
-                    let userReactions = [];
-                    if (commentElement.dataset.userReactions) {
-                        try {
-                            userReactions = JSON.parse(commentElement.dataset.userReactions);
-                        } catch (e) {
-                            userReactions = commentElement.dataset.userReactions.split(',');
-                        }
-                    }
-                    
-                    if (data.action === 'added') {
-                        if (!userReactions.includes(reactionType)) {
-                            userReactions.push(reactionType);
-                        }
-                        e.target.classList.add('active');
-                    } else {
-                        userReactions = userReactions.filter(r => r !== reactionType);
-                        e.target.classList.remove('active');
-                    }
-                    
-                    commentElement.dataset.userReactions = JSON.stringify(userReactions);
-                }
-            } catch (error) {
-                console.error('Error toggling reaction:', error);
-            }
-        });
-    });
-    
-    // Initialize Materialize components if available
-    if (typeof M !== 'undefined') {
-        // Initialize dropdowns
-        var dropdowns = document.querySelectorAll('.dropdown-trigger');
-        M.Dropdown.init(dropdowns);
-        
-        // Initialize tooltips
-        var tooltips = document.querySelectorAll('.tooltipped');
-        M.Tooltip.init(tooltips);
-        
-        // Initialize modals
-        var modals = document.querySelectorAll('.modal');
-        M.Modal.init(modals);
-    }
-    
-    // Set initial active state for votes and reactions
-    document.querySelectorAll('.comment').forEach(comment => {
-        // Set vote active state
-        const userVote = comment.dataset.userVote;
-        if (userVote) {
-            if (userVote === 'UPVOTE') {
-                comment.querySelector('.upvote-btn')?.classList.add('active');
-            } else if (userVote === 'DOWNVOTE') {
-                comment.querySelector('.downvote-btn')?.classList.add('active');
-            }
+        } catch (error) {
+            console.error('Voting error:', error);
+            showToast('Error processing vote', 'red');
         }
-        
-        // Set reaction active states
-        const userReactions = comment.dataset.userReactions;
-        if (userReactions) {
-            let reactions = [];
-            try {
-                reactions = JSON.parse(userReactions);
-            } catch (e) {
-                reactions = userReactions.split(',');
-            }
-            
-            reactions.forEach(reactionType => {
-                const reactionBtn = comment.querySelector(`.reaction-btn[data-reaction-type="${reactionType}"]`);
-                if (reactionBtn) {
-                    reactionBtn.classList.add('active');
-                }
+    }
+
+    async function handleReaction(button) {
+        const comment = button.closest('.comment');
+        if (!comment) return;
+
+        const commentId = comment.dataset.commentId;
+        const reactionType = button.dataset.reactionType;
+
+        try {
+            const response = await fetch(`/comments/${commentId}/reaction/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken(),
+                },
+                body: JSON.stringify({ reaction_type: reactionType })
             });
-        }
-    });
-});
 
-// Helper function to update reaction counts
-function updateReactionCounts(commentElement, reactionCounts) {
-    const countsContainer = commentElement.querySelector('.reaction-counts');
-    if (!countsContainer) return;
-    
-    countsContainer.innerHTML = '';
-    
-    for (const [type, count] of Object.entries(reactionCounts)) {
-        if (count > 0) {
-            const emoji = getReactionEmoji(type);
-            countsContainer.innerHTML += `
-                <div class="reaction-count-container" data-reaction-type="${type}">
-                    <span class="reaction-emoji">${emoji}</span>
-                    <span class="reaction-count">${count}</span>
-                </div>
-            `;
+            if (response.ok) {
+                const data = await response.json();
+                updateReactionCounts(comment, data.reaction_counts);
+
+                // Update user reactions
+                let userReactions = JSON.parse(comment.dataset.userReactions || '[]');
+                if (data.action === 'added') {
+                    if (!userReactions.includes(reactionType)) {
+                        userReactions.push(reactionType);
+                    }
+                    button.classList.add('active');
+                } else {
+                    userReactions = userReactions.filter(r => r !== reactionType);
+                    button.classList.remove('active');
+                }
+                comment.dataset.userReactions = JSON.stringify(userReactions);
+            }
+        } catch (error) {
+            console.error('Reaction error:', error);
+            showToast('Error processing reaction', 'red');
         }
     }
+
+function addCommentEventListeners(commentElement) {
+    // Remove any existing reply button listeners by cloning buttons
+    commentElement.querySelectorAll('.reply-btn').forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.replaceWith(newBtn);
+        // Note: The original listener for 'click' on 'reply-btn' is already handled by a delegated event listener.
+        // No need to re-add a specific listener here unless there's a reason for a direct handler.
+        // For now, removing the direct re-addition to avoid potential duplicate handlers if the delegated event is sufficient.
+    });
+
+    // Add upvote/downvote listeners
+    commentElement.querySelectorAll('.upvote-btn, .downvote-btn').forEach(btn => {
+        // These are already handled by the delegated event listener for 'click' on 'upvote-btn'/'downvote-btn'.
+        // No need to add specific listeners here.
+    });
+
+    // Add reaction listeners
+    commentElement.querySelectorAll('.reaction-btn').forEach(btn => {
+        // These are already handled by the delegated event listener for 'click' on 'reaction-btn'.
+        // No need to add specific listeners here.
+    });
+
+    // Initialize Materialize tooltips and textareas
+    if (typeof M !== 'undefined') {
+        M.Tooltip.init(commentElement.querySelectorAll('.tooltipped'));
+
+        commentElement.querySelectorAll('.materialize-textarea').forEach(textarea => {
+            M.textareaAutoResize(textarea);
+        });
+    }
+
+    // Initialize vote and reaction states
+    initializeVoteState(commentElement);
+    initializeReactionState(commentElement);
 }
 
-// Helper function to get emoji for a reaction type
-function getReactionEmoji(type) {
-    const emojiMap = {
-        'LIKE': '👍',
-        'LOVE': '❤️',
-        'LAUGH': '😂',
-        'INSIGHTFUL': '💡',
-        'CONFUSED': '😕',
-        'SAD': '😢',
-        'THANKS': '🙏'
-    };
-    return emojiMap[type] || '👍';
-}
+
+    function initializeVoteState(comment) {
+        const userVote = comment.dataset.userVote;
+        if (userVote === 'UPVOTE') {
+            comment.querySelector('.upvote-btn')?.classList.add('active');
+        } else if (userVote === 'DOWNVOTE') {
+            comment.querySelector('.downvote-btn')?.classList.add('active');
+        }
+    }
+
+    function initializeReactionState(comment) {
+        const userReactions = JSON.parse(comment.dataset.userReactions || '[]');
+        userReactions.forEach(reactionType => {
+            const btn = comment.querySelector(`.reaction-btn[data-reaction-type="${reactionType}"]`);
+            if (btn) btn.classList.add('active');
+        });
+    }
+
+    function updateReactionCounts(comment, counts) {
+        const container = comment.querySelector('.reaction-counts');
+        if (!container) return;
+
+        container.innerHTML = Object.entries(counts)
+            .filter(([_, count]) => count > 0)
+            .map(([type, count]) => `
+                <div class="reaction-count" data-type="${type}">
+                    ${getReactionEmoji(type)} ${count}
+                </div>
+            `).join('');
+    }
+
+    function getReactionEmoji(type) {
+        const emojiMap = {
+            'LIKE': '👍', 'LOVE': '❤️', 'LAUGH': '😂',
+            'INSIGHTFUL': '💡', 'CONFUSED': '😕',
+            'SAD': '😢', 'THANKS': '🙏'
+        };
+        return emojiMap[type] || '👍';
+    }
+});

@@ -2179,3 +2179,20 @@ details[open] .user-group-summary {
 details:not([open]) .user-group-summary {
     margin-bottom: 10px;
 }
+
+
+.reply-form-container {
+    margin: 15px 0;
+    padding: 15px;
+    background: var(--bg-light);
+    border-radius: 4px;
+}
+
+.reply-form .input-field {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.reply-form .btn {
+    margin-right: 10px;
+}

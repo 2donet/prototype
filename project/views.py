@@ -108,7 +108,7 @@ def project_members(request, project_id):
 
 
 def project(request, project_id):
-    content = get_object_or_404(Project, pk=project_id)
+    content = get_object_or_404(Project, id=project_id)
     
     # Check if user has permission to view this project
     can_view = False
@@ -138,7 +138,15 @@ def project(request, project_id):
     # Continue with the rest of the view logic
     tasks = Task.objects.filter(to_project=project_id)
     needs = Need.objects.filter(to_project=project_id).order_by('-priority', 'id')
-    comments = Comment.objects.filter(to_project=project_id)
+    comments = Comment.objects.filter(
+        to_project=content.id,
+        parent__isnull=True
+    
+        ).select_related('user').prefetch_related(
+            Prefetch('replies', queryset=Comment.objects.select_related('user')),
+            'votes',
+            'reactions'
+        )
 
     # Get all child projects
     child_connections = Connection.objects.filter(

@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.db.models import Count, Prefetch, Q
 import json
 import logging
-
+from django.conf import settings
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -242,99 +242,97 @@ def load_replies(request, comment_id):
     return JsonResponse({"replies": reply_data})
 
 
+
 def add_comment(request):
     """
     Add a new comment or reply.
     """
-    if request.method == "POST":
-        # Check if it's an AJAX request
-        is_ajax = request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
-        
-        content = request.POST.get("content", "").strip()
-        parent_id = request.POST.get("parent_id")
-        to_project_id = request.POST.get("to_project_id")
-        to_task_id = request.POST.get("to_task_id")
-        to_need_id = request.POST.get("to_need_id")
+    print(f"Request method: {request.method}")
+    print(f"Is AJAX: {request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'}")
+    print(f"POST data: {request.POST}")
+    print(f"User: {request.user if request.user.is_authenticated else 'Anonymous'}")
+    
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "error": "Method not allowed"}, status=405)
 
-        if not content:
-            if is_ajax:
-                return JsonResponse({"error": "Content is required"}, status=400)
-            else:
-                messages.error(request, "Content is required")
-                return redirect(request.META.get('HTTP_REFERER', '/'))
+    # Check if it's an AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    # Get form data
+    content = request.POST.get("content", "").strip()
+    parent_id = request.POST.get("parent_id")
+    to_project_id = request.POST.get("to_project_id")
+    to_task_id = request.POST.get("to_task_id")
+    to_need_id = request.POST.get("to_need_id")
 
+    # Validate content
+    if not content:
+        return JsonResponse({
+            "status": "error",
+            "error": "Content is required",
+            "fields": {"content": "This field cannot be empty"}
+        }, status=400)
+
+    try:
         parent_comment = None
-        to_project = None
-        to_task = None
-        to_need = None
-
-        # Handle replies
         if parent_id:
             parent_comment = get_object_or_404(Comment, id=parent_id)
-            
-            # Inherit the parent's associations
-            if parent_comment.to_need_id:
-                to_need_id = parent_comment.to_need_id
-            elif parent_comment.to_task_id:
-                to_task_id = parent_comment.to_task_id
-            elif parent_comment.to_project_id:
-                to_project_id = parent_comment.to_project_id
-
-        # Handle top-level comments - PRIORITIZE NEED over others!
-        if to_need_id:
-            to_need = get_object_or_404(Need, id=to_need_id)
-            to_project = None
-            to_task = None
-        elif to_task_id:
-            to_task = get_object_or_404(Task, id=to_task_id)
-            to_project = None
-        elif to_project_id:
-            to_project = get_object_or_404(Project, id=to_project_id)
-
-        # Allow anonymous users
-        user = request.user if request.user.is_authenticated else None
+            # Inherit the parent's associations if not specified
+            to_need_id = to_need_id or parent_comment.to_need_id
+            to_task_id = to_task_id or parent_comment.to_task_id
+            to_project_id = to_project_id or parent_comment.to_project_id
 
         # Create the comment
         comment = Comment.objects.create(
-            user=user,
+            user=request.user if request.user.is_authenticated else None,
             content=content,
             parent=parent_comment,
-            to_project=to_project,
-            to_task=to_task,
-            to_need=to_need,
-            author_name=request.POST.get("author_name") if not user else None,
-            author_email=request.POST.get("author_email") if not user else None,
+            to_project_id=to_project_id,
+            to_task_id=to_task_id,
+            to_need_id=to_need_id,
+            author_name=request.POST.get("author_name") if not request.user.is_authenticated else None,
+            author_email=request.POST.get("author_email") if not request.user.is_authenticated else None,
             ip_address=get_client_ip(request),
         )
 
-        # Return appropriate response based on request type
-        if is_ajax:
-            return JsonResponse({
+        # Build response data
+        response_data = {
+            "status": "success",
+            "comment": {
                 "id": comment.id,
                 "content": comment.content,
-                "user": comment.user.username if comment.user else "Anonymous",
+                "user": comment.user.username if comment.user else (comment.author_name or "Anonymous"),
                 "user_id": comment.user.id if comment.user else None,
-                "total_replies": comment.total_replies,
-                "score": comment.score,
+                "author_avatar": (
+                    comment.user.userprofile.avatar.url 
+                    if comment.user and hasattr(comment.user, 'userprofile') and hasattr(comment.user.userprofile, 'avatar') and comment.user.userprofile.avatar
+                    else '/static/icons/default-avatar.svg'
+                ),
+                "created_at": comment.created_at.isoformat(),  # Make sure your Comment model has created_at field
+                "total_replies": 0,  # New comments have no replies yet
+                "score": 0,  # New comments start with score 0
+                "parent_id": parent_id,
                 "to_need_id": comment.to_need_id,
                 "to_project_id": comment.to_project_id,
-                "to_task_id": comment.to_task_id
-            })
-        else:
-            # For non-AJAX requests, redirect back to the referring page
-            messages.success(request, "Comment added successfully!")
-            
-            # Determine where to redirect based on what the comment is attached to
-            if comment.to_task:
-                return redirect('task:task_detail', task_id=comment.to_task.id)
-            elif comment.to_need:
-                return redirect('need:need', need_id=comment.to_need.id)
-            elif comment.to_project:
-                return redirect('project:project', project_id=comment.to_project.id)
-            else:
-                return redirect(request.META.get('HTTP_REFERER', '/'))
-    
-    return JsonResponse({"error": "Method not allowed"}, status=405)
+                "to_task_id": comment.to_task_id,
+                "user_vote": None,  # New comment has no vote from user yet
+                "user_reactions": [],  # New comment has no reactions yet
+                "reaction_counts": {},  # No reactions yet
+            }
+        }
+
+        return JsonResponse(response_data)
+
+    except Exception as e:
+        print(f"Error creating comment: {str(e)}")
+        import traceback
+        traceback.print_exc()  # This will help debug the exact error
+        return JsonResponse({
+            "status": "error",
+            "error": "An error occurred while saving your comment",
+            "debug": str(e) if settings.DEBUG else None
+        }, status=500)
+
 def vote_comment(request, comment_id):
     """
     Vote on a comment (upvote or downvote)

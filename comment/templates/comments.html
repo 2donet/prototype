@@ -90,7 +90,23 @@
     <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
 
     <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
-
+<div class="reply-form-container" data-comment-id="{{ comment.id }}" style="display: none;">
+    <form class="reply-form">
+        {% csrf_token %}
+        <div class="input-field">
+            <textarea name="content" class="materialize-textarea" required></textarea>
+            <label>Your reply</label>
+        </div>
+        <input type="hidden" name="parent_id" value="{{ comment.id }}">
+        <input type="hidden" name="to_task_id" value="{{ task.id }}">
+        <button type="submit" class="btn waves-effect waves-light blue">
+            <i class="material-icons left">send</i>Post Reply
+        </button>
+        <button type="button" class="btn waves-effect waves-light grey cancel-reply">
+            Cancel
+        </button>
+    </form>
+</div>
     <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
         {% include "comments.html" with comments=comment.replies.all %}
     </div>
