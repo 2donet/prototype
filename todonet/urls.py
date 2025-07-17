@@ -27,6 +27,7 @@ urlpatterns = [
     path("n/", include("need.urls")),
     path("c/", include("contribution.urls")),
     path('', include('skills.urls')),  
+    path("submissions/", include("submissions.urls")),
 
     # path("project_constructor/", include("project_constructor.urls")),
 

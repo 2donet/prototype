@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'todonet',
     'django.contrib.humanize',
     'contribution',
-
+    'submissions.apps.SubmissionsConfig',
     'decisions.apps.DecisionsConfig',
 
     'skills', 
