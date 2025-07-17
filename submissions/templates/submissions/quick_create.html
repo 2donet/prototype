@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12 m8 offset-m2">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">{{ title }}</span>
+                    
+                    <!-- Content Summary -->
+                    <div class="card blue-grey lighten-5" style="margin-bottom: 2rem;">
+                        <div class="card-content">
+                            <h6>{{ content_type|title }} Details</h6>
+                            <p><strong>{{ content_object.title|default:content_object.name }}</strong></p>
+                            {% if content_object.description %}
+                                <p class="grey-text">{{ content_object.description|truncatewords:30 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Why Fit -->
+                        <div class="input-field">
+                            <label for="{{ form.why_fit.id_for_label }}">
+                                {{ form.why_fit.label }} *
+                            </label>
+                            {{ form.why_fit }}
+                            {% if form.why_fit.help_text %}
+                                <span class="helper-text">{{ form.why_fit.help_text }}</span>
+                            {% endif %}
+                            {% if form.why_fit.errors %}
+                                <span class="red-text">{{ form.why_fit.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Skills -->
+                        <div class="input-field">
+                            <label for="{{ form.relevant_skills.id_for_label }}">
+                                {{ form.relevant_skills.label }}
+                            </label>
+                            {{ form.relevant_skills }}
+                            {% if form.relevant_skills.help_text %}
+                                <span class="helper-text">{{ form.relevant_skills.help_text }}</span>
+                            {% endif %}
+                            {% if form.relevant_skills.errors %}
+                                <span class="red-text">{{ form.relevant_skills.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Additional Info -->
+                        <div class="input-field">
+                            <label for="{{ form.additional_info.id_for_label }}">
+                                {{ form.additional_info.label }}
+                            </label>
+                            {{ form.additional_info }}
+                            {% if form.additional_info.help_text %}
+                                <span class="helper-text">{{ form.additional_info.help_text }}</span>
+                            {% endif %}
+                            {% if form.additional_info.errors %}
+                                <span class="red-text">{{ form.additional_info.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="card-action">
+                            <button type="submit" class="btn blue waves-effect waves-light">
+                                <i class="material-icons left">send</i>Submit Application
+                            </button>
+                            <a href="javascript:history.back()" class="btn-flat">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

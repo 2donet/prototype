@@ -20,6 +20,14 @@
                 University of Warsaw, Pasteura 5 Warszawa, Poland
             </a>
             <br>
+            <a href="{% url 'submissions:submission_list' 'project' project.id %}" 
+   class="btn blue">
+    View Submissions ({{ project.submissions.count }})
+</a>
+<a href="{% url 'submissions:create_submission_for_content' 'project' project.id %}" 
+   class="btn blue waves-effect waves-light">
+    <i class="material-icons left">assignment</i>Apply Now
+</a>
 {% include "components/status.html" %}
             <h5>Goal</h5>
             <p>

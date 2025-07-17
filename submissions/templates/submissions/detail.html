@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Submission Details{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <div class="card-title">
+                        <h4>Submission Details</h4>
+                        <div class="right">
+                            <span class="status-badge status-{{ submission.status|lower }}">
+                                {{ submission.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col s12 m6">
+                            <h6>Applicant Information</h6>
+                            <p><strong>Name:</strong> {{ submission.applicant.get_full_name|default:submission.applicant.username }}</p>
+                            <p><strong>Email:</strong> {{ submission.applicant.email }}</p>
+                            <p><strong>Applied:</strong> {{ submission.submitted_at|date:"F d, Y H:i" }}</p>
+                        </div>
+                        
+                        <div class="col s12 m6">
+                            <h6>{{ content_type_name }} Information</h6>
+                            <p><strong>Title:</strong> {{ content_object.title|default:content_object.name }}</p>
+                            {% if content_object.description %}
+                            <p><strong>Description:</strong> {{ content_object.description|truncatewords:20 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Why They Fit</h6>
+                            <p>{{ submission.why_fit|default:"No response provided" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if submission.relevant_skills.exists %}
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Relevant Skills</h6>
+                            <div class="chips-container">
+                                {% for skill in submission.relevant_skills.all %}
+                                    <div class="chip blue lighten-4">{{ skill.name }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if submission.additional_info %}
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Additional Information</h6>
+                            <p>{{ submission.additional_info }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if can_edit %}
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Update Status</h6>
+                            <select class="browser-default status-update" 
+                                    data-submission-id="{{ submission.id }}"
+                                    data-current-status="{{ submission.status }}">
+                                {% for status_code, status_name in status_choices %}
+                                    <option value="{{ status_code }}" 
+                                            {% if status_code == submission.status %}selected{% endif %}>
+                                        {{ status_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-action">
+                    <a href="{% url 'submissions:submission_list' content_type content_object.id %}" 
+                       class="btn-flat">
+                        <i class="material-icons left">arrow_back</i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle status updates (same as in list.html)
+    const statusSelect = document.querySelector('.status-update');
+    
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            const submissionId = this.dataset.submissionId;
+            const newStatus = this.value;
+            const currentStatus = this.dataset.currentStatus;
+            
+            if (newStatus === currentStatus) {
+                return; // No change
+            }
+            
+            // Show loading state
+            this.disabled = true;
+            
+            // Make AJAX request
+            fetch(`/submissions/${submissionId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: `status=${newStatus}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the data attribute
+                    this.dataset.currentStatus = newStatus;
+                    // Show success message
+                    M.toast({html: data.message, classes: 'green'});
+                    // Refresh the page to update UI
+                    location.reload();
+                } else {
+                    // Revert the selection
+                    this.value = currentStatus;
+                    M.toast({html: data.error || 'Failed to update status', classes: 'red'});
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.value = currentStatus;
+                M.toast({html: 'Network error occurred', classes: 'red'});
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

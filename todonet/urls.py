@@ -19,7 +19,9 @@ from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("project.urls")),
+    
+
+    path("submissions/", include("submissions.urls")),
     path("comments/", include("comment.urls")),
     path("u/", include("user.urls")),
     path("d/", include("decisions.urls")),
@@ -27,7 +29,9 @@ urlpatterns = [
     path("n/", include("need.urls")),
     path("c/", include("contribution.urls")),
     path('', include('skills.urls')),  
-    path("submissions/", include("submissions.urls")),
+    
+    path("", include("project.urls")),
+    
 
     # path("project_constructor/", include("project_constructor.urls")),
 

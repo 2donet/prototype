@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<!-- <style>
+    .form-section {
+        margin-bottom: 2rem;
+    }
+    .content-selection {
+        border: 1px solid #ddd;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+    .skill-selection {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+    }
+    .char-counter {
+        font-size: 0.8rem;
+        color: #666;
+        float: right;
+        margin-top: 0.5rem;
+    }
+</style> -->
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12 m8 offset-m2">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">{{ title }}</span>
+                    
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Content Selection -->
+                        <div class="form-section">
+                            <h6>What are you applying for?</h6>
+                            <div class="content-selection">
+                                <div class="row">
+                                    <div class="col s12 m4">
+                                        <label for="{{ form.to_project.id_for_label }}">{{ form.to_project.label }}</label>
+                                        {{ form.to_project }}
+                                        {% if form.to_project.errors %}
+                                            <span class="red-text">{{ form.to_project.errors.0 }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col s12 m4">
+                                        <label for="{{ form.to_task.id_for_label }}">{{ form.to_task.label }}</label>
+                                        {{ form.to_task }}
+                                        {% if form.to_task.errors %}
+                                            <span class="red-text">{{ form.to_task.errors.0 }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col s12 m4">
+                                        <label for="{{ form.to_need.id_for_label }}">{{ form.to_need.label }}</label>
+                                        {{ form.to_need }}
+                                        {% if form.to_need.errors %}
+                                            <span class="red-text">{{ form.to_need.errors.0 }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Why Fit -->
+                        <div class="form-section">
+                            <label for="{{ form.why_fit.id_for_label }}">
+                                {{ form.why_fit.label }} *
+                            </label>
+                            {{ form.why_fit }}
+                            <div class="char-counter">
+                                <span id="why_fit_counter">0</span> / 1000
+                            </div>
+                            {% if form.why_fit.help_text %}
+                                <div class="grey-text text-darken-1">{{ form.why_fit.help_text }}</div>
+                            {% endif %}
+                            {% if form.why_fit.errors %}
+                                <span class="red-text">{{ form.why_fit.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Skills -->
+                        <div class="form-section">
+                            <label for="{{ form.relevant_skills.id_for_label }}">
+                                {{ form.relevant_skills.label }}
+                            </label>
+                            <div class="skill-selection">
+                                {{ form.relevant_skills }}
+                            </div>
+                            {% if form.relevant_skills.help_text %}
+                                <div class="grey-text text-darken-1">{{ form.relevant_skills.help_text }}</div>
+                            {% endif %}
+                            {% if form.relevant_skills.errors %}
+                                <span class="red-text">{{ form.relevant_skills.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Additional Info -->
+                        <div class="form-section">
+                            <label for="{{ form.additional_info.id_for_label }}">
+                                {{ form.additional_info.label }}
+                            </label>
+                            {{ form.additional_info }}
+                            <div class="char-counter">
+                                <span id="additional_info_counter">0</span> / 500
+                            </div>
+                            {% if form.additional_info.help_text %}
+                                <div class="grey-text text-darken-1">{{ form.additional_info.help_text }}</div>
+                            {% endif %}
+                            {% if form.additional_info.errors %}
+                                <span class="red-text">{{ form.additional_info.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Form-wide errors -->
+                        {% if form.non_field_errors %}
+                            <div class="red-text">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="card-action">
+                            <button type="submit" class="btn blue waves-effect waves-light">
+                                <i class="material-icons left">send</i>Submit Application
+                            </button>
+                            <a href="javascript:history.back()" class="btn-flat">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character counters
+    const whyFitField = document.querySelector('#id_why_fit');
+    const additionalInfoField = document.querySelector('#id_additional_info');
+    
+    function updateCounter(field, counterId) {
+        const counter = document.getElementById(counterId);
+        const count = field.value.length;
+        counter.textContent = count;
+        
+        const maxLength = field.getAttribute('maxlength') || 1000;
+        if (count > maxLength * 0.9) {
+            counter.style.color = 'red';
+        } else if (count > maxLength * 0.8) {
+            counter.style.color = 'orange';
+        } else {
+            counter.style.color = '#666';
+        }
+    }
+    
+    if (whyFitField) {
+        whyFitField.addEventListener('input', () => updateCounter(whyFitField, 'why_fit_counter'));
+        updateCounter(whyFitField, 'why_fit_counter');
+    }
+    
+    if (additionalInfoField) {
+        additionalInfoField.addEventListener('input', () => updateCounter(additionalInfoField, 'additional_info_counter'));
+        updateCounter(additionalInfoField, 'additional_info_counter');
+    }
+    
+    // Content selection logic
+    const projectSelect = document.querySelector('#id_to_project');
+    const taskSelect = document.querySelector('#id_to_task');
+    const needSelect = document.querySelector('#id_to_need');
+    
+    function clearOtherSelections(currentSelect) {
+        [projectSelect, taskSelect, needSelect].forEach(select => {
+            if (select !== currentSelect && select && select.value) {
+                select.value = '';
+            }
+        });
+    }
+    
+    if (projectSelect) {
+        projectSelect.addEventListener('change', () => {
+            if (projectSelect.value) clearOtherSelections(projectSelect);
+        });
+    }
+    
+    if (taskSelect) {
+        taskSelect.addEventListener('change', () => {
+            if (taskSelect.value) clearOtherSelections(taskSelect);
+        });
+    }
+    
+    if (needSelect) {
+        needSelect.addEventListener('change', () => {
+            if (needSelect.value) clearOtherSelections(needSelect);
+        });
+    }
+});
+</script>
+{% endblock %}

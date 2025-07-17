@@ -23,8 +23,9 @@ def need(request, need_id):
     )
     context = {"content": content,
     "comments":comments,
+    'need': content,
                }
-    return render(request, "details.html", context=context)
+    return render(request, "need/details.html", context=context)
     
 @login_required
 def edit_need(request, need_id):

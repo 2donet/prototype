@@ -109,7 +109,7 @@ def project_members(request, project_id):
 
 def project(request, project_id):
     content = get_object_or_404(Project, id=project_id)
-    
+    project = get_object_or_404(Project, id=project_id)
     # Check if user has permission to view this project
     can_view = False
     
@@ -208,6 +208,7 @@ def project(request, project_id):
         "comments": comments,
         "tasks": tasks,
         "needs": needs,
+        "project": project,
         "admin_users": admin_users,
         "moderator_users": moderator_users,
         "contributor_users": contributor_users,

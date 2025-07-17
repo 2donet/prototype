@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Error{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content center-align">
+                    <i class="material-icons large red-text">error</i>
+                    <h5>Error</h5>
+                    <p>{{ error }}</p>
+                    <a href="javascript:history.back()" class="btn blue">Go Back</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

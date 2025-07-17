@@ -11,6 +11,14 @@
     <div class="ncard">
         <div class="box">
             <h2>{{ content.name }}</h2>
+<a href="{% url 'submissions:create_submission_for_content' 'need' content.id %}"
+   class="btn blue waves-effect waves-light">
+    <i class="material-icons left">assignment</i>Apply Now
+</a>
+<a href="{% url 'submissions:submission_list' 'need' content.id %}" class="btn blue">
+    View Submissions ({{ content.submissions.count }})
+</a>
+
             <span class="priority-badge">Priority: {{ content.priority }}</span>
             <span class="status-badge">Status: {{ content.get_status_display }}</span>
             <p class="need-summary">{{ content.desc }}</p>
@@ -38,9 +46,11 @@
             <p>Created: {{ content.created_date|naturaltime }}</p>
             {% if content.tags %}
             <div class="tags">
-                {% for tag in content.tags.split(',') %}
-                <span class="chip">{{ tag.strip }}</span>
-                {% endfor %}
+{% if content.tags %}
+<div class="tags">
+    <span class="chip">{{ content.tags }}</span>
+</div>
+{% endif %}
             </div>
             {% endif %}
         </div>

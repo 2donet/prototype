@@ -33,7 +33,16 @@
                                   data-badge-caption="{{ task.priority|title }}"></span>
                             {% endif %}
                         </div>
-                    </div>
+                        <a href="{% url 'submissions:create_submission_for_content' 'task' task.id %}"
+                            class="btn blue waves-effect waves-light">
+                            <i class="material-icons left">assignment</i>Apply Now
+                        </a>
+                        </div>
+                        
+                        <a href="{% url 'submissions:submission_list' 'task' task.id %}" 
+                        class="btn blue waves-effect waves-light">
+                            <i class="material-icons left">assignment</i>View Submissions
+                        </a>
                     
                     <div class="task-meta">
                         <div class="chip">

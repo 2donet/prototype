@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ content_type_name }} Submissions{% endblock %}
+
+{% block extra_css %}
+<style>
+    .submission-card {
+        margin-bottom: 1rem;
+        transition: box-shadow 0.3s ease;
+    }
+    .submission-card:hover {
+        box-shadow: 0 8px 17px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+    }
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8em;
+        font-weight: bold;
+    }
+    .status-pending { background-color: #ffab40; color: white; }
+    .status-reviewed { background-color: #42a5f5; color: white; }
+    .status-accepted { background-color: #66bb6a; color: white; }
+    .status-rejected { background-color: #ef5350; color: white; }
+    .status-archived { background-color: #bdbdbd; color: white; }
+    .stats-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .filter-section {
+        background: #f5f5f5;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <h4>{{ content_type_name }} Submissions</h4>
+            <p class="grey-text">
+                Submissions for: <strong>{{ content_object.title|default:content_object.name }}</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col s12 m2">
+            <div class="card-panel stats-card center-align">
+                <h5 class="blue-text">{{ stats.total }}</h5>
+                <p>Total</p>
+            </div>
+        </div>
+        <div class="col s12 m2">
+            <div class="card-panel stats-card center-align">
+                <h5 class="orange-text">{{ stats.pending }}</h5>
+                <p>Pending</p>
+            </div>
+        </div>
+        <div class="col s12 m2">
+            <div class="card-panel stats-card center-align">
+                <h5 class="light-blue-text">{{ stats.reviewed }}</h5>
+                <p>Reviewed</p>
+            </div>
+        </div>
+        <div class="col s12 m2">
+            <div class="card-panel stats-card center-align">
+                <h5 class="green-text">{{ stats.accepted }}</h5>
+                <p>Accepted</p>
+            </div>
+        </div>
+        <div class="col s12 m2">
+            <div class="card-panel stats-card center-align">
+                <h5 class="red-text">{{ stats.rejected }}</h5>
+                <p>Rejected</p>
+            </div>
+        </div>
+        <div class="col s12 m2">
+            <div class="card-panel stats-card center-align">
+                <h5 class="grey-text">{{ stats.archived }}</h5>
+                <p>Archived</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+        <form method="GET" class="row">
+            <div class="col s12 m3">
+                <select name="status" class="browser-default">
+                    <option value="">All Statuses</option>
+                    {% for status_code, status_name in status_choices %}
+                        <option value="{{ status_code }}" {% if status_code == current_status_filter %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col s12 m3">
+                <input type="text" name="search" placeholder="Search applicants..." 
+                       value="{{ current_search }}" class="browser-default">
+            </div>
+            <div class="col s12 m3">
+                <select name="sort" class="browser-default">
+                    <option value="-submitted_at" {% if current_sort == '-submitted_at' %}selected{% endif %}>
+                        Newest First
+                    </option>
+                    <option value="submitted_at" {% if current_sort == 'submitted_at' %}selected{% endif %}>
+                        Oldest First
+                    </option>
+                    <option value="status" {% if current_sort == 'status' %}selected{% endif %}>
+                        Status A-Z
+                    </option>
+                    <option value="applicant__username" {% if current_sort == 'applicant__username' %}selected{% endif %}>
+                        Applicant A-Z
+                    </option>
+                </select>
+            </div>
+            <div class="col s12 m3">
+                <button type="submit" class="btn blue waves-effect waves-light">
+                    <i class="material-icons left">filter_list</i>Filter
+                </button>
+                <a href="?" class="btn-flat">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Submissions List -->
+    <div class="row">
+        <div class="col s12">
+            {% if submissions %}
+                {% for submission in submissions %}
+                <div class="card submission-card">
+                    <div class="card-content">
+                        <div class="row valign-wrapper">
+                            <div class="col s12 m8">
+                                <div class="row">
+                                    <div class="col s12 m6">
+                                        <strong>{{ submission.applicant.get_full_name|default:submission.applicant.username }}</strong>
+                                        <br>
+                                        <small class="grey-text">{{ submission.applicant.email }}</small>
+                                    </div>
+                                    <div class="col s12 m6">
+                                        <span class="status-badge status-{{ submission.status|lower }}">
+                                            {{ submission.get_status_display }}
+                                        </span>
+                                        <br>
+                                        <small class="grey-text">{{ submission.submitted_at|date:"M d, Y H:i" }}</small>
+                                    </div>
+                                </div>
+                                
+                                {% if submission.why_fit %}
+                                <p class="truncate" style="margin-top: 1rem;">
+                                    <strong>Why they fit:</strong> {{ submission.why_fit|truncatewords:20 }}
+                                </p>
+                                {% endif %}
+                                
+                                {% if submission.relevant_skills.exists %}
+                                <div class="chips-container" style="margin-top: 0.5rem;">
+                                    {% for skill in submission.relevant_skills.all %}
+                                        <div class="chip blue lighten-4">{{ skill.name }}</div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col s12 m4">
+                                <div class="right-align">
+                                    <!-- Status Update Dropdown -->
+                                    <select class="browser-default status-update" 
+                                            data-submission-id="{{ submission.id }}"
+                                            data-current-status="{{ submission.status }}">
+                                        {% for status_code, status_name in status_choices %}
+                                            <option value="{{ status_code }}" 
+                                                    {% if status_code == submission.status %}selected{% endif %}>
+                                                {{ status_name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    
+                                    <a href="{% url 'submissions:submission_detail' submission.id %}" 
+                                       class="btn-small blue waves-effect waves-light">
+                                        <i class="material-icons left">visibility</i>View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if submissions.has_other_pages %}
+                <div class="center-align">
+                    <ul class="pagination">
+                        {% if submissions.has_previous %}
+                            <li class="waves-effect">
+                                <a href="?page={{ submissions.previous_page_number }}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
+                                    <i class="material-icons">chevron_left</i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in submissions.paginator.page_range %}
+                            {% if num == submissions.number %}
+                                <li class="active blue"><a href="#">{{ num }}</a></li>
+                            {% else %}
+                                <li class="waves-effect">
+                                    <a href="?page={{ num }}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if submissions.has_next %}
+                            <li class="waves-effect">
+                                <a href="?page={{ submissions.next_page_number }}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
+                                    <i class="material-icons">chevron_right</i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="card">
+                    <div class="card-content center-align">
+                        <i class="material-icons large grey-text">assignment</i>
+                        <h5>No submissions found</h5>
+                        <p class="grey-text">No submissions match your current filters.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle status updates
+    const statusSelects = document.querySelectorAll('.status-update');
+    
+    statusSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const submissionId = this.dataset.submissionId;
+            const newStatus = this.value;
+            const currentStatus = this.dataset.currentStatus;
+            
+            if (newStatus === currentStatus) {
+                return; // No change
+            }
+            
+            // Show loading state
+            this.disabled = true;
+            
+            // Make AJAX request
+            fetch(`/submissions/${submissionId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: `status=${newStatus}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the data attribute
+                    this.dataset.currentStatus = newStatus;
+                    // Show success message
+                    M.toast({html: data.message, classes: 'green'});
+                    // Refresh the page to update UI
+                    location.reload();
+                } else {
+                    // Revert the selection
+                    this.value = currentStatus;
+                    M.toast({html: data.error || 'Failed to update status', classes: 'red'});
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.value = currentStatus;
+                M.toast({html: 'Network error occurred', classes: 'red'});
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
