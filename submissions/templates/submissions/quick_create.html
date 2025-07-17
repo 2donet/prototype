@@ -27,45 +27,44 @@
                         
                         <!-- Why Fit -->
                         <div class="input-field">
-                            <label for="{{ form.why_fit.id_for_label }}">
-                                {{ form.why_fit.label }} *
-                            </label>
-                            {{ form.why_fit }}
-                            {% if form.why_fit.help_text %}
-                                <span class="helper-text">{{ form.why_fit.help_text }}</span>
-                            {% endif %}
-                            {% if form.why_fit.errors %}
-                                <span class="red-text">{{ form.why_fit.errors.0 }}</span>
-                            {% endif %}
+                            <textarea id="why_fit" name="why_fit" class="materialize-textarea" 
+                                      placeholder="Why are you interested in this opportunity? (Optional)"
+                                      rows="3">{{ form_data.why_fit }}</textarea>
+                            <label for="why_fit">Why are you a good fit? (Optional)</label>
                         </div>
                         
                         <!-- Skills -->
                         <div class="input-field">
-                            <label for="{{ form.relevant_skills.id_for_label }}">
-                                {{ form.relevant_skills.label }}
-                            </label>
-                            {{ form.relevant_skills }}
-                            {% if form.relevant_skills.help_text %}
-                                <span class="helper-text">{{ form.relevant_skills.help_text }}</span>
-                            {% endif %}
-                            {% if form.relevant_skills.errors %}
-                                <span class="red-text">{{ form.relevant_skills.errors.0 }}</span>
-                            {% endif %}
+                            <label for="relevant_skills">Your Relevant Skills (Optional)</label>
+                            <select multiple name="relevant_skills" id="relevant_skills" 
+                                    class="browser-default" size="6">
+                                {% for skill in skills %}
+                                    <option value="{{ skill.id }}" 
+                                            {% if skill.id in form_data.relevant_skills %}selected{% endif %}>
+                                        {{ skill.name }}
+                                    </option>
+                                {% empty %}
+                                    <option disabled>No skills available</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         
                         <!-- Additional Info -->
                         <div class="input-field">
-                            <label for="{{ form.additional_info.id_for_label }}">
-                                {{ form.additional_info.label }}
-                            </label>
-                            {{ form.additional_info }}
-                            {% if form.additional_info.help_text %}
-                                <span class="helper-text">{{ form.additional_info.help_text }}</span>
-                            {% endif %}
-                            {% if form.additional_info.errors %}
-                                <span class="red-text">{{ form.additional_info.errors.0 }}</span>
-                            {% endif %}
+                            <textarea id="additional_info" name="additional_info" class="materialize-textarea" 
+                                      placeholder="Additional information (Optional)"
+                                      rows="2">{{ form_data.additional_info }}</textarea>
+                            <label for="additional_info">Additional Information (Optional)</label>
                         </div>
+                        
+                        <!-- Show any error messages -->
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="red-text">
+                                    <p>{{ message }}</p>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
                         
                         <div class="card-action">
                             <button type="submit" class="btn blue waves-effect waves-light">
@@ -79,4 +78,12 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.textareaAutoResize(document.querySelectorAll('textarea'));
+    M.updateTextFields();
+});
+</script>
 {% endblock %}

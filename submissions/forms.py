@@ -32,7 +32,7 @@ class SubmissionForm(forms.ModelForm):
             }),
             'why_fit': forms.Textarea(attrs={
                 'class': 'materialize-textarea',
-                'placeholder': 'Explain why you are a good fit for this opportunity. What makes you qualified?',
+                'placeholder': 'Explain why you are a good fit for this opportunity. What makes you qualified? (Optional)',
                 'rows': 4,
                 'maxlength': 1000
             }),
@@ -43,7 +43,7 @@ class SubmissionForm(forms.ModelForm):
             }),
             'additional_info': forms.Textarea(attrs={
                 'class': 'materialize-textarea',
-                'placeholder': 'Any additional information, links to portfolio, GitHub, LinkedIn, etc.',
+                'placeholder': 'Any additional information, links to portfolio, GitHub, LinkedIn, etc. (Optional)',
                 'rows': 3,
                 'maxlength': 500
             }),
@@ -52,9 +52,9 @@ class SubmissionForm(forms.ModelForm):
             'to_project': 'Project',
             'to_task': 'Task',
             'to_need': 'Need',
-            'why_fit': 'Why are you a good fit?',
-            'relevant_skills': 'Relevant Skills',
-            'additional_info': 'Additional Information',
+            'why_fit': 'Why are you a good fit? (Optional)',
+            'relevant_skills': 'Relevant Skills (Optional)',
+            'additional_info': 'Additional Information (Optional)',
         }
         help_texts = {
             'why_fit': 'Briefly describe your interest, qualifications, and what you can bring to this opportunity.',
@@ -71,23 +71,44 @@ class SubmissionForm(forms.ModelForm):
         
         super().__init__(*args, **kwargs)
         
+        # Make fields optional
+        self.fields['why_fit'].required = False
+        self.fields['relevant_skills'].required = False
+        self.fields['additional_info'].required = False
+        
         # Filter querysets to show only active/available items
-        self.fields['to_project'].queryset = Project.objects.filter(
-            is_active=True
-        ).order_by('title') if hasattr(Project, 'is_active') else Project.objects.order_by('title')
+        try:
+            if hasattr(Project, 'is_active'):
+                self.fields['to_project'].queryset = Project.objects.filter(is_active=True).order_by('title')
+            else:
+                self.fields['to_project'].queryset = Project.objects.order_by('title')
+        except:
+            self.fields['to_project'].queryset = Project.objects.none()
         
-        self.fields['to_task'].queryset = Task.objects.filter(
-            is_active=True
-        ).order_by('title') if hasattr(Task, 'is_active') else Task.objects.order_by('title')
+        try:
+            if hasattr(Task, 'is_active'):
+                self.fields['to_task'].queryset = Task.objects.filter(is_active=True).order_by('title')
+            else:
+                self.fields['to_task'].queryset = Task.objects.order_by('title')
+        except:
+            self.fields['to_task'].queryset = Task.objects.none()
         
-        self.fields['to_need'].queryset = Need.objects.filter(
-            is_active=True
-        ).order_by('title') if hasattr(Need, 'is_active') else Need.objects.order_by('title')
+        try:
+            if hasattr(Need, 'is_active'):
+                self.fields['to_need'].queryset = Need.objects.filter(is_active=True).order_by('title')
+            else:
+                self.fields['to_need'].queryset = Need.objects.order_by('title')
+        except:
+            self.fields['to_need'].queryset = Need.objects.none()
         
         # Order skills alphabetically
-        self.fields['relevant_skills'].queryset = Skill.objects.filter(
-            is_active=True
-        ).order_by('name') if hasattr(Skill, 'is_active') else Skill.objects.order_by('name')
+        try:
+            if hasattr(Skill, 'is_active'):
+                self.fields['relevant_skills'].queryset = Skill.objects.filter(is_active=True).order_by('name')
+            else:
+                self.fields['relevant_skills'].queryset = Skill.objects.order_by('name')
+        except:
+            self.fields['relevant_skills'].queryset = Skill.objects.none()
         
         # Add empty option to select fields
         self.fields['to_project'].empty_label = "Select a project..."
@@ -96,26 +117,29 @@ class SubmissionForm(forms.ModelForm):
         
         # If user is provided, filter out items they already submitted to
         if self.user:
-            existing_submissions = Submission.objects.filter(applicant=self.user)
-            
-            # Filter out projects/tasks user already applied to
-            submitted_projects = existing_submissions.filter(
-                to_project__isnull=False
-            ).values_list('to_project', flat=True)
-            
-            submitted_tasks = existing_submissions.filter(
-                to_task__isnull=False
-            ).values_list('to_task', flat=True)
-            
-            if submitted_projects:
-                self.fields['to_project'].queryset = self.fields['to_project'].queryset.exclude(
-                    id__in=submitted_projects
-                )
-            
-            if submitted_tasks:
-                self.fields['to_task'].queryset = self.fields['to_task'].queryset.exclude(
-                    id__in=submitted_tasks
-                )
+            try:
+                existing_submissions = Submission.objects.filter(applicant=self.user)
+                
+                # Filter out projects/tasks user already applied to
+                submitted_projects = existing_submissions.filter(
+                    to_project__isnull=False
+                ).values_list('to_project', flat=True)
+                
+                submitted_tasks = existing_submissions.filter(
+                    to_task__isnull=False
+                ).values_list('to_task', flat=True)
+                
+                if submitted_projects:
+                    self.fields['to_project'].queryset = self.fields['to_project'].queryset.exclude(
+                        id__in=submitted_projects
+                    )
+                
+                if submitted_tasks:
+                    self.fields['to_task'].queryset = self.fields['to_task'].queryset.exclude(
+                        id__in=submitted_tasks
+                    )
+            except Exception as e:
+                print(f"DEBUG: Error filtering existing submissions: {e}")
         
         # Pre-select content if provided
         if self.content_type and self.content_id:
@@ -151,20 +175,23 @@ class SubmissionForm(forms.ModelForm):
         
         # Check if user already submitted to this content
         if self.user:
-            existing_submission = None
-            if to_project:
-                existing_submission = Submission.objects.filter(
-                    applicant=self.user, to_project=to_project
-                ).first()
-            elif to_task:
-                existing_submission = Submission.objects.filter(
-                    applicant=self.user, to_task=to_task
-                ).first()
-            # Note: to_need doesn't have unique_together constraint, so multiple submissions allowed
-            
-            if existing_submission:
-                content_type = 'project' if to_project else 'task'
-                raise ValidationError(f'You have already submitted to this {content_type}.')
+            try:
+                existing_submission = None
+                if to_project:
+                    existing_submission = Submission.objects.filter(
+                        applicant=self.user, to_project=to_project
+                    ).first()
+                elif to_task:
+                    existing_submission = Submission.objects.filter(
+                        applicant=self.user, to_task=to_task
+                    ).first()
+                # Note: to_need doesn't have unique_together constraint, so multiple submissions allowed
+                
+                if existing_submission:
+                    content_type = 'project' if to_project else 'task'
+                    raise ValidationError(f'You have already submitted to this {content_type}.')
+            except Exception as e:
+                print(f"DEBUG: Error checking existing submissions: {e}")
         
         return cleaned_data
 
@@ -193,9 +220,8 @@ class SubmissionQuickForm(forms.ModelForm):
         widgets = {
             'why_fit': forms.Textarea(attrs={
                 'class': 'materialize-textarea',
-                'placeholder': 'Why are you interested in this opportunity?',
-                'rows': 3,
-                'required': True
+                'placeholder': 'Why are you interested in this opportunity? (Optional)',
+                'rows': 3
             }),
             'relevant_skills': forms.SelectMultiple(attrs={
                 'class': 'browser-default',
@@ -204,14 +230,14 @@ class SubmissionQuickForm(forms.ModelForm):
             }),
             'additional_info': forms.Textarea(attrs={
                 'class': 'materialize-textarea',
-                'placeholder': 'Additional information (optional)',
+                'placeholder': 'Additional information (Optional)',
                 'rows': 2
             }),
         }
         labels = {
-            'why_fit': 'Why are you a good fit?',
-            'relevant_skills': 'Your Relevant Skills',
-            'additional_info': 'Additional Information',
+            'why_fit': 'Why are you a good fit? (Optional)',
+            'relevant_skills': 'Your Relevant Skills (Optional)',
+            'additional_info': 'Additional Information (Optional)',
         }
 
     def __init__(self, *args, **kwargs):
@@ -220,13 +246,82 @@ class SubmissionQuickForm(forms.ModelForm):
         
         super().__init__(*args, **kwargs)
         
-        # Filter skills
-        self.fields['relevant_skills'].queryset = Skill.objects.filter(
-            is_active=True
-        ).order_by('name') if hasattr(Skill, 'is_active') else Skill.objects.order_by('name')
+        print(f"DEBUG: SubmissionQuickForm initialized with user={self.user}, content_object={self.content_object}")
         
-        # Make why_fit required for quick form
-        self.fields['why_fit'].required = True
+        # Make all fields optional
+        self.fields['why_fit'].required = False
+        self.fields['relevant_skills'].required = False
+        self.fields['additional_info'].required = False
+        
+        # Filter skills
+        try:
+            if hasattr(Skill, 'is_active'):
+                self.fields['relevant_skills'].queryset = Skill.objects.filter(is_active=True).order_by('name')
+            else:
+                self.fields['relevant_skills'].queryset = Skill.objects.order_by('name')
+        except:
+            self.fields['relevant_skills'].queryset = Skill.objects.none()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        print(f"DEBUG: SubmissionQuickForm.clean() called with cleaned_data: {cleaned_data}")
+        print(f"DEBUG: self.content_object = {self.content_object}")
+        print(f"DEBUG: self.user = {self.user}")
+        return cleaned_data
+
+    def save(self, commit=True):
+        print(f"DEBUG: SubmissionQuickForm.save() called with commit={commit}")
+        submission = super().save(commit=False)
+        
+        print(f"DEBUG: Created submission object: {submission}")
+        print(f"DEBUG: submission.to_project = {submission.to_project}")
+        print(f"DEBUG: submission.to_task = {submission.to_task}")
+        print(f"DEBUG: submission.to_need = {submission.to_need}")
+        
+        if self.user:
+            submission.applicant = self.user
+            print(f"DEBUG: Set applicant to {self.user}")
+        
+        if self.content_object:
+            print(f"DEBUG: Content object type: {type(self.content_object)}")
+            print(f"DEBUG: Content object: {self.content_object}")
+            
+            # Set the appropriate foreign key based on content type
+            if isinstance(self.content_object, Project):
+                submission.to_project = self.content_object
+                print(f"DEBUG: Set to_project = {self.content_object}")
+            elif isinstance(self.content_object, Task):
+                submission.to_task = self.content_object
+                print(f"DEBUG: Set to_task = {self.content_object}")
+            elif isinstance(self.content_object, Need):
+                submission.to_need = self.content_object
+                print(f"DEBUG: Set to_need = {self.content_object}")
+            else:
+                print(f"DEBUG: WARNING - Unknown content object type: {type(self.content_object)}")
+        else:
+            print(f"DEBUG: WARNING - No content_object provided!")
+        
+        print(f"DEBUG: Final submission state before save:")
+        print(f"DEBUG: - applicant: {submission.applicant}")
+        print(f"DEBUG: - to_project: {submission.to_project}")
+        print(f"DEBUG: - to_task: {submission.to_task}")
+        print(f"DEBUG: - to_need: {submission.to_need}")
+        print(f"DEBUG: - why_fit: {submission.why_fit}")
+        
+        if commit:
+            # Validate before saving
+            try:
+                submission.full_clean()
+                print(f"DEBUG: Submission validation passed")
+                submission.save()
+                print(f"DEBUG: Submission saved successfully with ID: {submission.id}")
+                self.save_m2m()
+                print(f"DEBUG: Many-to-many relationships saved")
+            except Exception as e:
+                print(f"DEBUG: Error during submission save: {e}")
+                raise
+        
+        return submission
 
     def save(self, commit=True):
         submission = super().save(commit=False)
@@ -299,9 +394,13 @@ class SubmissionFilterForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['skills'].queryset = Skill.objects.filter(
-            is_active=True
-        ).order_by('name') if hasattr(Skill, 'is_active') else Skill.objects.order_by('name')
+        try:
+            if hasattr(Skill, 'is_active'):
+                self.fields['skills'].queryset = Skill.objects.filter(is_active=True).order_by('name')
+            else:
+                self.fields['skills'].queryset = Skill.objects.order_by('name')
+        except:
+            self.fields['skills'].queryset = Skill.objects.none()
 
 
 class SubmissionStatusUpdateForm(forms.ModelForm):

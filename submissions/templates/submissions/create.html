@@ -4,7 +4,7 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block extra_css %}
-<!-- <style>
+<style>
     .form-section {
         margin-bottom: 2rem;
     }
@@ -26,7 +26,7 @@
         float: right;
         margin-top: 0.5rem;
     }
-</style> -->
+</style>
 {% endblock %}
 
 {% block content %}
@@ -42,7 +42,7 @@
                         
                         <!-- Content Selection -->
                         <div class="form-section">
-                            <h6>What are you applying for?</h6>
+                            <h6>What are you applying for? *</h6>
                             <div class="content-selection">
                                 <div class="row">
                                     <div class="col s12 m4">
@@ -73,7 +73,7 @@
                         <!-- Why Fit -->
                         <div class="form-section">
                             <label for="{{ form.why_fit.id_for_label }}">
-                                {{ form.why_fit.label }} *
+                                {{ form.why_fit.label }}
                             </label>
                             {{ form.why_fit }}
                             <div class="char-counter">
@@ -152,6 +152,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function updateCounter(field, counterId) {
         const counter = document.getElementById(counterId);
+        if (!counter || !field) return;
+        
         const count = field.value.length;
         counter.textContent = count;
         

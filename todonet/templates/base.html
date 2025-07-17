@@ -118,6 +118,16 @@
     <div class="row">
         <div class="s12 m8">
             <div class="contentBASE">
+              {% if messages %}
+    {% for message in messages %}
+        <div class="card-panel {{ message.tags|default:'blue' }} lighten-4">
+            <i class="material-icons left">
+                {% if message.tags == 'error' %}error{% elif message.tags == 'success' %}check_circle{% else %}info{% endif %}
+            </i>
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
                 {% block content %}
 
                 {% endblock %}
