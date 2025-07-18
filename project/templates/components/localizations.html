@@ -1,0 +1,76 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'leaflet/leaflet.css' %}">
+<script src="{% static 'leaflet/leaflet.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  
+  // Initialize location maps
+  var locationMaps = document.querySelectorAll('[data-location-map]');
+  locationMaps.forEach(function(mapElement) {
+    var mapId = mapElement.id;
+    var lat = parseFloat(mapElement.getAttribute('data-lat'));
+    var lng = parseFloat(mapElement.getAttribute('data-lng'));
+    
+    console.log('Initializing map:', mapId, 'at', lat, lng);
+    
+    try {
+      var map = L.map(mapId, {
+        center: [lat, lng],
+        zoom: 13,
+        scrollWheelZoom: false
+      });
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }).addTo(map);
+      
+      L.marker([lat, lng]).addTo(map);
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
+  });
+});
+</script>
+
+<style>
+  .location-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .map-container {
+    height: 400px;
+    width: 100%;
+    margin: 10px 0;
+  }
+</style>
+
+
+
+<!-- Location maps -->
+{% for loc in project.localizations.all %}
+  <div class="location-section">
+    <h4>{{ loc.name }}</h4>
+    <p>{{ loc.description }}</p>
+    
+    <!-- Map container with data attributes -->
+    <div id="map-location-{{ loc.id }}" 
+         class="map-container"
+         data-location-map
+         data-lat="{{ loc.latitude }}" 
+         data-lng="{{ loc.longitude }}">
+    </div>
+    
+    <a href="https://www.google.com/maps/dir/?api=1&destination={{ loc.latitude }},{{ loc.longitude }}"
+       target="_blank" class="waves-effect waves-green btn-flat">
+      Navigate to this location
+    </a>
+  </div>
+{% empty %}
+  <p>No localizations to display</p>
+{% endfor %}

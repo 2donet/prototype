@@ -289,3 +289,15 @@ def create_default_project_groups():
                 group.permissions.add(perm)
             except Permission.DoesNotExist:
                 print(f"Permission {codename} does not exist for {content_type}")
+
+
+
+class Localization(models.Model):
+    project = models.ForeignKey(Project, related_name='localizations', on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.latitude}, {self.longitude})"

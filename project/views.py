@@ -110,6 +110,7 @@ def project_members(request, project_id):
 def project(request, project_id):
     content = get_object_or_404(Project, id=project_id)
     project = get_object_or_404(Project, id=project_id)
+    
     # Check if user has permission to view this project
     can_view = False
     
