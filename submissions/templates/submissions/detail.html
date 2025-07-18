@@ -3,8 +3,46 @@
 
 {% block title %}Submission Details{% endblock %}
 
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 0.9em;
+        font-weight: bold;
+        display: inline-block;
+    }
+    .status-pending { background-color: #ffab40; color: white; }
+    .status-reviewed { background-color: #42a5f5; color: white; }
+    .status-accepted { background-color: #66bb6a; color: white; }
+    .status-rejected { background-color: #ef5350; color: white; }
+    .status-archived { background-color: #bdbdbd; color: white; }
+    .chips-container {
+        margin-top: 1rem;
+    }
+    .status-update-section {
+        margin-top: 2rem;
+        padding: 1rem;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+    }
+    .status-update-container {
+        margin-bottom: 10px;
+    }
+    .status-select {
+        margin-bottom: 0;
+    }
+    .change-status-btn:disabled {
+        opacity: 0.6;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
+    <!-- CSRF Token for AJAX -->
+    {% csrf_token %}
+    
     <div class="row">
         <div class="col s12">
             <div class="card">
@@ -12,7 +50,7 @@
                     <div class="card-title">
                         <h4>Submission Details</h4>
                         <div class="right">
-                            <span class="status-badge status-{{ submission.status|lower }}">
+                            <span class="status-badge status-{{ submission.status|lower }}" id="status-badge">
                                 {{ submission.get_status_display }}
                             </span>
                         </div>
@@ -69,17 +107,33 @@
                     {% if can_edit %}
                     <div class="row">
                         <div class="col s12">
-                            <h6>Update Status</h6>
-                            <select class="browser-default status-update" 
-                                    data-submission-id="{{ submission.id }}"
-                                    data-current-status="{{ submission.status }}">
-                                {% for status_code, status_name in status_choices %}
-                                    <option value="{{ status_code }}" 
-                                            {% if status_code == submission.status %}selected{% endif %}>
-                                        {{ status_name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                            <div class="status-update-section">
+                                <h6>Update Status</h6>
+                                <div class="status-update-container" data-submission-id="{{ submission.id }}">
+                                    <div class="row">
+                                        <div class="col s12 m8">
+                                            <select class="browser-default status-select" 
+                                                    data-current-status="{{ submission.status }}"
+                                                    id="status-select">
+                                                {% for status_code, status_name in status_choices %}
+                                                    <option value="{{ status_code }}" 
+                                                            {% if status_code == submission.status %}selected{% endif %}>
+                                                        {{ status_name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col s12 m4">
+                                            <button class="btn orange waves-effect waves-light change-status-btn"
+                                                    data-submission-id="{{ submission.id }}"
+                                                    style="width: 100%;">
+                                                <i class="material-icons left">update</i>Change Status
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="grey-text">Select a new status and click "Change Status" to update.</p>
+                            </div>
                         </div>
                     </div>
                     {% endif %}
@@ -100,53 +154,104 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle status updates (same as in list.html)
-    const statusSelect = document.querySelector('.status-update');
+    // Get CSRF token
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
     
-    if (statusSelect) {
-        statusSelect.addEventListener('change', function() {
+    // Update status badge appearance
+    function updateStatusBadge(newStatus, statusDisplay) {
+        const badge = document.getElementById('status-badge');
+        if (badge) {
+            // Remove old status classes
+            badge.classList.remove('status-pending', 'status-reviewed', 'status-accepted', 'status-rejected', 'status-archived');
+            // Add new status class
+            badge.classList.add(`status-${newStatus.toLowerCase()}`);
+            // Update text
+            badge.textContent = statusDisplay;
+        }
+    }
+    
+    // Handle status updates with button
+    const changeStatusButton = document.querySelector('.change-status-btn');
+    
+    if (changeStatusButton) {
+        changeStatusButton.addEventListener('click', function() {
             const submissionId = this.dataset.submissionId;
-            const newStatus = this.value;
-            const currentStatus = this.dataset.currentStatus;
+            const statusSelect = document.getElementById('status-select');
+            const newStatus = statusSelect.value;
+            const currentStatus = statusSelect.dataset.currentStatus;
             
             if (newStatus === currentStatus) {
-                return; // No change
+                if (typeof M !== 'undefined') {
+                    M.toast({html: 'No change in status', classes: 'orange'});
+                } else {
+                    alert('No change in status');
+                }
+                return;
             }
             
             // Show loading state
             this.disabled = true;
+            statusSelect.disabled = true;
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="material-icons left">hourglass_empty</i>Updating...';
             
             // Make AJAX request
             fetch(`/submissions/${submissionId}/update-status/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    'X-CSRFToken': getCSRFToken()
                 },
-                body: `status=${newStatus}`
+                body: `status=${encodeURIComponent(newStatus)}`
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     // Update the data attribute
-                    this.dataset.currentStatus = newStatus;
+                    statusSelect.dataset.currentStatus = newStatus;
+                    
+                    // Update status badge
+                    const statusDisplay = statusSelect.options[statusSelect.selectedIndex].text;
+                    updateStatusBadge(newStatus, statusDisplay);
+                    
                     // Show success message
-                    M.toast({html: data.message, classes: 'green'});
-                    // Refresh the page to update UI
-                    location.reload();
+                    if (typeof M !== 'undefined') {
+                        M.toast({html: data.message, classes: 'green'});
+                    } else {
+                        alert(data.message);
+                    }
                 } else {
                     // Revert the selection
-                    this.value = currentStatus;
-                    M.toast({html: data.error || 'Failed to update status', classes: 'red'});
+                    statusSelect.value = currentStatus;
+                    const errorMsg = data.error || 'Failed to update status';
+                    if (typeof M !== 'undefined') {
+                        M.toast({html: errorMsg, classes: 'red'});
+                    } else {
+                        alert(errorMsg);
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                this.value = currentStatus;
-                M.toast({html: 'Network error occurred', classes: 'red'});
+                statusSelect.value = currentStatus;
+                const errorMsg = 'Network error occurred';
+                if (typeof M !== 'undefined') {
+                    M.toast({html: errorMsg, classes: 'red'});
+                } else {
+                    alert(errorMsg);
+                }
             })
             .finally(() => {
                 this.disabled = false;
+                statusSelect.disabled = false;
+                this.innerHTML = originalText;
             });
         });
     }

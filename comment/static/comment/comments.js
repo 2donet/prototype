@@ -154,43 +154,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Toggle reply forms
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('reply-btn') || e.target.parentElement?.classList.contains('reply-btn')) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const replyBtn = e.target.classList.contains('reply-btn') ? e.target : e.target.parentElement;
-            const commentId = replyBtn.getAttribute('data-comment-id');
-            const comment = replyBtn.closest('.comment');
-            const replyForm = comment.querySelector(`.reply-form-container[data-comment-id="${commentId}"]`);
-            
-            if (replyForm) {
-                const isHidden = replyForm.style.display === 'none' || !replyForm.style.display;
-                replyForm.style.display = isHidden ? 'block' : 'none';
-                
-                if (isHidden) {
-                    const textarea = replyForm.querySelector('textarea');
-                    if (textarea) {
-                        textarea.focus();
-                        if (typeof M !== 'undefined') {
-                            M.textareaAutoResize(textarea);
-                        }
-                    }
-                }
-            }
-        }
+document.addEventListener('click', (e) => {
+    const replyButton = e.target.closest('.reply-btn');
+    if (replyButton) {
+        e.preventDefault();
 
-        // Cancel reply
-        if (e.target.classList.contains('cancel-reply')) {
-            e.preventDefault();
-            const replyForm = e.target.closest('.reply-form-container');
-            if (replyForm) {
-                replyForm.style.display = 'none';
-                const textarea = replyForm.querySelector('textarea');
-                if (textarea) textarea.value = '';
-            }
+        const commentElement = replyButton.closest('.comment');
+        const replyFormContainer = commentElement.querySelector('.reply-form-container');
+
+        if (replyFormContainer) {
+            replyFormContainer.style.display = 'block';  // Always show it
+            const textarea = replyFormContainer.querySelector('textarea');
+            if (textarea) textarea.focus();
         }
-    });
+    }
+});
 
     // View replies toggle
     document.addEventListener('click', async (e) => {
@@ -279,106 +257,99 @@ document.addEventListener('DOMContentLoaded', function() {
         return container;
     }
 
-    function createCommentHtml(commentData, isReply = false) {
-        // Get CSRF token
-        const csrfToken = getCSRFToken();
-        
-        // Format the time as "just now" for new comments
-        const timeDisplay = 'just now';
-        
-        // Build the HTML matching the structure in comments.html
-        return `
-            <div class="comment ${isReply ? 'reply' : ''}" data-comment-id="${commentData.id}"
-                ${commentData.user_vote ? `data-user-vote="${commentData.user_vote}"` : ''}
-                ${commentData.user_reactions ? `data-user-reactions='${JSON.stringify(commentData.user_reactions)}'` : 'data-user-reactions="[]"'}>
-                <img class="miniavatar" src="${commentData.author_avatar || '/static/icons/default-avatar.svg'}">
-                <span>
-                    <i title="${new Date().toISOString()}" style="float: right;">${timeDisplay}</i>
-                    ${commentData.user_id ? `<a href="/u/${commentData.user_id}">${commentData.user || 'Anonymous'}</a>` : `<span>${commentData.user || 'Anonymous'}</span>`}
+   function createCommentHtml(commentData, isReply = false) {
+    // Get CSRF token
+    const csrfToken = getCSRFToken();
+    
+    // Format the time as "just now" for new comments
+    const timeDisplay = 'just now';
+    
+    // Build the HTML matching the structure in comments.html
+    return `
+        <div class="comment ${isReply ? 'reply' : ''}" data-comment-id="${commentData.id}"
+            ${commentData.user_vote ? `data-user-vote="${commentData.user_vote}"` : ''}
+            ${commentData.user_reactions ? `data-user-reactions='${JSON.stringify(commentData.user_reactions)}'` : 'data-user-reactions="[]"'}>
+            <img class="miniavatar" src="${commentData.author_avatar || '/static/icons/default-avatar.svg'}">
+            <span>
+                <i title="${new Date().toISOString()}" style="float: right;">${timeDisplay}</i>
+                ${commentData.user_id ? `<a href="/u/${commentData.user_id}">${commentData.user || 'Anonymous'}</a>` : `<span>${commentData.user || 'Anonymous'}</span>`}
+                
+                <div class="comment-actions">
+                    <div class="vote-container">
+                        <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
+                            <i>👍</i>
+                        </a>
+                        <span class="score">${commentData.score || 0}</span>
+                        <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
+                            <i>👎</i>
+                        </a>
+                    </div>
                     
-                    <div class="comment-actions">
-                        <!-- Vote buttons with improved UI -->
-                        <div class="vote-container">
-                            <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
-                                <i>👍</i>
-                            </a>
-                            <span class="score">${commentData.score || 0}</span>
-                            <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
-                                <i>👎</i>
-                            </a>
-                        </div>
-                        
-                        <!-- Reactions button -->
-                        <div class="reactions-container">
-                            <a href="#" class="reaction-dropdown-trigger" data-target="reactions-${commentData.id}">
-                                <i class="material-icons">add_reaction</i>
-                            </a>
-                            
-                            <!-- Reaction dropdown -->
-                            <div id="reactions-${commentData.id}" class="reaction-dropdown">
-                                <a href="#" class="reaction-btn tooltipped" data-reaction-type="LIKE" data-position="top" data-tooltip="Like">👍</a>
-                                <a href="#" class="reaction-btn tooltipped" data-reaction-type="LOVE" data-position="top" data-tooltip="Love">❤️</a>
-                                <a href="#" class="reaction-btn tooltipped" data-reaction-type="LAUGH" data-position="top" data-tooltip="Laugh">😂</a>
-                                <a href="#" class="reaction-btn tooltipped" data-reaction-type="INSIGHTFUL" data-position="top" data-tooltip="Insightful">💡</a>
-                                <a href="#" class="reaction-btn tooltipped" data-reaction-type="CONFUSED" data-position="top" data-tooltip="Confused">😕</a>
-                                <a href="#" class="reaction-btn tooltipped" data-reaction-type="SAD" data-position="top" data-tooltip="Sad">😢</a>
-                                <a href="#" class="reaction-btn tooltipped" data-reaction-type="THANKS" data-position="top" data-tooltip="Thanks">🙏</a>
-                            </div>
-                            
-                            <!-- Reaction counts -->
-                            <div class="reaction-counts"></div>
-                        </div>
-                        
-                        <!-- Comment menu -->
-                        <a class='dropdown-trigger btn-flat' href='#' data-target='actions-${commentData.id}'>
-                            <img src="/static/icons/menu.svg" alt="actions">
+                    <div class="reactions-container">
+                        <a href="#" class="reaction-dropdown-trigger" data-target="reactions-${commentData.id}">
+                            <i class="material-icons">add_reaction</i>
                         </a>
                         
-                        <!-- Dropdown Structure -->
-                        <ul id='actions-${commentData.id}' class='dropdown-content'>
-                            ${commentData.user_id ? `<li><a href="/comments/edit/${commentData.id}/">Edit</a></li>` : ''}
-                            <li><a href="/comments/report/${commentData.id}/">Report</a></li>
-                        </ul>
-                    </div>
-                </span>
-
-                <p>${commentData.content}</p>
-
-                <!-- Link to single comment view -->
-                <a href="/comments/${commentData.id}/">Permalink</a>
-
-                <span></span> ${commentData.total_replies || 0} replies
-
-                ${(commentData.total_replies || 0) > 0 ? `
-                    <button class="view-replies-btn" data-comment-id="${commentData.id}">View Replies</button>
-                ` : ''}
-
-                <button class="reply-btn" data-comment-id="${commentData.id}">Reply</button>
-                
-                <div class="reply-form-container" data-comment-id="${commentData.id}" style="display: none;">
-                    <form class="reply-form">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
-                        <div class="input-field">
-                            <textarea name="content" class="materialize-textarea" required></textarea>
-                            <label>Your reply</label>
+                        <div id="reactions-${commentData.id}" class="reaction-dropdown">
+                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="LIKE" data-position="top" data-tooltip="Like">👍</a>
+                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="LOVE" data-position="top" data-tooltip="Love">❤️</a>
+                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="LAUGH" data-position="top" data-tooltip="Laugh">😂</a>
+                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="INSIGHTFUL" data-position="top" data-tooltip="Insightful">💡</a>
+                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="CONFUSED" data-position="top" data-tooltip="Confused">😕</a>
+                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="SAD" data-position="top" data-tooltip="Sad">😢</a>
+                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="THANKS" data-position="top" data-tooltip="Thanks">🙏</a>
                         </div>
-                        <input type="hidden" name="parent_id" value="${commentData.id}">
-                        ${commentData.to_task_id ? `<input type="hidden" name="to_task_id" value="${commentData.to_task_id}">` : ''}
-                        ${commentData.to_project_id ? `<input type="hidden" name="to_project_id" value="${commentData.to_project_id}">` : ''}
-                        ${commentData.to_need_id ? `<input type="hidden" name="to_need_id" value="${commentData.to_need_id}">` : ''}
-                        <button type="submit" class="btn waves-effect waves-light blue">
-                            <i class="material-icons left">send</i>Post Reply
-                        </button>
-                        <button type="button" class="btn waves-effect waves-light grey cancel-reply">
-                            Cancel
-                        </button>
-                    </form>
+                        
+                        <div class="reaction-counts"></div>
+                    </div>
+                    
+                    <a class='dropdown-trigger btn-flat' href='#' data-target='actions-${commentData.id}'>
+                        <img src="/static/icons/menu.svg" alt="actions">
+                    </a>
+                    
+                    <ul id='actions-${commentData.id}' class='dropdown-content'>
+                        ${commentData.user_id ? `<li><a href="/comments/edit/${commentData.id}/">Edit</a></li>` : ''}
+                        <li><a href="/comments/report/${commentData.id}/">Report</a></li>
+                    </ul>
                 </div>
-                
-                <div class="replies-container" data-comment-id="${commentData.id}" style="display: none;"></div>
+            </span>
+
+            <p>${commentData.content}</p>
+
+            <a href="/comments/${commentData.id}/">Permalink</a>
+
+            <span></span> ${commentData.total_replies || 0} replies
+
+            ${(commentData.total_replies || 0) > 0 ? `
+                <button class="view-replies-btn" data-comment-id="${commentData.id}">View Replies</button>
+            ` : ''}
+
+            <button class="reply-btn" data-comment-id="${commentData.id}" data-controls="reply-form-${commentData.id}">Reply</button>
+            
+            <div class="reply-form-container" id="reply-form-${commentData.id}" data-comment-id="${commentData.id}" style="display: none;">
+                <form class="reply-form">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                    <div class="input-field">
+                        <textarea name="content" class="materialize-textarea" required></textarea>
+                        <label>Your reply</label>
+                    </div>
+                    <input type="hidden" name="parent_id" value="${commentData.id}">
+                    ${commentData.to_task_id ? `<input type="hidden" name="to_task_id" value="${commentData.to_task_id}">` : ''}
+                    ${commentData.to_project_id ? `<input type="hidden" name="to_project_id" value="${commentData.to_project_id}">` : ''}
+                    ${commentData.to_need_id ? `<input type="hidden" name="to_need_id" value="${commentData.to_need_id}">` : ''}
+                    <button type="submit" class="btn waves-effect waves-light blue">
+                        <i class="material-icons left">send</i>Post Reply
+                    </button>
+                    <button type="button" class="btn waves-effect waves-light grey cancel-reply">
+                        Cancel
+                    </button>
+                </form>
             </div>
-        `;
-    }
+            
+            <div class="replies-container" data-comment-id="${commentData.id}" style="display: none;"></div>
+        </div>
+    `;
+}
 
     async function loadReplies(commentId, container) {
         try {

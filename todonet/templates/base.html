@@ -37,6 +37,9 @@
         });
       </script>  
       <script src="{% static 'js/comment-rating.js' %}"></script>    
+          {% block extra_js %}
+    <!-- Additional JavaScript will be inserted here -->
+    {% endblock %}
     {% comment %} nie wykorzystywany w tej template {% endcomment %}
 
     
@@ -151,3 +154,4 @@
 </body>
 
 </html>
+

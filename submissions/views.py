@@ -6,6 +6,9 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+import json
 
 from submissions.models import Submission
 from submissions.forms import SubmissionForm, SubmissionQuickForm
@@ -171,6 +174,35 @@ def get_content_object_and_submissions(content_type, content_id):
     return content_object, submissions, content_type_name
 
 
+def user_can_manage_submissions(user, content_object):
+    """Check if user can manage submissions for the given content object"""
+    if user.is_superuser or user.is_staff:
+        return True
+    
+    # Check if user is the creator/owner of the content
+    if hasattr(content_object, 'created_by') and content_object.created_by == user:
+        return True
+    if hasattr(content_object, 'creator') and content_object.creator == user:
+        return True
+    if hasattr(content_object, 'owner') and content_object.owner == user:
+        return True
+    
+    # For projects, check if user is admin or moderator
+    if hasattr(content_object, 'membership_set'):
+        from project.models import Membership
+        return Membership.objects.filter(
+            project=content_object,
+            user=user,
+            is_administrator=True
+        ).exists() or Membership.objects.filter(
+            project=content_object,
+            user=user,
+            is_moderator=True
+        ).exists()
+    
+    return False
+
+
 @login_required
 def submission_list(request, content_type, content_id):
     try:
@@ -179,9 +211,8 @@ def submission_list(request, content_type, content_id):
         messages.error(request, str(e))
         return render(request, 'submissions/error.html', {'error': str(e)})
 
-    if not (request.user == getattr(content_object, 'creator', None) or
-            request.user == getattr(content_object, 'owner', None) or
-            request.user.is_staff):
+    # Check permissions using the new function
+    if not user_can_manage_submissions(request.user, content_object):
         messages.error(request, _('You do not have permission to view these submissions.'))
         return render(request, 'submissions/error.html', {'error': 'Permission denied'})
 
@@ -237,37 +268,54 @@ def submission_list(request, content_type, content_id):
 
     return render(request, 'submissions/list.html', context)
 
-
 @login_required
+@require_http_methods(["POST"])
+@csrf_exempt  # We'll handle CSRF manually in the AJAX request
 def update_submission_status(request, submission_id):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    """AJAX endpoint for updating submission status"""
+    try:
+        submission = get_object_or_404(Submission, id=submission_id)
+        content_object = submission.to_project or submission.to_task or submission.to_need
+        
+        # Check permissions
+        if not user_can_manage_submissions(request.user, content_object):
+            return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
 
-    submission = get_object_or_404(Submission, id=submission_id)
-    new_status = request.POST.get('status')
+        # Get new status from request
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            new_status = data.get('status')
+        else:
+            new_status = request.POST.get('status')
 
-    content_object = submission.to_project or submission.to_task or submission.to_need
-    if not (request.user == getattr(content_object, 'creator', None) or
-            request.user == getattr(content_object, 'owner', None) or
-            request.user.is_staff):
-        return JsonResponse({'error': 'Permission denied'}, status=403)
+        if not new_status:
+            return JsonResponse({'success': False, 'error': 'Status is required'}, status=400)
 
-    valid_statuses = [choice[0] for choice in Submission.STATUS_CHOICES]
-    if new_status not in valid_statuses:
-        return JsonResponse({'error': 'Invalid status'}, status=400)
+        # Validate status
+        valid_statuses = [choice[0] for choice in Submission.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
 
-    old_status = submission.status
-    submission.status = new_status
-    submission.save()
+        # Update the status
+        old_status = submission.status
+        submission.status = new_status
+        submission.save(update_fields=['status'])
 
-    return JsonResponse({
-        'success': True,
-        'old_status': old_status,
-        'new_status': new_status,
-        'message': f'Status updated to {new_status}'
-    })
+        # Log the change
+        print(f"Status updated for submission {submission_id}: {old_status} -> {new_status}")
 
+        return JsonResponse({
+            'success': True,
+            'old_status': old_status,
+            'new_status': new_status,
+            'status_display': submission.get_status_display(),
+            'message': f'Status updated to {submission.get_status_display()}'
+        })
 
+    except Exception as e:
+        print(f"Error updating submission status: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
 @login_required
 def submission_detail(request, submission_id):
     submission = get_object_or_404(
@@ -276,10 +324,12 @@ def submission_detail(request, submission_id):
     )
 
     content_object = submission.to_project or submission.to_task or submission.to_need
-    if not (request.user == getattr(content_object, 'creator', None) or
-            request.user == getattr(content_object, 'owner', None) or
-            request.user.is_staff or
-            request.user == submission.applicant):
+    
+    # Check if user can view this submission
+    can_manage = user_can_manage_submissions(request.user, content_object)
+    is_applicant = request.user == submission.applicant
+    
+    if not (can_manage or is_applicant):
         messages.error(request, _('You do not have permission to view this submission.'))
         return render(request, 'submissions/error.html', {'error': 'Permission denied'})
 
@@ -299,9 +349,7 @@ def submission_detail(request, submission_id):
         'content_type': content_type,
         'content_type_name': content_type_name,
         'status_choices': Submission.STATUS_CHOICES,
-        'can_edit': request.user == getattr(content_object, 'creator', None) or
-                    request.user == getattr(content_object, 'owner', None) or
-                    request.user.is_staff,
+        'can_edit': can_manage,
     }
 
     return render(request, 'submissions/detail.html', context)
