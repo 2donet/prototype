@@ -72,7 +72,9 @@ nav{
     
     background: var(--bg-color);
   }
-
+.collection{
+    background-color: none !important;
+}
 .border {
     background-color: var(--bg-menu);
     padding: 0.5 rem;
@@ -1974,7 +1976,7 @@ input, textarea {
 
    .newcomments{
     overflow-y: scroll;
-    max-height: 100vh;   }
+    }
 
     .tabs{
         background-color: var(--bg-color2);

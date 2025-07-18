@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Localizations - {{ project.name }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'leaflet/leaflet.css' %}">
+<script src="{% static 'leaflet/leaflet.js' %}"></script>
+
+<div class="container">
+  <div class="row">
+    <div class="col s12">
+      <h4>
+        Localizations for {{ project.name }}
+        {% if can_edit %}
+          <a href="{% url 'project:add_localization' project.id %}" class="btn-floating btn-large waves-effect waves-light right">
+            <i class="material-icons">add</i>
+          </a>
+        {% endif %}
+      </h4>
+    </div>
+  </div>
+
+  {% if localizations %}
+    <div class="row">
+      <div class="col s12">
+        <ul class="collection">
+          {% for loc in localizations %}
+            <li class="collection-item">
+              <div>
+                <span class="title"><strong>{{ loc.name }}</strong></span>
+                <p>{{ loc.description|default:"No description" }}</p>
+                <p class="grey-text">
+                  <i class="material-icons tiny">location_on</i> 
+                  {{ loc.latitude|floatformat:6 }}, {{ loc.longitude|floatformat:6 }}
+                </p>
+                
+                {% if can_edit %}
+                  <div class="secondary-content">
+                    <a href="#modal-{{ loc.id }}" class="modal-trigger btn-small waves-effect waves-light blue" title="View on map">
+                      <i class="material-icons">map</i>
+                    </a>
+                    <a href="{% url 'project:edit_localization' project.id loc.id %}" class="btn-small waves-effect waves-light orange" title="Edit location">
+                      <i class="material-icons">edit</i>
+                    </a>
+                    <form method="post" action="{% url 'project:delete_localization' project.id loc.id %}" style="display: inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-small waves-effect waves-light red" title="Delete location"
+                              onclick="return confirm('Are you sure you want to delete this location?');">
+                        <i class="material-icons">delete</i>
+                      </button>
+                    </form>
+                  </div>
+                                <div style="height: 2rem;"></div>
+                {% else %}
+                  <a href="#modal-{{ loc.id }}" class="secondary-content modal-trigger">
+                    <i class="material-icons">map</i>
+                  </a>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Map Modals -->
+    {% for loc in localizations %}
+      <div id="modal-{{ loc.id }}" class="modal">
+        <div class="modal-content">
+          <h4>{{ loc.name }}</h4>
+          <p>{{ loc.description }}</p>
+          <div id="map-location-{{ loc.id }}" 
+               class="map-container"
+               data-lat="{{ loc.latitude }}" 
+               data-lng="{{ loc.longitude }}"
+               style="height: 400px;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="https://www.google.com/maps/dir/?api=1&destination={{ loc.latitude }},{{ loc.longitude }}"
+             target="_blank" class="waves-effect waves-green btn-flat">
+            <i class="material-icons left">directions</i>
+            Navigate to this location
+          </a>
+          <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+        </div>
+
+      </div>
+
+    {% endfor %}
+
+  {% else %}
+    <div class="row">
+      <div class="col s12">
+        <div class="card">
+          <div class="card-content center-align">
+            <i class="material-icons large grey-text">location_off</i>
+            <p class="grey-text">No localizations added yet.</p>
+            {% if can_edit %}
+              <br>
+              <a href="{% url 'project:add_localization' project.id %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">add_location</i>
+                Add First Localization
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+  
+  <div class="row">
+    <div class="col s12">
+      <a href="{% url 'project:project' project.id %}" class="btn-flat waves-effect">
+        <i class="material-icons left">arrow_back</i>
+        Back to Project
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize modals
+  var modalElems = document.querySelectorAll('.modal');
+  var modalInstances = M.Modal.init(modalElems);
+  
+  // Store map instances
+  var maps = {};
+  var mapInitialized = {};
+  
+  // Initialize modals with map handling
+  modalElems.forEach(function(elem) {
+    var instance = M.Modal.getInstance(elem);
+    instance.options.onOpenEnd = function(modal) {
+      var mapId = modal.id.replace('modal-', '');
+      var mapElementId = 'map-location-' + mapId;
+      var mapElement = document.getElementById(mapElementId);
+      
+      if (!mapElement) return;
+      
+      // Initialize map only when modal opens for the first time
+      if (!mapInitialized[mapId]) {
+        var lat = parseFloat(mapElement.getAttribute('data-lat'));
+        var lng = parseFloat(mapElement.getAttribute('data-lng'));
+        
+        try {
+          // Clear any existing content
+          mapElement.innerHTML = '';
+          
+          // Initialize the map
+          var map = L.map(mapElementId, {
+            center: [lat, lng],
+            zoom: 13,
+            scrollWheelZoom: false
+          });
+          
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          }).addTo(map);
+          
+          L.marker([lat, lng]).addTo(map);
+          
+          // Store map instance
+          maps[mapId] = map;
+          mapInitialized[mapId] = true;
+          
+          // Force a resize after modal is fully opened
+          setTimeout(function() {
+            map.invalidateSize();
+          }, 300);
+          
+        } catch (error) {
+          console.error('Error initializing map:', error);
+        }
+      } else {
+        // Map already initialized, just refresh it
+        if (maps[mapId]) {
+          setTimeout(function() {
+            maps[mapId].invalidateSize();
+          }, 300);
+        }
+      }
+    };
+  });
+});
+</script>
+{% endblock %}

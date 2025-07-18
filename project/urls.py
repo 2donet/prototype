@@ -17,4 +17,8 @@ urlpatterns = [
     path('<int:project_id>/members/<int:user_id>/remove/', views.remove_member, name='remove_member'),
     path('<int:project_id>/join/', views.join_project, name='join_project'),
     path('<int:project_id>/leave/', views.leave_project, name='leave_project'),
+    path('<int:project_id>/localizations/add/', views.add_localization, name='add_localization'),
+    path('<int:project_id>/localizations/<int:localization_id>/edit/', views.edit_localization, name='edit_localization'),
+    path('<int:project_id>/localizations/<int:localization_id>/delete/', views.delete_localization, name='delete_localization'),
+    path('<int:project_id>/localizations/', views.manage_localizations, name='manage_localizations'),
 ]

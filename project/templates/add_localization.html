@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add Localization - {{ project.name }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'leaflet/leaflet.css' %}">
+<script src="{% static 'leaflet/leaflet.js' %}"></script>
+
+<div class="container">
+  <div class="row">
+    <div class="col s12">
+      <h4>Add Localization to {{ project.name }}</h4>
+      <p class="grey-text">Click on the map to select a location for your project</p>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'project:add_localization' project.id %}">
+    {% csrf_token %}
+    
+    <div class="row">
+      <div class="col s12 m6">
+        <div class="card">
+          <div class="card-content">
+            <span class="card-title">Location Details</span>
+            
+            <div class="input-field">
+              <input id="localization_name" name="name" type="text" class="validate" required>
+              <label for="localization_name">Location Name *</label>
+            </div>
+            
+            <div class="input-field">
+              <textarea id="localization_description" name="description" class="materialize-textarea"></textarea>
+              <label for="localization_description">Description (optional)</label>
+            </div>
+            
+            <div class="row">
+              <div class="input-field col s6">
+                <input id="latitude" name="latitude" type="number" step="any" class="validate" required readonly>
+                <label for="latitude" class="active">Latitude *</label>
+              </div>
+              <div class="input-field col s6">
+                <input id="longitude" name="longitude" type="number" step="any" class="validate" required readonly>
+                <label for="longitude" class="active">Longitude *</label>
+              </div>
+            </div>
+            
+            <p class="grey-text" id="location-help-text">
+              <i class="material-icons tiny">info</i> Click anywhere on the map to place a marker
+            </p>
+          </div>
+          
+          <div class="card-action">
+            <button type="submit" class="btn waves-effect waves-light" id="submit-localization" disabled>
+              <i class="material-icons left">save</i>Save Location
+            </button>
+            <a href="{% url 'project:project' project.id %}" class="btn-flat waves-effect">
+              Cancel
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col s12 m6">
+        <div class="card">
+          <div class="card-content" style="padding: 0;">
+            <div id="add-localization-map" style="height: 500px; width: 100%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Materialize components
+  M.updateTextFields();
+  M.textareaAutoResize(document.querySelector('textarea'));
+  
+  // Initialize map
+  var map = L.map('add-localization-map', {
+    center: [52.2297, 21.0122], // Default to Warsaw
+    zoom: 10
+  });
+  
+  // Add tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(map);
+  
+  var marker = null;
+  
+  // Add click event to map
+  map.on('click', function(e) {
+    var lat = e.latlng.lat;
+    var lng = e.latlng.lng;
+    
+    // Remove existing marker if any
+    if (marker) {
+      map.removeLayer(marker);
+    }
+    
+    // Add new marker
+    marker = L.marker([lat, lng]).addTo(map);
+    
+    // Update form fields
+    document.getElementById('latitude').value = lat.toFixed(6);
+    document.getElementById('longitude').value = lng.toFixed(6);
+    
+    // Enable submit button
+    document.getElementById('submit-localization').disabled = false;
+    
+    // Update help text
+    var helpText = document.getElementById('location-help-text');
+    helpText.innerHTML = '<i class="material-icons tiny">check_circle</i> Location selected. You can click again to change it.';
+    helpText.classList.add('green-text');
+    helpText.classList.remove('grey-text');
+    
+    // Update Materialize labels
+    M.updateTextFields();
+  });
+  
+  // Optional: Add current location button
+  if (navigator.geolocation) {
+    var currentLocationBtn = document.createElement('button');
+    currentLocationBtn.innerHTML = '<i class="material-icons">my_location</i>';
+    currentLocationBtn.className = 'btn-floating btn-small blue';
+    currentLocationBtn.style.position = 'absolute';
+    currentLocationBtn.style.top = '10px';
+    currentLocationBtn.style.right = '10px';
+    currentLocationBtn.style.zIndex = '1000';
+    currentLocationBtn.type = 'button';
+    
+    currentLocationBtn.onclick = function() {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        var lat = position.coords.latitude;
+        var lng = position.coords.longitude;
+        
+        // Center map on current location
+        map.setView([lat, lng], 13);
+        
+        // Add marker
+        if (marker) {
+          map.removeLayer(marker);
+        }
+        marker = L.marker([lat, lng]).addTo(map);
+        
+        // Update form
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+        document.getElementById('submit-localization').disabled = false;
+        
+        // Update help text
+        var helpText = document.getElementById('location-help-text');
+        helpText.innerHTML = '<i class="material-icons tiny">check_circle</i> Using your current location';
+        helpText.classList.add('green-text');
+        helpText.classList.remove('grey-text');
+        
+        M.updateTextFields();
+      });
+    };
+    
+    document.getElementById('add-localization-map').appendChild(currentLocationBtn);
+  }
+});
+</script>
+
+<style>
+  .leaflet-container {
+    cursor: crosshair !important;
+  }
+  
+  #add-localization-map {
+    border-radius: 4px;
+  }
+</style>
+{% endblock %}

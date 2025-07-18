@@ -19,8 +19,15 @@
             <a class="waves-effect waves-light btn location">
                 University of Warsaw, Pasteura 5 Warszawa, Poland
             </a>
-            {% include "components/localizations.html" %}
+            <div class="section">
+  <h5>Project Locations</h5>
+  <a href="{% url 'project:manage_localizations' project.id %}" class="btn waves-effect waves-light">
+    <i class="material-icons left">map</i>
+    Manage Localizations
+  </a>
 
+            {% include "components/localizations.html" %}
+</div>
             <br>
 <a href="{% url 'submissions:submission_list' 'project' content.id %}" 
    class="btn blue">

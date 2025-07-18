@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db import models
-from project.models import Project, Connection, Membership, ProjectPermissionGroup
+from project.models import Project, Connection, Membership, ProjectPermissionGroup, Localization
 from comment.models import Comment
 from task.models import Task
 from need.models import Need
@@ -14,6 +14,7 @@ from django.db.models import Prefetch
 from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.urls import reverse
+
 import json
 
 from skills.models import Skill
@@ -517,3 +518,164 @@ def leave_project(request, project_id):
     }
     
     return render(request, 'leave_project.html', context)
+
+
+@login_required
+def add_localization(request, project_id):
+    """Add a new localization to a project"""
+    project = get_object_or_404(Project, pk=project_id)
+    
+    # Check if user can contribute to this project
+    if not project.user_can_contribute(request.user):
+        messages.error(request, "You don't have permission to add localizations to this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+        
+        # Validate the data
+        if not all([name, latitude, longitude]):
+            messages.error(request, "Please provide all required fields.")
+            return render(request, 'add_localization.html', {'project': project})
+        
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+            
+            # Create the localization
+            localization = Localization.objects.create(
+                project=project,
+                name=name,
+                description=description,
+                latitude=latitude,
+                longitude=longitude
+            )
+            
+            messages.success(request, f"Successfully added location '{name}' to the project.")
+            return redirect('project:project', project_id=project.id)
+            
+        except ValueError:
+            messages.error(request, "Invalid latitude or longitude values.")
+            return render(request, 'add_localization.html', {'project': project})
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            return render(request, 'add_localization.html', {'project': project})
+    
+    # GET request - show the form
+    return render(request, 'add_localization.html', {'project': project})
+
+
+@login_required
+def manage_localizations(request, project_id):
+    """View to manage all localizations for a project"""
+    project = get_object_or_404(Project, pk=project_id)
+    
+    # Check if user can view this project
+    can_view = False
+    can_edit = False
+    
+    if project.visibility == 'public':
+        can_view = True
+    elif request.user.is_authenticated:
+        if project.visibility == 'logged_in':
+            can_view = True
+        elif request.user == project.created_by or Membership.objects.filter(project=project, user=request.user).exists():
+            can_view = True
+    
+    if not can_view:
+        messages.error(request, "You don't have permission to view this project.")
+        return redirect('project:index')
+    
+    # Check if user can edit localizations
+    if request.user.is_authenticated:
+        can_edit = project.user_can_contribute(request.user)
+    
+    localizations = project.localizations.all()
+    
+    context = {
+        'project': project,
+        'localizations': localizations,
+        'can_edit': can_edit,
+    }
+    
+    return render(request, 'manage_localizations.html', context)
+
+
+@login_required
+def delete_localization(request, project_id, localization_id):
+    """Delete a localization"""
+    project = get_object_or_404(Project, pk=project_id)
+    localization = get_object_or_404(Localization, pk=localization_id, project=project)
+    
+    # Check if user can contribute to this project
+    if not project.user_can_contribute(request.user):
+        messages.error(request, "You don't have permission to delete localizations from this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    if request.method == 'POST':
+        name = localization.name
+        localization.delete()
+        messages.success(request, f"Successfully deleted location '{name}'.")
+    
+    return redirect('project:manage_localizations', project_id=project.id)
+
+@login_required
+def edit_localization(request, project_id, localization_id):
+    """Edit an existing localization"""
+    project = get_object_or_404(Project, pk=project_id)
+    localization = get_object_or_404(Localization, pk=localization_id, project=project)
+    
+    # Check if user can contribute to this project
+    if not project.user_can_contribute(request.user):
+        messages.error(request, "You don't have permission to edit localizations in this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+        
+        # Validate the data
+        if not all([name, latitude, longitude]):
+            messages.error(request, "Please provide all required fields.")
+            return render(request, 'edit_localization.html', {
+                'project': project,
+                'localization': localization
+            })
+        
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+            
+            # Update the localization
+            localization.name = name
+            localization.description = description
+            localization.latitude = latitude
+            localization.longitude = longitude
+            localization.save()
+            
+            messages.success(request, f"Successfully updated location '{localization.name}'.")
+            return redirect('project:project', project_id=project.id)
+            
+        except ValueError:
+            messages.error(request, "Invalid latitude or longitude values.")
+            return render(request, 'edit_localization.html', {
+                'project': project,
+                'localization': localization
+            })
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            return render(request, 'edit_localization.html', {
+                'project': project,
+                'localization': localization
+            })
+    
+    # GET request - show the form with existing data
+    return render(request, 'edit_localization.html', {
+        'project': project,
+        'localization': localization
+    })
