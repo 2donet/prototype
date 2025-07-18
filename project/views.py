@@ -221,7 +221,6 @@ def project(request, project_id):
     return render(request, "details.html", context=context)
 
 
-# @login_required
 def create_project(request):
     if request.user.is_authenticated and request.method == 'POST':
         # Dane projektu
@@ -265,6 +264,7 @@ def create_project(request):
                         created_by=user,
                         to_project=project,
                     )
+        
         task_names = request.POST.getlist('task_name[]')  # List of task names
         task_descs = request.POST.getlist('task_desc[]')  # List of task descriptions
         task_priorities = request.POST.getlist('task_priority[]')  # List of task priorities
@@ -280,11 +280,12 @@ def create_project(request):
                         created_by=user,
                         to_project=project,
                     )
+        
+        # Handle skills with simplified approach
         skills_json = request.POST.get('skills')
         if skills_json:
             skill_names = json.loads(skills_json)
-            for skill_name in skill_names:
-                project.add_skill(skill_name)
+            project.add_skills(skill_names)  # Uses the helper method
 
         return redirect('project:project', project_id=project.id)
 

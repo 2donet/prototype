@@ -57,12 +57,39 @@ class Project(models.Model):
         help_text="Require comments to be approved by moderators before being visible")
     
     def add_skill(self, skill_name):
-        """Adds a skill to the project, ensuring max 20 skills"""
-        skill, created = Skill.objects.get_or_create(name=skill_name.title())
-        if self.skills.count() < 20:
+        """
+        Add a skill to the project, creating it if it doesn't exist
+        """
+        if skill_name.strip():
+            skill, created = Skill.objects.get_or_create(
+                name__iexact=skill_name.strip(),
+                defaults={'name': skill_name.strip().title()}
+            )
             self.skills.add(skill)
-        else:
-            raise ValueError("A project can have a maximum of 20 skills.")
+            return skill
+        return None
+
+    def add_skills(self, skill_names):
+        """
+        Add multiple skills to the project, handling duplicates
+        """
+        processed_skills = []
+        seen_names = set()
+        
+        for skill_name in skill_names:
+            if skill_name.strip():
+                normalized_name = skill_name.strip().lower()
+                if normalized_name not in seen_names:
+                    seen_names.add(normalized_name)
+                    skill, created = Skill.objects.get_or_create(
+                        name__iexact=skill_name.strip(),
+                        defaults={'name': skill_name.strip().title()}
+                    )
+                    processed_skills.append(skill)
+        
+        self.skills.set(processed_skills)
+        return processed_skills
+    
     
     def add_member(self, user, role='VIEWER'):
         """Add a user to the project with specified role"""
