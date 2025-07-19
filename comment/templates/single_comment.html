@@ -3,6 +3,7 @@
 {% load static %}
 
 {% block title %}Comment - {{ comment.content|truncatechars:50 }}{% endblock %}
+{% load comment_tags %}
 
 {% block content %}
 <div class="container">
@@ -39,8 +40,7 @@
             <!-- User information -->
             <div class="comment-header">
                 {% if comment.user %}
-                <img class="miniavatar" src="{{ comment.user.avatar | default:'/static/icons/default-avatar.svg'}}"
-                    alt="{{ comment.user.username }}">
+      {% comment_avatar comment.user %}
                 <div class="comment-meta">
                     <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
                     <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
@@ -70,7 +70,7 @@
                             {% if request.user == comment.user or request.user.is_staff %}
                             <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
                             {% endif %}
-                            <li><a href="#" class="report-link">Report</a></li>
+                <li><a href="{% url 'comments:report_comment' comment.id %}">Report</a></li>
                         </ul>
                     </div>
                 </div>

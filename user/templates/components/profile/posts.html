@@ -1,0 +1,107 @@
+{% load humanize %}
+<div class="posts-container">
+                    <!-- Example post 1 (or use real posts from context) -->
+                    {% for post in posts %}
+                    <div class="card post-card">
+                        <div class="card-content">
+                            <div class="post-header">
+                                <span class="card-title">{{ post.name }}</span>
+                                <span class="post-date">{{ post.date|naturaltime }}</span>
+                            </div>
+                            <p class="post-content">{{ post.desc|truncatewords:50 }}</p>
+                            
+                            <div class="post-tags">
+                                <span class="chip">Development</span>
+                                <span class="chip">Community</span>
+                            </div>
+                            
+                            <div class="post-stats">
+                                <div class="post-stat">
+                                    <i class="material-icons">thumb_up</i>
+                                    <span>{{ post.likes|default:"23" }}</span>
+                                </div>
+                                <div class="post-stat">
+                                    <i class="material-icons">comment</i>
+                                    <span>{{ post.comments_count|default:"8" }}</span>
+                                </div>
+                                <div class="post-stat">
+                                    <i class="material-icons">visibility</i>
+                                    <span>{{ post.views|default:"142" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="#" class="btn-flat waves-effect">Read More</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <!-- Example post when no real posts exist -->
+                    <div class="card post-card">
+                        <div class="card-content">
+                            <div class="post-header">
+                                <span class="card-title">Best Practices for Comment Moderation</span>
+                                <span class="post-date">3 weeks ago</span>
+                            </div>
+                            <p class="post-content">In this post, I share insights on effective comment moderation strategies for community platforms. Maintaining a healthy community discussion requires a balance between freedom of expression and ensuring respect among users. Here are some approaches that have worked well in my experience...</p>
+                            
+                            <div class="post-tags">
+                                <span class="chip">Moderation</span>
+                                <span class="chip">Community</span>
+                                <span class="chip">Best Practices</span>
+                            </div>
+                            
+                            <div class="post-stats">
+                                <div class="post-stat">
+                                    <i class="material-icons">thumb_up</i>
+                                    <span>42</span>
+                                </div>
+                                <div class="post-stat">
+                                    <i class="material-icons">comment</i>
+                                    <span>15</span>
+                                </div>
+                                <div class="post-stat">
+                                    <i class="material-icons">visibility</i>
+                                    <span>237</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="#" class="btn-flat waves-effect">Read More</a>
+                        </div>
+                    </div>
+                    
+                    <div class="card post-card">
+                        <div class="card-content">
+                            <div class="post-header">
+                                <span class="card-title">Building Effective User Authentication Systems</span>
+                                <span class="post-date">1 month ago</span>
+                            </div>
+                            <p class="post-content">Security should always be a top priority when developing web applications. In this post, I'll walk through the key components of a robust authentication system, including password hashing, multi-factor authentication, and session management...</p>
+                            
+                            <div class="post-tags">
+                                <span class="chip">Security</span>
+                                <span class="chip">Development</span>
+                                <span class="chip">Authentication</span>
+                            </div>
+                            
+                            <div class="post-stats">
+                                <div class="post-stat">
+                                    <i class="material-icons">thumb_up</i>
+                                    <span>38</span>
+                                </div>
+                                <div class="post-stat">
+                                    <i class="material-icons">comment</i>
+                                    <span>12</span>
+                                </div>
+                                <div class="post-stat">
+                                    <i class="material-icons">visibility</i>
+                                    <span>195</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a href="#" class="btn-flat waves-effect">Read More</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>

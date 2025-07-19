@@ -211,38 +211,6 @@ def report_comment_view(request, comment_id):
         'comment': comment
     })
 
-
-def load_replies(request, comment_id):
-    """
-    Fetch replies dynamically for a specific comment.
-    """
-    parent_comment = get_object_or_404(Comment, id=comment_id)
-    replies = parent_comment.replies.select_related("user").all()
-    
-    # Enhance replies with reaction counts and user vote/reaction status
-    replies = get_comments_with_reactions(replies, request.user)
-    
-    reply_data = []
-    for reply in replies:
-        reply_info = {
-            "id": reply.id,
-            "content": reply.content,
-            "user": reply.user.username if reply.user else "Anonymous",
-            "total_replies": reply.total_replies,
-            "score": reply.score,
-            "reaction_counts": reply.reaction_counts,
-        }
-        
-        if request.user.is_authenticated:
-            reply_info["user_vote"] = getattr(reply, 'user_vote', None)
-            reply_info["user_reactions"] = getattr(reply, 'user_reactions', [])
-            
-        reply_data.append(reply_info)
-    
-    return JsonResponse({"replies": reply_data})
-
-
-
 def add_comment(request):
     """
     Add a new comment or reply.
@@ -295,6 +263,17 @@ def add_comment(request):
             ip_address=get_client_ip(request),
         )
 
+        # Get avatar URL for the comment author
+        def get_avatar_url(user):
+            """Helper function to get avatar URL"""
+            if user and hasattr(user, 'profile'):
+                try:
+                    if user.profile.avatar:
+                        return user.profile.avatar_small.url
+                except:
+                    pass
+            return '/static/icons/default-avatar.svg'
+
         # Build response data
         response_data = {
             "status": "success",
@@ -303,21 +282,17 @@ def add_comment(request):
                 "content": comment.content,
                 "user": comment.user.username if comment.user else (comment.author_name or "Anonymous"),
                 "user_id": comment.user.id if comment.user else None,
-                "author_avatar": (
-                    comment.user.userprofile.avatar.url 
-                    if comment.user and hasattr(comment.user, 'userprofile') and hasattr(comment.user.userprofile, 'avatar') and comment.user.userprofile.avatar
-                    else '/static/icons/default-avatar.svg'
-                ),
-                "created_at": comment.created_at.isoformat(),  # Make sure your Comment model has created_at field
-                "total_replies": 0,  # New comments have no replies yet
-                "score": 0,  # New comments start with score 0
+                "author_avatar": get_avatar_url(comment.user),
+                "created_at": comment.created_at.isoformat(),
+                "total_replies": 0,
+                "score": 0,
                 "parent_id": parent_id,
                 "to_need_id": comment.to_need_id,
                 "to_project_id": comment.to_project_id,
                 "to_task_id": comment.to_task_id,
-                "user_vote": None,  # New comment has no vote from user yet
-                "user_reactions": [],  # New comment has no reactions yet
-                "reaction_counts": {},  # No reactions yet
+                "user_vote": None,
+                "user_reactions": [],
+                "reaction_counts": {},
             }
         }
 
@@ -326,13 +301,54 @@ def add_comment(request):
     except Exception as e:
         print(f"Error creating comment: {str(e)}")
         import traceback
-        traceback.print_exc()  # This will help debug the exact error
+        traceback.print_exc()
         return JsonResponse({
             "status": "error",
             "error": "An error occurred while saving your comment",
             "debug": str(e) if settings.DEBUG else None
         }, status=500)
 
+
+def load_replies(request, comment_id):
+    """
+    Fetch replies dynamically for a specific comment.
+    """
+    parent_comment = get_object_or_404(Comment, id=comment_id)
+    replies = parent_comment.replies.select_related("user", "user__profile").all()
+    
+    # Enhance replies with reaction counts and user vote/reaction status
+    replies = get_comments_with_reactions(replies, request.user)
+    
+    def get_avatar_url(user):
+        """Helper function to get avatar URL"""
+        if user and hasattr(user, 'profile'):
+            try:
+                if user.profile.avatar:
+                    return user.profile.avatar_small.url
+            except:
+                pass
+        return '/static/icons/default-avatar.svg'
+    
+    reply_data = []
+    for reply in replies:
+        reply_info = {
+            "id": reply.id,
+            "content": reply.content,
+            "user": reply.user.username if reply.user else "Anonymous",
+            "user_id": reply.user.id if reply.user else None,
+            "author_avatar": get_avatar_url(reply.user),
+            "total_replies": reply.total_replies,
+            "score": reply.score,
+            "reaction_counts": reply.reaction_counts,
+        }
+        
+        if request.user.is_authenticated:
+            reply_info["user_vote"] = getattr(reply, 'user_vote', None)
+            reply_info["user_reactions"] = getattr(reply, 'user_reactions', [])
+            
+        reply_data.append(reply_info)
+    
+    return JsonResponse({"replies": reply_data})
 def vote_comment(request, comment_id):
     """
     Vote on a comment (upvote or downvote)

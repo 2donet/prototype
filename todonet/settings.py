@@ -32,9 +32,21 @@ ALLOWED_HOSTS = [
     '192.168.125.139',
 ]
 
+IMAGEKIT_DEFAULT_CACHEFILE_STRATEGY = 'imagekit.cachefiles.strategies.JustInTime'
+IMAGEKIT_CACHEFILE_NAMER = 'imagekit.cachefiles.namers.source_name_dot_hash'
+IMAGEKIT_SPEC_CACHEFILE_NAMER = 'imagekit.cachefiles.namers.source_name_as_path'
+IMAGEKIT_DELETE_SOURCE = True
+IMAGEKIT_DEFAULT_CACHEFILE_BACKEND = 'imagekit.cachefiles.backends.Simple'
+IMAGEKIT_PILLOW_CONFIG = {
+    'ANTIALIAS': True,
+    'QUALITY': 85,
+    'OPTIMIZE': True,
+    'PROGRESSIVE': True,  # For JPEG progressive loading
+}
+
+
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -53,7 +65,7 @@ INSTALLED_APPS = [
     'contribution',
     'submissions.apps.SubmissionsConfig',
     'decisions.apps.DecisionsConfig',
-
+    'imagekit',
     'skills', 
     'rest_framework',
 
@@ -151,3 +163,11 @@ STATIC_ROOT = 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_REDIRECT_URL = '/'
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

@@ -13,7 +13,7 @@ from user.models import Membership, UserProfile, Post
 from django.contrib.auth.decorators import login_required
 from user.models import Person
 
-from .forms import SignInForm, SignupForm
+from .forms import SignInForm, SignupForm, EditProfileForm
 from django.contrib.auth import get_user_model
 
 def userprofile(request, user_id):
@@ -161,3 +161,121 @@ def signin(request):
 def custom_logout(request):
     logout(request)  # Log out the user
     return redirect('/')  # Redirect to a specific page (e.g., home page)
+
+
+@login_required
+def edit_profile(request, user_id):
+    """
+    Handle profile editing for authenticated users including avatar upload
+    """
+    User = get_user_model()
+    user = get_object_or_404(User, pk=user_id)
+    
+    # Check if user can edit this profile (own profile or admin)
+    if request.user.id != user.id and not request.user.is_staff:
+        messages.error(request, "You don't have permission to edit this profile.")
+        return redirect('user:userprofile', user_id=user_id)
+    
+    # Get or create user profile
+    user_profile, created = UserProfile.objects.get_or_create(user=user)
+    
+    if request.method == 'POST':
+        form = EditProfileForm(request.POST, request.FILES, instance=user, user_profile=user_profile)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, 'Your profile has been updated successfully!')
+                return redirect('user:userprofile', user_id=user.id)
+            except Exception as e:
+                messages.error(request, 'An error occurred while updating your profile. Please try again.')
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Profile update error: {e}")
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = EditProfileForm(instance=user, user_profile=user_profile)
+    
+    context = {
+        'form': form,
+        'user': user,
+        'user_profile': user_profile
+    }
+    return render(request, 'edit_profile.html', context)
+    """
+    Handle profile editing for authenticated users
+    """
+    User = get_user_model()
+    user = get_object_or_404(User, pk=user_id)
+    
+    # Check if user can edit this profile (own profile or admin)
+    if request.user.id != user.id and not request.user.is_staff:
+        messages.error(request, "You don't have permission to edit this profile.")
+        return redirect('user:userprofile', user_id=user_id)
+    
+    # Get or create user profile
+    user_profile, created = UserProfile.objects.get_or_create(user=user)
+    
+    if request.method == 'POST':
+        form = EditProfileForm(request.POST, instance=user, user_profile=user_profile)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, 'Your profile has been updated successfully!')
+                return redirect('user:userprofile', user_id=user.id)
+            except Exception as e:
+                messages.error(request, 'An error occurred while updating your profile. Please try again.')
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Profile update error: {e}")
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = EditProfileForm(instance=user, user_profile=user_profile)
+    
+    context = {
+        'form': form,
+        'user': user,
+        'user_profile': user_profile
+    }
+    return render(request, 'edit_profile.html', context)
+    """
+    Handle profile editing for authenticated users
+    """
+    User = get_user_model()
+    user = get_object_or_404(User, pk=user_id)
+    
+    # Check if user can edit this profile (own profile or admin)
+    if request.user.id != user.id and not request.user.is_staff:
+        messages.error(request, "You don't have permission to edit this profile.")
+        return redirect('user:userprofile', user_id=user_id)
+    
+    # Get or create user profile
+    user_profile, created = UserProfile.objects.get_or_create(user=user)
+    
+    if request.method == 'POST':
+        form = EditProfileForm(request.POST, instance=user, user_profile=user_profile)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, 'Your profile has been updated successfully!')
+                return redirect('user:userprofile', user_id=user.id)
+            except Exception as e:
+                messages.error(request, 'An error occurred while updating your profile. Please try again.')
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Profile update error: {e}")
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = EditProfileForm(instance=user, user_profile=user_profile)
+    
+    context = {
+        'form': form,
+        'user': user,
+        'user_profile': user_profile
+    }
+    return render(request, 'edit_profile.html', context)

@@ -6,6 +6,8 @@ cd 2donet/bin
 source activate
 pip install django
 pip install djangorestframework
+<!-- for formatting images -->
+pip install Pillow django-imagekit 
 ```
 
 2. Run server:

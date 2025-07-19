@@ -1,0 +1,742 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile | {{ user.username }}{% endblock %}
+{% block content %}
+{% load static %}
+
+<div class="edit-profile-container">
+    <div class="row">
+        <div class="col s12 m8 offset-m2 l6 offset-l3">
+            <!-- Header -->
+            <div class="profile-edit-header">
+                <h4 class="center-align">Edit Profile</h4>
+                <p class="center-align text-secondary">Update your profile information</p>
+            </div>
+
+            <!-- Profile Edit Form -->
+            <div class="card profile-edit-card">
+                <div class="card-content">
+                    <form method="post" enctype="multipart/form-data" class="profile-edit-form">
+                        {% csrf_token %}
+                        
+                        <!-- Avatar Section -->
+                        <div class="section-header">
+                            <h5><i class="material-icons left">account_circle</i>Profile Picture</h5>
+                        </div>
+                        
+                        <div class="avatar-section">
+                            <div class="current-avatar">
+                                {% if user_profile.avatar %}
+                                    <img src="{{ user_profile.avatar_thumbnail.url }}" alt="Current Avatar" class="circle responsive-img current-avatar-img">
+                                {% else %}
+                                    <img src="{% static 'icons/default-avatar.svg' %}" alt="Default Avatar" class="circle responsive-img current-avatar-img">
+                                {% endif %}
+                            </div>
+                            
+                            <div class="avatar-upload-area">
+                                <!-- Custom file upload button -->
+                                <div class="avatar-upload-wrapper">
+                                    <input type="file" id="avatar" name="avatar" accept="image/jpeg,image/jpg,image/png,image/webp" style="display: none;">
+                                    <button type="button" class="btn avatar-upload-btn waves-effect waves-light" onclick="document.getElementById('avatar').click();">
+                                        <i class="material-icons left">cloud_upload</i>Choose Image
+                                    </button>
+                                    <div class="file-name-display" style="margin-top: 10px; color: var(--text2ndary); font-size: 0.9rem;"></div>
+                                </div>
+                                
+                                <div class="avatar-preview-container" style="display: none;">
+                                    <img id="avatar-preview" class="circle responsive-img avatar-preview" alt="Avatar Preview">
+                                    <div class="avatar-actions">
+                                        <button type="button" class="btn-flat waves-effect remove-avatar">
+                                            <i class="material-icons">close</i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="avatar-requirements">
+                                    <p class="helper-text">
+                                        <i class="material-icons tiny">info</i>
+                                        JPEG, PNG, or WebP. Max 5MB. Minimum 100x100px.
+                                    </p>
+                                </div>
+                                
+                                {% if form.avatar.errors %}
+                                    <span class="helper-text error-text">
+                                        {% for error in form.avatar.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Basic Information Section -->
+                        <div class="section-header">
+                            <h5><i class="material-icons left">person</i>Basic Information</h5>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="input-field col s12">
+                                {{ form.username }}
+                                <label for="username" class="{% if form.username.value %}active{% endif %}">Username *</label>
+                                {% if form.username.errors %}
+                                    <span class="helper-text error-text">
+                                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-field col s12 m6">
+                                {{ form.first_name }}
+                                <label for="first_name" class="{% if form.first_name.value %}active{% endif %}">First Name</label>
+                                {% if form.first_name.errors %}
+                                    <span class="helper-text error-text">
+                                        {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="input-field col s12 m6">
+                                {{ form.last_name }}
+                                <label for="last_name" class="{% if form.last_name.value %}active{% endif %}">Last Name</label>
+                                {% if form.last_name.errors %}
+                                    <span class="helper-text error-text">
+                                        {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-field col s12">
+                                {{ form.email }}
+                                <label for="email" class="{% if form.email.value %}active{% endif %}">Email *</label>
+                                {% if form.email.errors %}
+                                    <span class="helper-text error-text">
+                                        {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Profile Information Section -->
+                        <div class="section-header">
+                            <h5><i class="material-icons left">info</i>Profile Information</h5>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-field col s12">
+                                {{ form.bio }}
+                                <label for="bio" class="{% if form.bio.value %}active{% endif %}">Bio</label>
+                                <span class="helper-text">Tell others about yourself</span>
+                                {% if form.bio.errors %}
+                                    <span class="helper-text error-text">
+                                        {% for error in form.bio.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-field col s12 m6">
+                                {{ form.location }}
+                                <label for="location" class="{% if form.location.value %}active{% endif %}">Location</label>
+                                {% if form.location.errors %}
+                                    <span class="helper-text error-text">
+                                        {% for error in form.location.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="input-field col s12 m6">
+                                {{ form.website }}
+                                <label for="website" class="{% if form.website.value %}active{% endif %}">Website</label>
+                                {% if form.website.errors %}
+                                    <span class="helper-text error-text">
+                                        {% for error in form.website.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <div class="row">
+                                <div class="col s12">
+                                    <button type="submit" class="btn waves-effect waves-light save-btn">
+                                        <i class="material-icons left">save</i>Save Changes
+                                    </button>
+                                    <a href="{% url 'user:userprofile' user.id %}" class="btn-flat waves-effect cancel-btn">
+                                        <i class="material-icons left">cancel</i>Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Profile Preview -->
+            <div class="card profile-preview-card">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">visibility</i>Profile Preview
+                    </span>
+                    <div class="preview-content">
+                        <div class="preview-avatar">
+                            {% if user_profile.avatar %}
+                                <img src="{{ user_profile.avatar_thumbnail.url }}" alt="Avatar" class="circle responsive-img preview-avatar-img">
+                            {% else %}
+                                <img src="{% static 'icons/default-avatar.svg' %}" alt="Default Avatar" class="circle responsive-img preview-avatar-img">
+                            {% endif %}
+                        </div>
+                        <div class="preview-info">
+                            <h6 class="preview-name">{{ user.get_full_name|default:user.username }}</h6>
+                            <p class="preview-bio">{{ user_profile.bio|default:"No bio provided yet." }}</p>
+                            <div class="preview-details">
+                                {% if user_profile.location %}
+                                <div class="preview-detail">
+                                    <i class="material-icons tiny">location_on</i>
+                                    <span>{{ user_profile.location }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="preview-detail">
+                                    <i class="material-icons tiny">email</i>
+                                    <span>{{ user.email }}</span>
+                                </div>
+                                {% if user_profile.website %}
+                                <div class="preview-detail">
+                                    <i class="material-icons tiny">link</i>
+                                    <a href="{{ user_profile.website }}" target="_blank">{{ user_profile.website }}</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Edit Profile Styles */
+.edit-profile-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+    color: var(--text);
+}
+
+.profile-edit-header {
+    margin-bottom: 30px;
+}
+
+.profile-edit-header h4 {
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.text-secondary {
+    color: var(--text2ndary);
+}
+
+.profile-edit-card {
+    background-color: var(--bg-color2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    margin-bottom: 20px;
+}
+
+.profile-edit-card .card-content {
+    padding: 30px;
+}
+
+.section-header {
+    margin: 30px 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--bg-color3);
+}
+
+.section-header:first-child {
+    margin-top: 0;
+}
+
+.section-header h5 {
+    color: var(--text);
+    margin: 0;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+}
+
+.section-header h5 i {
+    margin-right: 10px;
+    color: var(--highlight);
+}
+
+/* Avatar Section Styles */
+.avatar-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+.current-avatar {
+    flex-shrink: 0;
+}
+
+.current-avatar-img {
+    width: 120px;
+    height: 120px;
+    background-color: var(--bg-color3);
+    padding: 4px;
+    border: 2px solid var(--bg-color3);
+}
+
+.avatar-upload-area {
+    flex: 1;
+}
+
+.avatar-upload-wrapper {
+    margin-bottom: 20px;
+}
+
+.avatar-upload-btn {
+    background-color: var(--highlight);
+    color: var(--highlightdark);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.avatar-upload-btn:hover {
+    background-color: var(--highlight-dark);
+}
+
+.file-name-display {
+    min-height: 20px;
+}
+
+.avatar-preview-container {
+    margin-top: 20px;
+    position: relative;
+    display: inline-block;
+}
+
+.avatar-preview {
+    width: 120px;
+    height: 120px;
+    border: 2px solid var(--highlight);
+    background-color: var(--bg-color3);
+    object-fit: cover;
+}
+
+.avatar-actions {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+}
+
+.remove-avatar {
+    background-color: var(--danger);
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-avatar:hover {
+    background-color: #cc0000;
+}
+
+.avatar-requirements {
+    margin-top: 15px;
+}
+
+.avatar-requirements .helper-text {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text2ndary);
+    font-size: 0.85rem;
+}
+
+.avatar-requirements .material-icons.tiny {
+    font-size: 1rem;
+}
+
+/* Drag and Drop Styles */
+.avatar-upload-area.drag-over {
+    background-color: var(--bg-color3);
+    border: 2px dashed var(--highlight);
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.avatar-upload-area {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+/* Form Styling */
+.profile-edit-form .input-field {
+    margin-bottom: 25px;
+}
+
+.profile-edit-form input[type=text],
+.profile-edit-form input[type=email],
+.profile-edit-form input[type=url],
+.profile-edit-form textarea {
+    background-color: var(--bg-color3);
+    border: 1px solid var(--bg-color3);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 12px 16px;
+    margin: 0;
+    transition: all 0.3s ease;
+}
+
+.profile-edit-form input[type=text]:focus,
+.profile-edit-form input[type=email]:focus,
+.profile-edit-form input[type=url]:focus,
+.profile-edit-form textarea:focus {
+    background-color: var(--bg-light);
+    border-color: var(--highlight);
+    box-shadow: 0 0 0 1px var(--highlight);
+    outline: none;
+}
+
+.profile-edit-form label {
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+    left: 16px;
+    top: 12px;
+}
+
+.profile-edit-form label.active {
+    color: var(--highlight);
+    font-size: 0.8rem;
+    transform: translateY(-140%) scale(0.8);
+}
+
+.profile-edit-form .helper-text {
+    color: var(--text2ndary);
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+.profile-edit-form .error-text {
+    color: var(--danger);
+}
+
+/* Form Actions */
+.form-actions {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--bg-color3);
+}
+
+.save-btn {
+    background-color: var(--highlight);
+    color: var(--highlightdark);
+    margin-right: 15px;
+    border-radius: 4px;
+    padding: 0 24px;
+    height: 42px;
+    line-height: 42px;
+}
+
+.save-btn:hover {
+    background-color: var(--highlight-dark);
+}
+
+.cancel-btn {
+    color: var(--text2ndary);
+    border: 1px solid var(--bg-color3);
+    border-radius: 4px;
+    height: 42px;
+    line-height: 42px;
+    padding: 0 24px;
+}
+
+.cancel-btn:hover {
+    background-color: var(--bg-color3);
+    color: var(--text);
+}
+
+/* Profile Preview */
+.profile-preview-card {
+    background-color: var(--bg-color2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.profile-preview-card .card-title {
+    color: var(--text);
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+
+.profile-preview-card .card-title i {
+    color: var(--highlight);
+}
+
+.preview-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.preview-avatar img {
+    width: 80px;
+    height: 80px;
+    background-color: var(--bg-color3);
+    padding: 8px;
+    object-fit: cover;
+}
+
+.preview-info {
+    flex: 1;
+}
+
+.preview-name {
+    color: var(--text);
+    margin: 0 0 10px 0;
+    font-size: 1.3rem;
+}
+
+.preview-bio {
+    color: var(--text2ndary);
+    margin: 0 0 15px 0;
+    line-height: 1.5;
+}
+
+.preview-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.preview-detail {
+    display: flex;
+    align-items: center;
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+}
+
+.preview-detail i {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.preview-detail a {
+    color: var(--highlight);
+    text-decoration: none;
+}
+
+.preview-detail a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .avatar-section {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .preview-content {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .edit-profile-container {
+        padding: 0 15px;
+    }
+    
+    .profile-edit-card .card-content {
+        padding: 20px;
+    }
+    
+    .form-actions .btn,
+    .form-actions .btn-flat {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
+
+/* Material Icons Fix */
+.material-icons.tiny {
+    font-size: 1rem;
+}
+
+/* Card Improvements */
+.card {
+    background-color: var(--bg-color2);
+    color: var(--text);
+}
+
+.card .card-title {
+    color: var(--text);
+}
+
+/* Additional Materialize Overrides */
+.input-field .prefix {
+    color: var(--text2ndary);
+}
+
+.input-field .prefix.active {
+    color: var(--highlight);
+}
+
+/* Focus states for better accessibility */
+.btn:focus,
+.btn-flat:focus {
+    outline: 2px solid var(--highlight);
+    outline-offset: 2px;
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const avatarInput = document.getElementById('avatar');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const previewContainer = document.querySelector('.avatar-preview-container');
+    const removeBtn = document.querySelector('.remove-avatar');
+    const previewAvatarImg = document.querySelector('.preview-avatar-img');
+    const fileNameDisplay = document.querySelector('.file-name-display');
+    
+    // Debug: Check if elements exist
+    console.log('Avatar input:', avatarInput);
+    console.log('Preview container:', previewContainer);
+    
+    if (!avatarInput) {
+        console.error('Avatar input not found!');
+        return;
+    }
+    
+    // Handle avatar file selection
+    avatarInput.addEventListener('change', function(e) {
+        console.log('File input changed:', e.target.files);
+        const file = e.target.files[0];
+        
+        if (file) {
+            // Display file name
+            fileNameDisplay.textContent = file.name;
+            
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                if (typeof M !== 'undefined' && M.toast) {
+                    M.toast({html: 'Please select a valid image file (JPEG, PNG, or WebP)', classes: 'red'});
+                } else {
+                    alert('Please select a valid image file (JPEG, PNG, or WebP)');
+                }
+                return;
+            }
+            
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                if (typeof M !== 'undefined' && M.toast) {
+                    M.toast({html: 'Image file is too large. Maximum size is 5MB.', classes: 'red'});
+                } else {
+                    alert('Image file is too large. Maximum size is 5MB.');
+                }
+                return;
+            }
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (avatarPreview) {
+                    avatarPreview.src = e.target.result;
+                    previewContainer.style.display = 'inline-block';
+                }
+                if (previewAvatarImg) {
+                    previewAvatarImg.src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+        } else {
+            fileNameDisplay.textContent = '';
+        }
+    });
+    
+    // Handle remove avatar
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            avatarInput.value = '';
+            fileNameDisplay.textContent = '';
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+            }
+            // Reset preview image to default or current avatar
+            if (previewAvatarImg) {
+                {% if user_profile.avatar %}
+                    previewAvatarImg.src = "{{ user_profile.avatar_thumbnail.url }}";
+                {% else %}
+                    previewAvatarImg.src = "{% static 'icons/default-avatar.svg' %}";
+                {% endif %}
+            }
+        });
+    }
+    
+    // Drag and drop functionality
+    const avatarSection = document.querySelector('.avatar-upload-area');
+    
+    if (avatarSection) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            avatarSection.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            avatarSection.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            avatarSection.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight(e) {
+            avatarSection.classList.add('drag-over');
+        }
+        
+        function unhighlight(e) {
+            avatarSection.classList.remove('drag-over');
+        }
+        
+        avatarSection.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                avatarInput.files = files;
+                const event = new Event('change', { bubbles: true });
+                avatarInput.dispatchEvent(event);
+            }
+        }
+    }
+});
+</script>
+
+{% endblock %}

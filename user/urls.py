@@ -8,6 +8,7 @@ from .views import person_memberships, membership_details
 app_name = "user"
 urlpatterns = [
     path("<int:user_id>/", views.userprofile, name="userprofile"),
+    path("<int:user_id>/edit/", views.edit_profile, name="edit_profile"),  # New URL
     path('<int:person_id>/memberships', person_memberships, name='person_memberships'),
     path('membership/<int:membership_id>/', membership_details, name='membership_details'),
     path('signin/', views.signin, name='signin'),

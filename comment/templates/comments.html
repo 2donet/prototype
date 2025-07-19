@@ -5,7 +5,8 @@
 <div class="comment" data-comment-id="{{ comment.id }}"
     {% if comment.user_vote %}data-user-vote="{{ comment.user_vote }}"{% endif %}
     {% if comment.user_reactions %}data-user-reactions="{{ comment.user_reactions }}"{% endif %}>
-    <img class="miniavatar" src="{{ comment.author.avatar |default:'/static/icons/default-avatar.svg'}}">
+      {% comment_avatar comment.user %}
+
     <span>
         <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
 
