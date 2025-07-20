@@ -1,20 +1,57 @@
 <p>Subproject of:</p>
-	{% for project in parent_projects %}
-			<div class="box">
-				<a  style="color: var(--highlight);" href="/{{ project.id }}">{{ project.name }}</a>
+{% for project in parent_projects %}
+    <div class="box projects-kills">
+        <a style="color: var(--highlight);" href="/{{ project.id }}">{{ project.name }}</a>
 
-				<p>{{ project.summary }}</p>
+        <p>{{ project.summary }}</p>
 
-                <div class="chips" style="border-bottom: none;">
-                    {% for skill in project.skills.all %}
-                    <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
-                        {{ skill.name }}
-                    </a>
-                    {% empty %}
-                    <p>No skills added yet.</p>
-                    {% endfor %}
-                </div>
+        <div class="chips" style="border-bottom: none;">
+            {% for skill in project.skills.all|slice:":6" %}
+            <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                {{ skill.name }}
+            </a>
+            {% empty %}
+            <p>No skills added yet.</p>
+            {% endfor %}
+            
+            {% if project.skills.count > 8 %}
+            <a href="javascript:void(0)" class="chip view-more-chip" style="background-color: black; color: white;" 
+               onclick="showAllChips(this)">
+                View More
+            </a>
+            
+            <div class="hidden-chips" style="display: none;">
+                {% for skill in project.skills.all|slice:"6:" %}
+                <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                    {{ skill.name }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}
 
-			</div>
-			
-	{% endfor %}
+<script>
+    function showAllChips(button) {
+        // Hide the "View More" button
+        button.style.display = 'none';
+        
+        // Get the hidden chips container
+        const hiddenChips = button.nextElementSibling;
+        
+        // Show the hidden chips
+        hiddenChips.style.display = 'inline';
+    }
+</script>
+
+<style>
+    .chip {
+        margin: 2px;
+        display: inline-block;
+    }
+    .view-more-chip:hover {
+        cursor: pointer;
+        opacity: 0.8;
+    }
+</style>

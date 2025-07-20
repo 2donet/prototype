@@ -15,6 +15,15 @@
 
             <h2>{{ content.name }}</h2>
             <i>{{ content.summary|default_if_none:" " }}</i>
+                    <div class="chips" style="border-bottom: none;">
+            {% for skill in content.skills.all %}
+            <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                {{ skill.name }}
+            </a>
+            {% empty %}
+            <p>No skills added yet.</p>
+            {% endfor %}
+        </div>
 
             <div class="section">
   <h5>Locations</h5>
@@ -36,7 +45,7 @@
             <p>
                 Creating MVP/Prototype showcasing main idea which is splitting big pieces of work into smaller and smaller parts. 
             </p>
-            {{content.desc}}
+            {{content.desc | linebreaks}}
             
             {% include "components/plan.html" %}
 
@@ -51,34 +60,189 @@
 
     <div class="pinfo">
         {% include "components/hero.html" %}
+                {% include "components/administrationcard.html" %}
+
         {% include "components/connection.html" %}
 
-        <br>
-        <br>
-        Run by <a href="/u/{{content.created_by.id}}">{{content.created_by.username}}</a>
-        <blockquote>
-            # user bio
-            # user verifications
-            # user rep
+<div class="creator-info">
+    {% if project.created_by %}
+        <div class="creator-header">
+            <div class="creator-avatar">
+                {% if project.created_by.profile.avatar %}
+                    <img src="{{ project.created_by.profile.avatar_thumbnail.url }}" alt="{{ project.created_by.username }}" class="circle responsive-img">
+                {% else %}
+                    <img src="{% static 'icons/default-avatar.svg' %}" alt="{{ project.created_by.username }}" class="circle responsive-img">
+                {% endif %}
+            </div>
+            <div class="creator-details">
+                <h6>Created by</h6>
+                <a href="{% url 'user:userprofile' project.created_by.id %}" class="creator-name">
+                    {{ project.created_by.get_full_name|default:project.created_by.username }}
+                </a>
+            </div>
+        </div>
+        
+        {% if project.created_by.profile.bio %}
+            <blockquote class="creator-bio">
+                {{ project.created_by.profile.bio|linebreaks }}
+            </blockquote>
+        {% else %}
+            <blockquote class="creator-bio no-bio">
+                <em>This user hasn't written a bio yet.</em>
+            </blockquote>
+        {% endif %}
+        
+        <!-- Additional creator info -->
+        <div class="creator-meta">
+            {% if project.created_by.profile.location %}
+                <div class="creator-location">
+                    <i class="material-icons tiny">location_on</i>
+                    <span>{{ project.created_by.profile.location }}</span>
+                </div>
+            {% endif %}
+            
+            {% if project.created_by.profile.website %}
+                <div class="creator-website">
+                    <i class="material-icons tiny">link</i>
+                    <a href="{{ project.created_by.profile.website }}" target="_blank" rel="noopener">
+                        {{ project.created_by.profile.website|truncatechars:30 }}
+                    </a>
+                </div>
+            {% endif %}
+            
+            <div class="creator-joined">
+                <i class="material-icons tiny">calendar_today</i>
+                <span>Joined {{ project.created_by.date_joined|date:"M Y" }}</span>
+            </div>
+        </div>
+    {% else %}
+        <blockquote class="creator-bio no-creator">
+            <em>Creator information not available.</em>
         </blockquote>
+    {% endif %}
+
+<style>
+/* Creator Info Styles */
+.creator-info {
+    background-color: var(--bg-color2);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    border-left: 4px solid var(--highlight);
+}
+
+.creator-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.creator-avatar img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+}
+
+.creator-details h6 {
+    margin: 0 0 5px 0;
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.creator-name {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.creator-name:hover {
+    color: var(--highlight);
+    text-decoration: underline;
+}
+
+.creator-bio {
+    background-color: var(--bg-color3);
+    border-left: 4px solid var(--highlight);
+    padding: 15px 20px;
+    margin: 15px 0;
+    border-radius: 0 4px 4px 0;
+    color: var(--text);
+    font-style: italic;
+    line-height: 1.6;
+}
+
+.creator-bio.no-bio {
+    border-left-color: var(--text2ndary);
+    color: var(--text2ndary);
+}
+
+.creator-bio.no-creator {
+    border-left-color: var(--warning);
+    color: var(--text2ndary);
+}
+
+.creator-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--bg-color3);
+}
+
+.creator-location,
+.creator-website,
+.creator-joined {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+}
+
+.creator-website a {
+    color: var(--highlight);
+    text-decoration: none;
+}
+
+.creator-website a:hover {
+    text-decoration: underline;
+}
+
+.material-icons.tiny {
+    font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .creator-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .creator-meta {
+        align-items: center;
+    }
+}
+</style>
+
+</div>
+
         {% if parent_projects %}
         {% include "components/parentcard.html" %}
         {% endif %}
 
 
+
         <br>
-        {% include "components/administrationcard.html" %}
         <!-- users should be able to add tags. verified user with a rep > N can flag project by clicking tags on left of the screen -->
 
-        <div class="chips" style="border-bottom: none;">
-            {% for skill in content.skills.all %}
-            <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
-                {{ skill.name }}
-            </a>
-            {% empty %}
-            <p>No skills added yet.</p>
-            {% endfor %}
-        </div>
+
 
         <div class="members-container card">
             {% include "components/join_or_leave.html" %}

@@ -80,7 +80,7 @@
                     <span class="card-title">Reporter's Description</span>
                     {% if report.description %}
                         <div class="reporter-description">
-                            <p>{{ report.description }}</p>
+                            <p>{{ report.description | linebreaks }}</p>
                         </div>
                     {% else %}
                         <p class="grey-text">No additional details provided by the reporter.</p>
@@ -101,7 +101,8 @@
                         <div class="comment-meta">
                             <strong>
                                 {% if report.comment.user %}
-                                    {{ report.comment.user.username }}
+                                <a href="/u/{{ report.comment.user.id }}">{{ report.comment.user.username }}</a>
+                                    
                                 {% else %}
                                     Anonymous
                                 {% endif %}
@@ -110,7 +111,7 @@
                         </div>
                         
                         <div class="comment-content">
-                            <p>{{ report.comment.content }}</p>
+                            <p>{{ report.comment.content | linebreaks }}</p>
                         </div>
                         
                         <div class="comment-actions">

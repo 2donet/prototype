@@ -162,6 +162,17 @@
                 {% endfor %}
             </div>
         </div>
+                    <div class="chips">
+                {% for skill in project.skills.all %}
+                <div class="chip">
+                    <a href="{% url 'skill_detail' skill.name|lower %}">
+                        {{ skill.name }}
+                    </a>
+                </div>
+                {% empty %}
+                <span class="grey-text">No skills</span>
+                {% endfor %}
+            </div>
     </div>
 
 

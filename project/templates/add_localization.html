@@ -8,6 +8,11 @@
 <script src="{% static 'leaflet/leaflet.js' %}"></script>
 
 <div class="container">
+      <div class="breadcrumb">
+                <a href="/{{ project.id }}/">{{ project.name }}</a> &gt;
+                <a href="/{{project.id}}/localizations">Localizations</a> &gt;
+              Add new
+      </div>
   <div class="row">
     <div class="col s12">
       <h4>Add Localization to {{ project.name }}</h4>
