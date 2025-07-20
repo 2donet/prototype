@@ -1263,8 +1263,9 @@ Comments *Work In Progress*
     background-color: var(--bg-light);
     padding: 10px 30px;
     margin-top: 20px;
+     border: transparent solid 2px;
+
     &:hover{
-     padding: 8px 28px;   
      border: var(--highlight) solid 2px;
     }
 }
@@ -1938,6 +1939,8 @@ input, textarea {
     position: relative;
     padding: 8px;
     overflow: visible;
+    border: transparent solid 2px;
+
    }
    
    .child-details {
@@ -1963,7 +1966,6 @@ input, textarea {
    .child-card:hover {
     border-color:var(--highlight);
     border: var(--highlight) solid 2px;
-    padding: 6px;
     box-shadow: 0 4px 18px 0 rgba(0, 0, 0, 0.25);
    }
    
@@ -2692,3 +2694,6 @@ details:not([open]) .user-group-summary {
     opacity: 0.5;
 }
 
+.helper-text{
+    color: var(--text2ndary) !important;
+}

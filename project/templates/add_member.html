@@ -10,7 +10,7 @@
         <div class="col s12 m8 offset-m2 l6 offset-l3">
             <div class="card">
                 <div class="card-content">
-                    <span class="card-title">Add Member to {{ project.name }}</span>
+                    <span class="card-title">Add Member to <a style="text-decoration: underline;" href="/{{project.id}}">{{ project.name }}</a></span>
                     
                     <form method="post" class="col s12">
                         {% csrf_token %}
@@ -47,6 +47,9 @@
                     
                     <div class="row">
                         <div class="col s12 center-align">
+                            <a href="{% url 'project:project' project.id %}" class="btn-flat waves-effect">
+                                Back to the project
+                            </a>
                             <a href="{% url 'project:project_members' project.id %}" class="btn-flat waves-effect">
                                 Back to Members List
                             </a>

@@ -116,7 +116,7 @@
     <div class="needCards">
         <span style="font-weight: bold;">Needs:</span> 
            {% for need in project.need_set.all %}
-           <a href="/need/{{need.id}}">{{need.name}}</a>
+           <a href="/n/{{need.id}}">{{need.name}}</a>
                    {% empty %}
                    <span>not published</span>
                    

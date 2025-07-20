@@ -51,26 +51,29 @@ document.addEventListener('DOMContentLoaded', function() {
 </style>
 
 
-
+  <a style="float: right;" href="{% url 'project:manage_localizations' project.id %}" class="btn waves-effect waves-light">
+    <i class="material-icons left">map</i>
+    Manage Localizations
+  </a>
 <!-- Location maps -->
 {% for loc in project.localizations.all %}
-  <div class="location-section">
-    <h4>{{ loc.name }}</h4>
-    <p>{{ loc.description }}</p>
-    
-    <!-- Map container with data attributes -->
-    <div id="map-location-{{ loc.id }}" 
-         class="map-container"
-         data-location-map
-         data-lat="{{ loc.latitude }}" 
-         data-lng="{{ loc.longitude }}">
-    </div>
-    
-    <a href="https://www.google.com/maps/dir/?api=1&destination={{ loc.latitude }},{{ loc.longitude }}"
-       target="_blank" class="waves-effect waves-green btn-flat">
-      Navigate to this location
-    </a>
-  </div>
+    <details>
+      <summary>{{ loc.name }}</summary>
+      <p>{{ loc.description }}</p>
+      
+      <!-- Map container with data attributes -->
+      <div id="map-location-{{ loc.id }}" 
+           class="map-container"
+           data-location-map
+           data-lat="{{ loc.latitude }}" 
+           data-lng="{{ loc.longitude }}">
+      </div>
+      
+      <a href="https://www.google.com/maps/dir/?api=1&destination={{ loc.latitude }},{{ loc.longitude }}"
+         target="_blank" class="waves-effect waves-green btn-flat">
+        Navigate to this location
+      </a>
+    </details>
 {% empty %}
   <p>No localizations to display</p>
 {% endfor %}

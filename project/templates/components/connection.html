@@ -1,10 +1,9 @@
 {% block connection %}
 {% load static %}
-
+{% comment %}
 <div class="connections-container">
         <span class="card-title">🔄 Project Connections</span>
         
-        <!-- Tabs for different connection types -->
         <ul class="tabs connection-tabs">
             <li class="tab"><a class="active" href="#versions-tab">Versions</a></li>
             <li class="tab"><a href="#forks-tab">Forks</a></li>
@@ -12,7 +11,7 @@
             <li class="tab"><a href="#merge-requests-tab">Merge Requests</a></li>
         </ul>
         
-        <!-- Versions Tab -->
+        
         <div id="versions-tab" class="connection-tab-content card">
             <!-- Version creation button -->
             <div class="connection-actions">
@@ -74,7 +73,7 @@
             </div>
         </div>
         
-        <!-- Forks Tab -->
+        
         <div id="forks-tab" class="connection-tab-content card">
             <!-- Fork creation button -->
             <div class="connection-actions">
@@ -128,7 +127,7 @@
             </div>
         </div>
         
-        <!-- Linked Projects Tab -->
+        
         <div id="linked-tab" class="connection-tab-content card">
             <!-- Link creation button -->
             <div class="connection-actions">
@@ -180,7 +179,7 @@
             </div>
         </div>
         
-        <!-- Merge Requests Tab -->
+        
         <div id="merge-requests-tab" class="connection-tab-content card">
             <div class="merge-requests-list">
                 <h5>Pending Merge Requests</h5>
@@ -234,6 +233,7 @@
             </div>
         </div>
 </div>
+{% endcomment %}
 
 <!-- Modals -->
 

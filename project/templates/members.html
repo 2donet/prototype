@@ -9,6 +9,15 @@
 <div class="container">
     <div class="row">
         <div class="col s12">
+                <div class="breadcrumb">
+            
+
+                <a href="/{{ project.id }}/">{{ project.name }}</a> &gt;
+                <a href="/{{project.id}}/members">Members</a>
+
+            
+
+    </div>
             <h2>{{ project.name }} - Members</h2>
             
             {% if can_manage_members %}

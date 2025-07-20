@@ -15,16 +15,10 @@
 
             <h2>{{ content.name }}</h2>
             <i>{{ content.summary|default_if_none:" " }}</i>
-            <br>
-            <a class="waves-effect waves-light btn location">
-                University of Warsaw, Pasteura 5 Warszawa, Poland
-            </a>
+
             <div class="section">
-  <h5>Project Locations</h5>
-  <a href="{% url 'project:manage_localizations' project.id %}" class="btn waves-effect waves-light">
-    <i class="material-icons left">map</i>
-    Manage Localizations
-  </a>
+  <h5>Locations</h5>
+
 
             {% include "components/localizations.html" %}
 </div>
@@ -42,9 +36,8 @@
             <p>
                 Creating MVP/Prototype showcasing main idea which is splitting big pieces of work into smaller and smaller parts. 
             </p>
-            <p>
-
-            </p>
+            {{content.desc}}
+            
             {% include "components/plan.html" %}
 
 
