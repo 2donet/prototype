@@ -2732,3 +2732,14 @@ details:not([open]) .user-group-summary {
 .btn, .wave-effects{
     color: var(--text) !important;
 }
+
+.sidenav#mobile-demo{
+    background-color: var(--bg-color2) !important;
+    & a  {
+        color: var(--text);
+    }
+    & a:hover{
+        color: var(--highlight) !important;
+        background-color: var(--bg-color);
+    }
+}
