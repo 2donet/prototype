@@ -2,10 +2,8 @@
 {% load static %}
 {% load comment_tags %}
 {% for comment in comments %}
-<div class="comment" data-comment-id="{{ comment.id }}"
-    {% if comment.user_vote %}data-user-vote="{{ comment.user_vote }}"{% endif %}
-    {% if comment.user_reactions %}data-user-reactions="{{ comment.user_reactions }}"{% endif %}>
-      {% comment_avatar comment.user %}
+<div class="comment" data-comment-id="{{ comment.id }}" {% if comment.user_vote%}data-user-vote="{{ comment.user_vote }}" {% endif %} {% if comment.user_reactions%}data-user-reactions="{{ comment.user_reactions }}" {% endif %}>
+    {% comment_avatar comment.user %}
 
     <span>
         <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
@@ -23,50 +21,57 @@
                     <i>👎</i>
                 </a>
             </div>
-            
+
             <!-- Reactions button -->
             <div class="reactions-container">
                 <a href="#" class="reaction-dropdown-trigger" data-target="reactions-{{comment.id}}">
                     <i class="material-icons">add_reaction</i>
                 </a>
-                
+
                 <!-- Reaction dropdown -->
                 <div id="reactions-{{comment.id}}" class="reaction-dropdown">
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LIKE" data-position="top" data-tooltip="Like">👍</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LOVE" data-position="top" data-tooltip="Love">❤️</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LAUGH" data-position="top" data-tooltip="Laugh">😂</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="INSIGHTFUL" data-position="top" data-tooltip="Insightful">💡</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="CONFUSED" data-position="top" data-tooltip="Confused">😕</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="SAD" data-position="top" data-tooltip="Sad">😢</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="THANKS" data-position="top" data-tooltip="Thanks">🙏</a>
+                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LIKE" data-position="top"
+                        data-tooltip="Like">👍</a>
+                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LOVE" data-position="top"
+                        data-tooltip="Love">❤️</a>
+                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LAUGH" data-position="top"
+                        data-tooltip="Laugh">😂</a>
+                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="INSIGHTFUL" data-position="top"
+                        data-tooltip="Insightful">💡</a>
+                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="CONFUSED" data-position="top"
+                        data-tooltip="Confused">😕</a>
+                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="SAD" data-position="top"
+                        data-tooltip="Sad">😢</a>
+                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="THANKS" data-position="top"
+                        data-tooltip="Thanks">🙏</a>
                 </div>
-                
+
                 <!-- Reaction counts -->
                 <div class="reaction-counts">
                     {% if comment.reaction_counts %}
-                        {% for reaction_type, count in comment.reaction_counts.items %}
-                            {% if count > 0 %}
-                                <div class="reaction-count-container" data-reaction-type="{{ reaction_type }}">
-                                    <span class="reaction-emoji">{{ reaction_type|reaction_emoji }}</span>
-                                    <span class="reaction-count">{{ count }}</span>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
+                    {% for reaction_type, count in comment.reaction_counts.items %}
+                    {% if count > 0 %}
+                    <div class="reaction-count-container" data-reaction-type="{{ reaction_type }}">
+                        <span class="reaction-emoji">{{ reaction_type|reaction_emoji }}</span>
+                        <span class="reaction-count">{{ count }}</span>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
                     {% endif %}
                 </div>
             </div>
-            
+
             <!-- Comment menu -->
             <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{comment.id}}'>
                 <img src="{% static 'icons/menu.svg' %}" alt="actions">
             </a>
-            
+
             <!-- Dropdown Structure -->
             <ul id='actions-{{comment.id}}' class='dropdown-content'>
                 {% if request.user.is_staff %}
-                    <li>
-                        <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
-                    </li>
+                <li>
+                    <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
+                </li>
                 {% endif %}
                 {% if request.user == comment.user or request.user.is_staff %}
                 <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
@@ -90,24 +95,25 @@
 
     <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
 
-    <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
-<div class="reply-form-container" data-comment-id="{{ comment.id }}" style="display: none;">
-    <form class="reply-form">
-        {% csrf_token %}
-        <div class="input-field">
-            <textarea name="content" class="materialize-textarea" required></textarea>
-            <label>Your reply</label>
-        </div>
-        <input type="hidden" name="parent_id" value="{{ comment.id }}">
-        <input type="hidden" name="to_task_id" value="{{ task.id }}">
-        <button type="submit" class="btn waves-effect waves-light blue">
-            <i class="material-icons left">send</i>Post Reply
-        </button>
-        <button type="button" class="btn waves-effect waves-light grey cancel-reply">
-            Cancel
-        </button>
-    </form>
-</div>
+    <button class="reply-btn" data-comment-id="{{ comment.id }}"
+        data-controls="reply-form-{{comment.id}}">Reply</button>
+    <div class="reply-form-container" data-comment-id="{{ comment.id }}" style="display: none;">
+        <form class="reply-form">
+            {% csrf_token %}
+            <div class="input-field">
+                <textarea name="content" class="materialize-textarea" required></textarea>
+                <label>Your reply</label>
+            </div>
+            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+            <input type="hidden" name="to_task_id" value="{{ task.id }}">
+            <button type="submit" class="btn waves-effect waves-light blue">
+                <i class="material-icons left">send</i>Post Reply
+            </button>
+            <button type="button" class="btn waves-effect waves-light grey cancel-reply">
+                Cancel
+            </button>
+        </form>
+    </div>
     <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
         {% include "comments.html" with comments=comment.replies.all %}
     </div>

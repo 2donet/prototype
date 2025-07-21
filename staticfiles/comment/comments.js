@@ -100,7 +100,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Reply form handling
     document.addEventListener('submit', async (e) => {
+        console.log("Dupa 1")
         if (e.target.classList.contains('reply-form')) {
+            console.log("Dupa 2")
             e.preventDefault();
             const submitButton = e.target.querySelector('button[type="submit"]');
             disableButton(submitButton, 'Posting Reply...');
@@ -119,6 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (data.status === 'error') {
+                    console.log("Dupa 3")
                     throw new Error(data.error || 'Error posting reply');
                 }
 
@@ -128,6 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const repliesContainer = document.querySelector(`.replies-container[data-comment-id="${parentId}"]`);
                 
                 if (repliesContainer) {
+                    console.log("Dupa 4")
                     repliesContainer.insertAdjacentHTML('beforeend', replyHtml);
                     repliesContainer.style.display = 'block';
                     addCommentEventListeners(repliesContainer.lastElementChild);
@@ -135,19 +139,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Update reply count
                     const replyCountElement = document.querySelector(`.comment[data-comment-id="${parentId}"] .reply-count`);
                     if (replyCountElement) {
+                        console.log("Dupa 5")
                         const currentCount = parseInt(replyCountElement.textContent) || 0;
                         replyCountElement.textContent = currentCount + 1;
                     }
                 }
-
+                console.log("Dupa 6")
                 e.target.reset();
                 e.target.closest('.reply-form-container').style.display = 'none';
                 showToast('Reply posted successfully!', 'green');
 
             } catch (error) {
+                console.log("Dupa 7")
                 console.error('Reply submission error:', error);
                 showToast(error.message, 'red');
             } finally {
+                console.log("Dupa 8")
                 enableButton(submitButton, 'Post Reply');
             }
         }

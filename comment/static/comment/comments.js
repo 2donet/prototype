@@ -139,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         replyCountElement.textContent = currentCount + 1;
                     }
                 }
-
                 e.target.reset();
                 e.target.closest('.reply-form-container').style.display = 'none';
                 showToast('Reply posted successfully!', 'green');
@@ -169,7 +168,32 @@ document.addEventListener('click', (e) => {
         }
     }
 });
-
+// Cancel reply form
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('cancel-reply')) {
+        e.preventDefault();
+        const replyFormContainer = e.target.closest('.reply-form-container');
+        if (replyFormContainer) {
+            replyFormContainer.style.display = 'none';
+            
+            // Clear the form
+            const form = replyFormContainer.querySelector('form');
+            if (form) {
+                form.reset();
+                
+                // Clear textarea for Materialize
+                const textarea = form.querySelector('textarea');
+                if (textarea) {
+                    textarea.value = '';
+                    if (typeof M !== 'undefined') {
+                        M.textareaAutoResize(textarea);
+                        M.updateTextFields();
+                    }
+                }
+            }
+        }
+    }
+});
     // View replies toggle
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('view-replies-btn')) {

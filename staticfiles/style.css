@@ -121,7 +121,8 @@ nav{
         "admin stats"
         "title title"
         "summary summary"
-        "needs needs";
+        "needs needs"
+        "skills skills";
         background-color: var(--bg-color2);
 
         & .menu{
@@ -164,6 +165,18 @@ nav{
                 border-radius: 1rem;
             }
         }
+        & .chips{
+            grid-area: skills;
+            border-bottom: none;
+            & .chip{
+
+                background-color: var(--bg-color3);
+                & a{
+
+                    color: var(--text2ndary);
+                }
+            }
+        }
 }
   & .menucard2 {
       padding: 0%;
@@ -189,7 +202,24 @@ nav{
     }
 }
 
-
+  .location-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid var(--bg-color3);
+    border-radius: 4px;
+  }
+  
+  .map-container {
+    height: 400px;
+    width: 100%;
+    margin: 10px 0;
+  }
+  .collection{
+    border: 2px solid var(--bg-color3) !important;
+    & .collection-item{
+        border-bottom: 2px solid var(--bg-color3) !important;
+    }
+  }
 
 /* Main popup container */
 .popup {
@@ -2109,7 +2139,7 @@ align-self: flex-start;            }
 }
 
 .user-count {
-    background-color: #2196F3;
+    background-color: var(--bg-color3);
     color: white;
     border-radius: 20px;
     padding: 2px 10px;
@@ -2592,10 +2622,11 @@ details:not([open]) .user-group-summary {
     flex-wrap: wrap;
     gap: 5px;
 }
-
-.project-skills .chip {
-    background-color: var(--bg-color3);
+.box {
+    & .project-skills, .chip {
+    background-color: var(--bg-color) !important;
     color: var(--text);
+    }
 }
 
 .more-skills {
@@ -2700,5 +2731,4 @@ details:not([open]) .user-group-summary {
 
 .btn, .wave-effects{
     color: var(--text) !important;
-    background-blend-mode: darken;
 }
