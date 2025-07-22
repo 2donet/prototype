@@ -100,9 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Reply form handling
     document.addEventListener('submit', async (e) => {
-        console.log("Dupa 1")
         if (e.target.classList.contains('reply-form')) {
-            console.log("Dupa 2")
             e.preventDefault();
             const submitButton = e.target.querySelector('button[type="submit"]');
             disableButton(submitButton, 'Posting Reply...');
@@ -121,7 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (data.status === 'error') {
-                    console.log("Dupa 3")
                     throw new Error(data.error || 'Error posting reply');
                 }
 
@@ -131,7 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const repliesContainer = document.querySelector(`.replies-container[data-comment-id="${parentId}"]`);
                 
                 if (repliesContainer) {
-                    console.log("Dupa 4")
                     repliesContainer.insertAdjacentHTML('beforeend', replyHtml);
                     repliesContainer.style.display = 'block';
                     addCommentEventListeners(repliesContainer.lastElementChild);
@@ -139,22 +135,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Update reply count
                     const replyCountElement = document.querySelector(`.comment[data-comment-id="${parentId}"] .reply-count`);
                     if (replyCountElement) {
-                        console.log("Dupa 5")
                         const currentCount = parseInt(replyCountElement.textContent) || 0;
                         replyCountElement.textContent = currentCount + 1;
                     }
                 }
-                console.log("Dupa 6")
                 e.target.reset();
                 e.target.closest('.reply-form-container').style.display = 'none';
                 showToast('Reply posted successfully!', 'green');
 
             } catch (error) {
-                console.log("Dupa 7")
                 console.error('Reply submission error:', error);
                 showToast(error.message, 'red');
             } finally {
-                console.log("Dupa 8")
                 enableButton(submitButton, 'Post Reply');
             }
         }
@@ -176,7 +168,32 @@ document.addEventListener('click', (e) => {
         }
     }
 });
-
+// Cancel reply form
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('cancel-reply')) {
+        e.preventDefault();
+        const replyFormContainer = e.target.closest('.reply-form-container');
+        if (replyFormContainer) {
+            replyFormContainer.style.display = 'none';
+            
+            // Clear the form
+            const form = replyFormContainer.querySelector('form');
+            if (form) {
+                form.reset();
+                
+                // Clear textarea for Materialize
+                const textarea = form.querySelector('textarea');
+                if (textarea) {
+                    textarea.value = '';
+                    if (typeof M !== 'undefined') {
+                        M.textareaAutoResize(textarea);
+                        M.updateTextFields();
+                    }
+                }
+            }
+        }
+    }
+});
     // View replies toggle
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('view-replies-btn')) {
@@ -208,13 +225,6 @@ document.addEventListener('click', (e) => {
         }
     });
 
-    // Reaction handling
-    document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('reaction-btn')) {
-            e.preventDefault();
-            await handleReaction(e.target);
-        }
-    });
 
     // Initialize Materialize components
     if (typeof M !== 'undefined') {
@@ -231,7 +241,6 @@ document.addEventListener('click', (e) => {
     document.querySelectorAll('.comment').forEach(comment => {
         addCommentEventListeners(comment);
         initializeVoteState(comment);
-        initializeReactionState(comment);
     });
 
     // Helper functions
@@ -275,7 +284,6 @@ document.addEventListener('click', (e) => {
     return `
         <div class="comment ${isReply ? 'reply' : ''}" data-comment-id="${commentData.id}"
             ${commentData.user_vote ? `data-user-vote="${commentData.user_vote}"` : ''}
-            ${commentData.user_reactions ? `data-user-reactions='${JSON.stringify(commentData.user_reactions)}'` : 'data-user-reactions="[]"'}>
             <img class="miniavatar" src="${commentData.author_avatar || '/static/icons/default-avatar.svg'}">
             <span>
                 <i title="${new Date().toISOString()}" style="float: right;">${timeDisplay}</i>
@@ -292,23 +300,7 @@ document.addEventListener('click', (e) => {
                         </a>
                     </div>
                     
-                    <div class="reactions-container">
-                        <a href="#" class="reaction-dropdown-trigger" data-target="reactions-${commentData.id}">
-                            <i class="material-icons">add_reaction</i>
-                        </a>
-                        
-                        <div id="reactions-${commentData.id}" class="reaction-dropdown">
-                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="LIKE" data-position="top" data-tooltip="Like">👍</a>
-                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="LOVE" data-position="top" data-tooltip="Love">❤️</a>
-                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="LAUGH" data-position="top" data-tooltip="Laugh">😂</a>
-                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="INSIGHTFUL" data-position="top" data-tooltip="Insightful">💡</a>
-                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="CONFUSED" data-position="top" data-tooltip="Confused">😕</a>
-                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="SAD" data-position="top" data-tooltip="Sad">😢</a>
-                            <a href="#" class="reaction-btn tooltipped" data-reaction-type="THANKS" data-position="top" data-tooltip="Thanks">🙏</a>
-                        </div>
-                        
-                        <div class="reaction-counts"></div>
-                    </div>
+
                     
                     <a class='dropdown-trigger btn-flat' href='#' data-target='actions-${commentData.id}'>
                         <img src="/static/icons/menu.svg" alt="actions">
@@ -424,45 +416,6 @@ document.addEventListener('click', (e) => {
         }
     }
 
-    async function handleReaction(button) {
-        const comment = button.closest('.comment');
-        if (!comment) return;
-
-        const commentId = comment.dataset.commentId;
-        const reactionType = button.dataset.reactionType;
-
-        try {
-            const response = await fetch(`/comments/${commentId}/reaction/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken(),
-                },
-                body: JSON.stringify({ reaction_type: reactionType })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                updateReactionCounts(comment, data.reaction_counts);
-                
-                // Update user reactions
-                let userReactions = JSON.parse(comment.dataset.userReactions || '[]');
-                if (data.action === 'added') {
-                    if (!userReactions.includes(reactionType)) {
-                        userReactions.push(reactionType);
-                    }
-                    button.classList.add('active');
-                } else {
-                    userReactions = userReactions.filter(r => r !== reactionType);
-                    button.classList.remove('active');
-                }
-                comment.dataset.userReactions = JSON.stringify(userReactions);
-            }
-        } catch (error) {
-            console.error('Reaction error:', error);
-            showToast('Error processing reaction', 'red');
-        }
-    }
 
     function addCommentEventListeners(commentElement) {
         // Initialize Materialize components for the new comment
@@ -486,9 +439,8 @@ document.addEventListener('click', (e) => {
             });
         }
         
-        // Initialize vote and reaction states
+        // Initialize vote state
         initializeVoteState(commentElement);
-        initializeReactionState(commentElement);
     }
 
     function initializeVoteState(comment) {
@@ -500,33 +452,4 @@ document.addEventListener('click', (e) => {
         }
     }
 
-    function initializeReactionState(comment) {
-        const userReactions = JSON.parse(comment.dataset.userReactions || '[]');
-        userReactions.forEach(reactionType => {
-            const btn = comment.querySelector(`.reaction-btn[data-reaction-type="${reactionType}"]`);
-            if (btn) btn.classList.add('active');
-        });
-    }
-
-    function updateReactionCounts(comment, counts) {
-        const container = comment.querySelector('.reaction-counts');
-        if (!container) return;
-        
-        container.innerHTML = Object.entries(counts)
-            .filter(([_, count]) => count > 0)
-            .map(([type, count]) => `
-                <div class="reaction-count" data-type="${type}">
-                    ${getReactionEmoji(type)} ${count}
-                </div>
-            `).join('');
-    }
-
-    function getReactionEmoji(type) {
-        const emojiMap = {
-            'LIKE': '👍', 'LOVE': '❤️', 'LAUGH': '😂', 
-            'INSIGHTFUL': '💡', 'CONFUSED': '😕', 
-            'SAD': '😢', 'THANKS': '🙏'
-        };
-        return emojiMap[type] || '👍';
-    }
 });

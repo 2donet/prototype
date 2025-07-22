@@ -5,13 +5,11 @@ from django.shortcuts import get_object_or_404
 from django.db import IntegrityError, transaction
 from django.db.models import Count
 
-from comment.models import Comment, CommentVote, CommentReaction, VoteType, ReactionType
+from comment.models import Comment, CommentVote, VoteType
 from comment.serializers import (
     CommentSerializer, 
     CommentDetailSerializer, 
-    CommentVoteSerializer, 
-    CommentReactionSerializer,
-    CommentReactionCountSerializer
+    CommentVoteSerializer
 )
 
 
@@ -94,66 +92,8 @@ class CommentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
     
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
-    def react(self, request, pk=None):
-        """Add a reaction to a comment"""
-        comment = self.get_object()
-        reaction_type = request.data.get('reaction_type')
-        
-        if reaction_type not in dict(ReactionType.choices):
-            return Response(
-                {'error': f'Invalid reaction type. Must be one of {dict(ReactionType.choices).keys()}'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            
-        try:
-            # Toggle reaction (create if doesn't exist, delete if it does)
-            try:
-                # Check if reaction already exists
-                reaction = CommentReaction.objects.get(
-                    comment=comment,
-                    user=request.user,
-                    reaction_type=reaction_type
-                )
-                # If it exists, delete it (toggle off)
-                reaction.delete()
-                action = 'removed'
-            except CommentReaction.DoesNotExist:
-                # If it doesn't exist, create it
-                CommentReaction.objects.create(
-                    comment=comment,
-                    user=request.user,
-                    reaction_type=reaction_type
-                )
-                action = 'added'
-                
-            # Return the updated comment
-            serializer = CommentSerializer(comment, context={'request': request})
-            return Response({
-                'action': action,
-                'comment': serializer.data
-            })
-                
-        except IntegrityError as e:
-            return Response(
-                {'error': f'Could not process reaction: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=True, methods=['get'])
-    def reactions(self, request, pk=None):
-        """Get all reactions for a comment with counts"""
-        comment = self.get_object()
-        
-        # Count reactions by type
-        reaction_counts = CommentReaction.objects.filter(comment=comment) \
-            .values('reaction_type') \
-            .annotate(count=Count('reaction_type')) \
-            .order_by('-count')
-        
-        serializer = CommentReactionCountSerializer(reaction_counts, many=True)
-        return Response(serializer.data)
-    
+
+
     @action(detail=True, methods=['get'])
     def replies(self, request, pk=None):
         """Get all direct replies to a comment"""
@@ -194,29 +134,3 @@ class CommentVoteViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class CommentReactionViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows comment reactions to be viewed or edited.
-    """
-    queryset = CommentReaction.objects.all()
-    serializer_class = CommentReactionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        """Optionally restrict to reactions by current user"""
-        queryset = CommentReaction.objects.all()
-        user = self.request.query_params.get('user')
-        comment = self.request.query_params.get('comment')
-        reaction_type = self.request.query_params.get('reaction_type')
-        
-        if user == 'me':
-            queryset = queryset.filter(user=self.request.user)
-        if comment:
-            queryset = queryset.filter(comment__id=comment)
-        if reaction_type:
-            queryset = queryset.filter(reaction_type=reaction_type)
-            
-        return queryset
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)

@@ -10,8 +10,6 @@ from .views import (
     report_detail_view,
     vote_comment,
     remove_vote,
-    toggle_reaction,
-    get_reactions_summary,
     delete_comment,
     ban_user,
     edit_comment
@@ -31,8 +29,6 @@ urlpatterns = [
     # Rating-related paths
     path("<int:comment_id>/vote/", csrf_exempt(vote_comment), name="vote_comment"),
     path("<int:comment_id>/remove-vote/", csrf_exempt(remove_vote), name="remove_vote"),
-    path("<int:comment_id>/reaction/", csrf_exempt(toggle_reaction), name="toggle_reaction"),
-    path("<int:comment_id>/reactions/", get_reactions_summary, name="reactions_summary"),
     path("<int:comment_id>/delete/", delete_comment, name="delete_comment"),
     path("user/<int:user_id>/ban/", ban_user, name="ban_user"),
     path("<int:comment_id>/edit/", edit_comment, name="edit_comment"),

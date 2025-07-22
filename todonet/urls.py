@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-
+from django.views.generic import RedirectView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("submissions/", include("submissions.urls")),
@@ -30,6 +30,7 @@ urlpatterns = [
     path("c/", include("contribution.urls")),
     path('', include('skills.urls')),  
     path("", include("project.urls")),
+    path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'favicon.ico', permanent=True)),
 
     # path("project_constructor/", include("project_constructor.urls")),
 

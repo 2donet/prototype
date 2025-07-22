@@ -2,7 +2,7 @@
 {% load static %}
 {% load comment_tags %}
 {% for comment in comments %}
-<div class="comment" data-comment-id="{{ comment.id }}" {% if comment.user_vote%}data-user-vote="{{ comment.user_vote }}" {% endif %} {% if comment.user_reactions%}data-user-reactions="{{ comment.user_reactions }}" {% endif %}>
+<div class="comment" data-comment-id="{{ comment.id }}" {% if comment.user_vote%}data-user-vote="{{ comment.user_vote }}" {% endif %} >
     {% comment_avatar comment.user %}
 
     <span>
@@ -20,45 +20,6 @@
                 <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
                     <i>👎</i>
                 </a>
-            </div>
-
-            <!-- Reactions button -->
-            <div class="reactions-container">
-                <a href="#" class="reaction-dropdown-trigger" data-target="reactions-{{comment.id}}">
-                    <i class="material-icons">add_reaction</i>
-                </a>
-
-                <!-- Reaction dropdown -->
-                <div id="reactions-{{comment.id}}" class="reaction-dropdown">
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LIKE" data-position="top"
-                        data-tooltip="Like">👍</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LOVE" data-position="top"
-                        data-tooltip="Love">❤️</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="LAUGH" data-position="top"
-                        data-tooltip="Laugh">😂</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="INSIGHTFUL" data-position="top"
-                        data-tooltip="Insightful">💡</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="CONFUSED" data-position="top"
-                        data-tooltip="Confused">😕</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="SAD" data-position="top"
-                        data-tooltip="Sad">😢</a>
-                    <a href="#" class="reaction-btn tooltipped" data-reaction-type="THANKS" data-position="top"
-                        data-tooltip="Thanks">🙏</a>
-                </div>
-
-                <!-- Reaction counts -->
-                <div class="reaction-counts">
-                    {% if comment.reaction_counts %}
-                    {% for reaction_type, count in comment.reaction_counts.items %}
-                    {% if count > 0 %}
-                    <div class="reaction-count-container" data-reaction-type="{{ reaction_type }}">
-                        <span class="reaction-emoji">{{ reaction_type|reaction_emoji }}</span>
-                        <span class="reaction-count">{{ count }}</span>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                    {% endif %}
-                </div>
             </div>
 
             <!-- Comment menu -->

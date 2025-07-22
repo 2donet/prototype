@@ -5,21 +5,17 @@ from django.templatetags.static import static
 
 
 register = template.Library()
-
 @register.filter
 def reaction_emoji(reaction_type):
     """Convert a reaction type to an emoji"""
     emoji_map = {
-        'LIKE': '👍',
-        'LOVE': '❤️',
-        'LAUGH': '😂',
-        'INSIGHTFUL': '💡',
-        'CONFUSED': '😕',
-        'SAD': '😢',
-        'THANKS': '🙏'
+        'IDEA': '💡',
+        'ISSUE': '⚠️',
+        'QUESTION': '❔',
+        'PLAN': '📋',
+        'INFO': 'ℹ️'
     }
-    return emoji_map.get(reaction_type, '👍')
-
+    return emoji_map.get(reaction_type, '💡')
 
 
 @register.simple_tag

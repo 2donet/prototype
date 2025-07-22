@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.views.generic import CreateView, UpdateView
 from .models import Task
 from .forms import TaskForm
-from comment.models import Comment, CommentVote, CommentReaction, ReactionType
+from comment.models import Comment, CommentVote
 from skills.models import Skill
 
 def task_detail(request, task_id):
@@ -20,34 +20,28 @@ def task_detail(request, task_id):
         parent__isnull=True
     ).select_related('user').prefetch_related(
         Prefetch('replies', queryset=Comment.objects.select_related('user')),
-        'votes',
-        'reactions'
-    )
+        'votes')
     
-    # Add reaction counts and user vote/reaction status to comments
+    # Add user vote status to comments
     for comment in comments:
-        comment.reaction_counts = comment.get_reaction_counts()
         
         if request.user.is_authenticated:
             user_vote = comment.votes.filter(user=request.user).first()
             comment.user_vote = user_vote.vote_type if user_vote else None
-            user_reactions = comment.reactions.filter(user=request.user).values_list('reaction_type', flat=True)
-            comment.user_reactions = list(user_reactions)
+            
         else:
             comment.user_vote = None
-            comment.user_reactions = []
+
         
         for reply in comment.replies.all():
-            reply.reaction_counts = reply.get_reaction_counts()
+
             
             if request.user.is_authenticated:
                 reply_vote = reply.votes.filter(user=request.user).first()
                 reply.user_vote = reply_vote.vote_type if reply_vote else None
-                reply_reactions = reply.reactions.filter(user=request.user).values_list('reaction_type', flat=True)
-                reply.user_reactions = list(reply_reactions)
             else:
                 reply.user_vote = None
-                reply.user_reactions = []
+
     
     context = {
         "task": task,

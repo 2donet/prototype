@@ -350,7 +350,7 @@
                             {% for user in contributor_users %}
                             <li class="user-item">
                                 <div class="user-info">
-                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
                                     <div class="user-details">
                                         <span class="user-name">{{ user.username }}</span>
                                         <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
@@ -391,7 +391,7 @@
                             {% for user in member_users %}
                             <li class="user-item">
                                 <div class="user-info">
-                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
                                     <div class="user-details">
                                         <span class="user-name">{{ user.username }}</span>
                                         <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Comment, CommentReport, CommentVote, CommentReaction
+from .models import Comment, CommentReport, CommentVote
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):

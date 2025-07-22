@@ -146,8 +146,7 @@ def project(request, project_id):
     
         ).select_related('user').prefetch_related(
             Prefetch('replies', queryset=Comment.objects.select_related('user')),
-            'votes',
-            'reactions'
+            'votes'
         )
 
     # Get all child projects
