@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}
 2do.net - {{ project.name }} - Member: {{ user_profile.username }}
@@ -8,11 +9,11 @@
 {% block content %}
 <div class="container">
     <div class="row">
-                <div class="breadcrumb">
-                    <a href="/{{ project.id }}/">{{ project.name }}</a> &gt;
-                    <a href="/{{project.id}}/members">Members</a> &gt;
-                {{user_profile.username}}
-                </div>
+        <div class="breadcrumb">
+            <a href="/{{ project.id }}/">{{ project.name }}</a> &gt;
+            <a href="/{{project.id}}/members">Members</a> &gt;
+            {{user_profile.username}}
+        </div>
         <div class="col s12 m10 offset-m1 l8 offset-l2">
             <div class="card">
                 <div class="card-content">
@@ -20,21 +21,37 @@
                     
                     <div class="row">
                         <div class="col s12 center-align">
-                            <img src="{{ user_profile.avatar|default:'/static/icons/default-avatar.svg' }}" 
-                                 alt="{{ user_profile.username }}" 
-                                 class="circle responsive-img" 
-                                 style="max-width: 100px;">
-                            <h4>{{ user_profile.username }}</h4>
+                            <!-- Fixed Avatar Display -->
+                            {% if user_profile.profile.avatar %}
+                                <img src="{{ user_profile.profile.avatar_thumbnail.url }}" 
+                                     alt="{{ user_profile.username }}" 
+                                     class="circle responsive-img member-detail-avatar">
+                            {% else %}
+                                <img src="{% static 'icons/default-avatar.svg' %}" 
+                                     alt="{{ user_profile.username }}" 
+                                     class="circle responsive-img member-detail-avatar">
+                            {% endif %}
+                            
+                            <h4>{{ user_profile.get_full_name|default:user_profile.username }}</h4>
                             <p>Joined project {{ membership.date_joined|naturaltime }}</p>
-                            <div class="chip">
+                            <div class="chip role-chip">
                                 {{ membership.get_role_display }}
                             </div>
+                            
+                            <!-- User Bio if available -->
+                            {% if user_profile.profile.bio %}
+                            <div class="member-bio">
+                                <blockquote>{{ user_profile.profile.bio|linebreaks }}</blockquote>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     
                     {% if can_manage %}
-                    <form method="post" class="col s12">
+                    <div class="divider"></div>
+                    <form method="post" class="col s12 manage-section">
                         {% csrf_token %}
+                        <h5>Manage Member</h5>
                         <div class="row">
                             <div class="input-field col s12 m6 offset-m3">
                                 <select name="role" id="role">
@@ -50,9 +67,9 @@
                         
                         <div class="row">
                             <div class="col s12 center-align">
-                                <button type="submit" class="btn waves-effect waves-light">
+                                <button type="submit" class="btn waves-effect waves-light green">
+                                    <i class="material-icons left">save</i>
                                     Update Role
-                                    <i class="material-icons right">save</i>
                                 </button>
                             </div>
                         </div>
@@ -63,30 +80,89 @@
                         <div class="col s12 center-align">
                             <a href="{% url 'project:remove_member' project.id user_profile.id %}" 
                                class="btn waves-effect waves-light red">
+                                <i class="material-icons left">person_remove</i>
                                 Remove from Project
-                                <i class="material-icons right">person_remove</i>
                             </a>
                         </div>
                     </div>
                     {% endif %}
                     {% endif %}
                     
-                    <div class="row">
+                    <div class="divider"></div>
+                    <div class="row user-info-section">
                         <div class="col s12">
-                            <h5>User Info</h5>
-                            <p>Username: {{ user_profile.username }}</p>
-                            {% if user_profile.email %}
-                            <p>Email: {{ user_profile.email }}</p>
-                            {% endif %}
-                            <p>Account created: {{ user_profile.date_joined|date }}</p>
+                            <h5>User Information</h5>
+                            <div class="user-info-grid">
+                                <div class="info-item">
+                                    <i class="material-icons">person</i>
+                                    <div class="info-content">
+                                        <strong>Username:</strong> {{ user_profile.username }}
+                                    </div>
+                                </div>
+                                
+                                {% if user_profile.email %}
+                                <div class="info-item">
+                                    <i class="material-icons">email</i>
+                                    <div class="info-content">
+                                        <strong>Email:</strong> {{ user_profile.email }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="info-item">
+                                    <i class="material-icons">calendar_today</i>
+                                    <div class="info-content">
+                                        <strong>Account created:</strong> {{ user_profile.date_joined|date }}
+                                    </div>
+                                </div>
+                                
+                                {% if user_profile.profile.location %}
+                                <div class="info-item">
+                                    <i class="material-icons">location_on</i>
+                                    <div class="info-content">
+                                        <strong>Location:</strong> {{ user_profile.profile.location }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if user_profile.profile.website %}
+                                <div class="info-item">
+                                    <i class="material-icons">link</i>
+                                    <div class="info-content">
+                                        <strong>Website:</strong> 
+                                        <a href="{{ user_profile.profile.website }}" target="_blank" rel="noopener">
+                                            {{ user_profile.profile.website|truncatechars:50 }}
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="info-item">
+                                    <i class="material-icons">group</i>
+                                    <div class="info-content">
+                                        <strong>Project role:</strong> {{ membership.get_role_display }}
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <i class="material-icons">access_time</i>
+                                    <div class="info-content">
+                                        <strong>Joined project:</strong> {{ membership.date_joined|date }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col s12 center-align">
+                        <div class="col s12 center-align action-buttons">
+                            <a href="{% url 'user:userprofile' user_profile.id %}" class="btn waves-effect waves-light blue">
+                                <i class="material-icons left">visibility</i>
+                                View Full Profile
+                            </a>
                             <a href="{% url 'project:project_members' project.id %}" class="btn waves-effect waves-light">
                                 <i class="material-icons left">arrow_back</i>
-                                Back to Members List
+                                Back to Members
                             </a>
                             <a href="{% url 'project:project' project.id %}" class="btn waves-effect waves-light">
                                 <i class="material-icons left">dashboard</i>
@@ -99,6 +175,125 @@
         </div>
     </div>
 </div>
+
+<style>
+.member-detail-avatar {
+    max-width: 120px;
+    max-height: 120px;
+    border: 3px solid var(--bg-color3);
+    margin-bottom: 20px;
+}
+
+.role-chip {
+    background-color: var(--highlight);
+    color: var(--highlightdark);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.member-bio {
+    margin: 20px 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.member-bio blockquote {
+    background-color: var(--bg-color3);
+    border-left: 4px solid var(--highlight);
+    padding: 15px 20px;
+    margin: 0;
+    border-radius: 0 4px 4px 0;
+    color: var(--text);
+    font-style: italic;
+    line-height: 1.6;
+}
+
+.manage-section {
+    padding: 20px 0;
+}
+
+.manage-section h5 {
+    color: var(--text);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.user-info-section {
+    padding: 20px 0;
+}
+
+.user-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: var(--bg-color3);
+    border-radius: 8px;
+}
+
+.info-item i {
+    color: var(--highlight);
+    font-size: 20px;
+}
+
+.info-content {
+    flex: 1;
+    color: var(--text);
+}
+
+.info-content strong {
+    color: var(--text2ndary);
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.info-content a {
+    color: var(--highlight);
+    text-decoration: none;
+}
+
+.info-content a:hover {
+    text-decoration: underline;
+}
+
+.action-buttons {
+    margin-top: 30px;
+}
+
+.action-buttons .btn {
+    margin: 5px;
+}
+
+.divider {
+    margin: 30px 0;
+    background-color: var(--bg-color3);
+}
+
+@media (max-width: 768px) {
+    .user-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    .member-detail-avatar {
+        max-width: 100px;
+        max-height: 100px;
+    }
+}
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

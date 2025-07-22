@@ -47,179 +47,7 @@ def index(request):
     context = {"latest_projects_list": latest_projects_list,}
     return render(request, "index.html", context=context)
 
-
 @login_required
-def project_members(request, project_id):
-    """View to display all project members with options to manage them"""
-    project = get_object_or_404(Project, pk=project_id)
-    
-    # Check if user has permission to view members
-    if not project.visibility == 'public' and not Membership.objects.filter(
-            project=project, 
-            user=request.user
-        ).exists() and not request.user == project.created_by:
-        messages.error(request, "You don't have permission to view this project's members.")
-        return redirect('project:project', project_id=project.id)
-    
-    # Get all memberships for this project
-    memberships = Membership.objects.filter(project=project).select_related('user')
-    
-    # Organize users by role
-    admin_users = []
-    moderator_users = []
-    contributor_users = []
-    member_users = []
-    
-    for membership in memberships:
-        user = membership.user
-        # Add date_joined field from membership to the user object
-        user.date_joined = membership.date_joined
-        user.membership_id = membership.id
-        
-        if membership.is_administrator:
-            admin_users.append(user)
-        elif membership.is_moderator:
-            moderator_users.append(user)
-        elif membership.is_contributor:
-            contributor_users.append(user)
-        else:
-            member_users.append(user)
-    
-    # Check if current user can manage members
-    can_manage_members = False
-    if request.user.is_authenticated:
-        if request.user == project.created_by:
-            can_manage_members = True
-        else:
-            user_membership = Membership.objects.filter(project=project, user=request.user).first()
-            if user_membership and (user_membership.is_administrator or user_membership.is_moderator):
-                can_manage_members = True
-    
-    context = {
-        'project': project,
-        'admin_users': admin_users,
-        'moderator_users': moderator_users,
-        'contributor_users': contributor_users,
-        'member_users': member_users,
-        'can_manage_members': can_manage_members,
-        'role_choices': ProjectPermissionGroup.choices,
-    }
-    
-    return render(request, 'members.html', context)
-
-
-def project(request, project_id):
-    content = get_object_or_404(Project, id=project_id)
-    project = get_object_or_404(Project, id=project_id)
-    
-    # Check if user has permission to view this project
-    can_view = False
-    
-    if content.visibility == 'public':
-        can_view = True
-    elif content.visibility == 'logged_in' and request.user.is_authenticated:
-        can_view = True
-    elif content.visibility == 'restricted' and request.user.is_authenticated:
-        # Check if user is a member or the creator
-        if request.user == content.created_by or Membership.objects.filter(project=content, user=request.user).exists():
-            can_view = True
-    elif content.visibility == 'private' and request.user.is_authenticated:
-        # Only the creator can view
-        if request.user == content.created_by:
-            can_view = True
-    
-    # If user doesn't have permission, show error or redirect
-    if not can_view:
-        if not request.user.is_authenticated:
-            messages.error(request, "You need to log in to view this project.")
-            return redirect('user:signin')  # Fixed URL name
-        else:
-            messages.error(request, "You don't have permission to view this project.")
-            return redirect('project:index')
-    
-    # Continue with the rest of the view logic
-    tasks = Task.objects.filter(to_project=project_id)
-    needs = Need.objects.filter(to_project=project_id).order_by('-priority', 'id')
-    comments = Comment.objects.filter(
-        to_project=content.id,
-        parent__isnull=True
-    
-        ).select_related('user').prefetch_related(
-            Prefetch('replies', queryset=Comment.objects.select_related('user')),
-            'votes'
-        )
-
-    # Get all child projects
-    child_connections = Connection.objects.filter(
-        from_project=content, 
-        type='child', 
-        status='approved'
-    ).select_related('to_project')
-    child_projects = [connection.to_project for connection in child_connections]
-    
-    # Get parent projects
-    parent_connections = Connection.objects.filter(
-        to_project=content, 
-        type='child', 
-        status='approved'
-    ).select_related('from_project')
-    parent_projects = [connection.from_project for connection in parent_connections]
-    
-    # Get project members for the member list
-    memberships = Membership.objects.filter(project=content).select_related('user')
-    
-    # Organize users by role
-    admin_users = []
-    moderator_users = []
-    contributor_users = []
-    member_users = []
-    
-    for membership in memberships:
-        user = membership.user
-        # Add date_joined field from membership to the user object
-        user.date_joined = membership.date_joined
-        
-        if membership.is_administrator:
-            admin_users.append(user)
-        elif membership.is_moderator:
-            moderator_users.append(user)
-        elif membership.is_contributor:
-            contributor_users.append(user)
-        else:
-            member_users.append(user)
-    
-    # Check if current user is a member of this project
-    is_member = False
-    can_manage_members = False
-    if request.user.is_authenticated:
-        is_member = Membership.objects.filter(project=content, user=request.user).exists()
-        
-        # Check if user can manage members
-        if request.user == content.created_by:
-            can_manage_members = True
-        else:
-            user_membership = Membership.objects.filter(project=content, user=request.user).first()
-            if user_membership and (user_membership.is_administrator or user_membership.is_moderator):
-                can_manage_members = True
-
-    context = {
-        "content": content,
-        "child_projects": child_projects,
-        "parent_projects": parent_projects,
-        "comments": comments,
-        "tasks": tasks,
-        "needs": needs,
-        "project": project,
-        "admin_users": admin_users,
-        "moderator_users": moderator_users,
-        "contributor_users": contributor_users,
-        "member_users": member_users,
-        "is_member": is_member,
-        "can_manage_members": can_manage_members,
-    }
-    return render(request, "details.html", context=context)
-
-
 def create_project(request):
     if request.user.is_authenticated and request.method == 'POST':
         # Dane projektu
@@ -298,13 +126,213 @@ def skill_projects(request, skill_name):
     projects = skill.project_set.all()
     return render(request, 'skills/skill_projects.html', {'skill': skill, 'projects': projects})
 
+@login_required
+def project_members(request, project_id):
+    """View to display all project members with options to manage them"""
+    project = get_object_or_404(Project, pk=project_id)
+    
+    # Check if user has permission to view members
+    if not project.visibility == 'public' and not Membership.objects.filter(
+            project=project, 
+            user=request.user
+        ).exists() and not request.user == project.created_by:
+        messages.error(request, "You don't have permission to view this project's members.")
+        return redirect('project:project', project_id=project.id)
+    
+    # Get all memberships for this project with user profiles prefetched
+    memberships = Membership.objects.filter(project=project).select_related(
+        'user', 
+        'user__profile'  # This is the key addition for avatar loading
+    ).order_by('user__username')
+    
+    # Organize users by role
+    admin_users = []
+    moderator_users = []
+    contributor_users = []
+    member_users = []
+    
+    for membership in memberships:
+        user = membership.user
+        # Add membership data to the user object for template access
+        user.membership_date_joined = membership.date_joined
+        user.membership_id = membership.id
+        user.membership_role = membership.role
+        
+        if membership.is_administrator:
+            admin_users.append(user)
+        elif membership.is_moderator:
+            moderator_users.append(user)
+        elif membership.is_contributor:
+            contributor_users.append(user)
+        else:
+            member_users.append(user)
+    
+    # Check if current user can manage members
+    can_manage_members = False
+    if request.user.is_authenticated:
+        if request.user == project.created_by:
+            can_manage_members = True
+        else:
+            user_membership = Membership.objects.filter(project=project, user=request.user).first()
+            if user_membership and (user_membership.is_administrator or user_membership.is_moderator):
+                can_manage_members = True
+    
+    context = {
+        'content': project,  # Added for template compatibility
+        'project': project,
+        'admin_users': admin_users,
+        'moderator_users': moderator_users,
+        'contributor_users': contributor_users,
+        'member_users': member_users,
+        'can_manage_members': can_manage_members,
+        'role_choices': ProjectPermissionGroup.choices,
+    }
+    
+    return render(request, 'members.html', context)
+
+
+def project(request, project_id):
+    # Efficiently load project with creator profile
+    content = get_object_or_404(
+        Project.objects.select_related(
+            'created_by',
+            'created_by__profile'  # Load creator's profile for avatar/bio
+        ), 
+        id=project_id
+    )
+    project = content  # Keep both for backward compatibility
+    
+    # Check if user has permission to view this project
+    can_view = False
+    
+    if content.visibility == 'public':
+        can_view = True
+    elif content.visibility == 'logged_in' and request.user.is_authenticated:
+        can_view = True
+    elif content.visibility == 'restricted' and request.user.is_authenticated:
+        # Check if user is a member or the creator
+        if request.user == content.created_by or Membership.objects.filter(project=content, user=request.user).exists():
+            can_view = True
+    elif content.visibility == 'private' and request.user.is_authenticated:
+        # Only the creator can view
+        if request.user == content.created_by:
+            can_view = True
+    
+    # If user doesn't have permission, show error or redirect
+    if not can_view:
+        if not request.user.is_authenticated:
+            messages.error(request, "You need to log in to view this project.")
+            return redirect('user:signin')
+        else:
+            messages.error(request, "You don't have permission to view this project.")
+            return redirect('project:index')
+    
+    # Continue with the rest of the view logic
+    tasks = Task.objects.filter(to_project=project_id)
+    needs = Need.objects.filter(to_project=project_id).order_by('-priority', 'id')
+    
+    # Load comments with user profiles for avatars
+    comments = Comment.objects.filter(
+        to_project=content.id,
+        parent__isnull=True
+    ).select_related(
+        'user', 
+        'user__profile'  # Load comment author profiles
+    ).prefetch_related(
+        Prefetch(
+            'replies', 
+            queryset=Comment.objects.select_related('user', 'user__profile')  # Load reply author profiles
+        ),
+        'votes'
+    )
+
+    # Get all child projects
+    child_connections = Connection.objects.filter(
+        from_project=content, 
+        type='child', 
+        status='approved'
+    ).select_related('to_project')
+    child_projects = [connection.to_project for connection in child_connections]
+    
+    # Get parent projects
+    parent_connections = Connection.objects.filter(
+        to_project=content, 
+        type='child', 
+        status='approved'
+    ).select_related('from_project')
+    parent_projects = [connection.from_project for connection in parent_connections]
+    
+    # Get project members with profiles for avatars
+    memberships = Membership.objects.filter(project=content).select_related(
+        'user',
+        'user__profile'  # Load member profiles for avatars
+    ).order_by('user__username')
+    
+    # Organize users by role
+    admin_users = []
+    moderator_users = []
+    contributor_users = []
+    member_users = []
+    
+    for membership in memberships:
+        user = membership.user
+        # Add membership data to the user object
+        user.membership_date_joined = membership.date_joined
+        user.membership_id = membership.id
+        user.membership_role = membership.role
+        
+        if membership.is_administrator:
+            admin_users.append(user)
+        elif membership.is_moderator:
+            moderator_users.append(user)
+        elif membership.is_contributor:
+            contributor_users.append(user)
+        else:
+            member_users.append(user)
+    
+    # Check if current user is a member of this project
+    is_member = False
+    can_manage_members = False
+    if request.user.is_authenticated:
+        is_member = Membership.objects.filter(project=content, user=request.user).exists()
+        
+        # Check if user can manage members
+        if request.user == content.created_by:
+            can_manage_members = True
+        else:
+            user_membership = Membership.objects.filter(project=content, user=request.user).first()
+            if user_membership and (user_membership.is_administrator or user_membership.is_moderator):
+                can_manage_members = True
+
+    context = {
+        "content": content,
+        "child_projects": child_projects,
+        "parent_projects": parent_projects,
+        "comments": comments,
+        "tasks": tasks,
+        "needs": needs,
+        "project": project,
+        "admin_users": admin_users,
+        "moderator_users": moderator_users,
+        "contributor_users": contributor_users,
+        "member_users": member_users,
+        "is_member": is_member,
+        "can_manage_members": can_manage_members,
+    }
+    return render(request, "details.html", context=context)
 
 
 @login_required
 def member_detail(request, project_id, user_id):
     """View to display and edit a specific member's role and permissions"""
     project = get_object_or_404(Project, pk=project_id)
-    user = get_object_or_404(User, pk=user_id)
+    
+    # Load user with profile for avatar display
+    user = get_object_or_404(
+        User.objects.select_related('profile'), 
+        pk=user_id
+    )
+    
     membership = get_object_or_404(Membership, project=project, user=user)
     
     # Check if current user can manage this member
@@ -350,13 +378,15 @@ def member_detail(request, project_id, user_id):
     
     context = {
         'project': project,
-        'user_profile': user,
+        'user_profile': user,  # Keep this name for template compatibility
+        'user': user,          # Add this for consistency
         'membership': membership,
         'can_manage': can_manage,
         'role_choices': ProjectPermissionGroup.choices,
     }
     
     return render(request, 'member_detail.html', context)
+
 
 @login_required
 def add_member(request, project_id):
@@ -382,7 +412,8 @@ def add_member(request, project_id):
         role = request.POST.get('role', 'VIEWER')
         
         try:
-            user_to_add = User.objects.get(username=username)
+            # Load user with profile for potential avatar display
+            user_to_add = User.objects.select_related('profile').get(username=username)
             
             # Check if already a member
             if Membership.objects.filter(project=project, user=user_to_add).exists():
@@ -406,11 +437,18 @@ def add_member(request, project_id):
     
     return render(request, 'add_member.html', context)
 
+
 @login_required
 def remove_member(request, project_id, user_id):
     """View to remove a member from the project"""
     project = get_object_or_404(Project, pk=project_id)
-    user = get_object_or_404(User, pk=user_id)
+    
+    # Load user with profile for avatar display
+    user = get_object_or_404(
+        User.objects.select_related('profile'), 
+        pk=user_id
+    )
+    
     membership = get_object_or_404(Membership, project=project, user=user)
     
     # Check if current user can remove this member

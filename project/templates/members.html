@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}
 2do.net - {{ project.name }} - Members
@@ -17,7 +18,7 @@
             
             {% if can_manage_members %}
             <div class="right-align">
-                <a href="{% url 'project:add_member' project.id %}" class="btn waves-effect waves-light">
+                <a href="{% url 'project:add_member' project.id %}" class="btn waves-effect waves-light green">
                     <i class="material-icons left">person_add</i>Add Member
                 </a>
             </div>
@@ -40,17 +41,35 @@
                                 {% for user in admin_users %}
                                 <li class="user-item">
                                     <div class="user-info">
-                                        <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
+                                        <!-- Fixed Avatar Handling -->
+                                        {% if user.profile.avatar %}
+                                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                        {% else %}
+                                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                                        {% endif %}
+                                        
                                         <div class="user-details">
-                                            <span class="user-name">{{ user.username }}</span>
-                                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                            <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                            {% if user.profile.location %}
+                                                <span class="user-location">
+                                                    <i class="material-icons tiny">location_on</i>
+                                                    {{ user.profile.location }}
+                                                </span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     
                                     <div class="user-actions">
-                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
-                                            Manage
+                                        {% if can_manage_members %}
+                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                            <i class="material-icons left">settings</i>Manage
                                         </a>
+                                        {% else %}
+                                        <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                            <i class="material-icons left">visibility</i>View Profile
+                                        </a>
+                                        {% endif %}
                                     </div>
                                 </li>
                                 {% empty %}
@@ -73,17 +92,35 @@
                                 {% for user in moderator_users %}
                                 <li class="user-item">
                                     <div class="user-info">
-                                        <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                        <!-- Fixed Avatar Handling -->
+                                        {% if user.profile.avatar %}
+                                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                        {% else %}
+                                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                                        {% endif %}
+                                        
                                         <div class="user-details">
-                                            <span class="user-name">{{ user.username }}</span>
-                                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                            <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                            {% if user.profile.location %}
+                                                <span class="user-location">
+                                                    <i class="material-icons tiny">location_on</i>
+                                                    {{ user.profile.location }}
+                                                </span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     
                                     <div class="user-actions">
-                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
-                                            Manage
+                                        {% if can_manage_members %}
+                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                            <i class="material-icons left">settings</i>Manage
                                         </a>
+                                        {% else %}
+                                        <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                            <i class="material-icons left">visibility</i>View Profile
+                                        </a>
+                                        {% endif %}
                                     </div>
                                 </li>
                                 {% empty %}
@@ -106,17 +143,35 @@
                                 {% for user in contributor_users %}
                                 <li class="user-item">
                                     <div class="user-info">
-                                        <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                        <!-- Fixed Avatar Handling -->
+                                        {% if user.profile.avatar %}
+                                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                        {% else %}
+                                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                                        {% endif %}
+                                        
                                         <div class="user-details">
-                                            <span class="user-name">{{ user.username }}</span>
-                                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                            <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                            {% if user.profile.location %}
+                                                <span class="user-location">
+                                                    <i class="material-icons tiny">location_on</i>
+                                                    {{ user.profile.location }}
+                                                </span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     
                                     <div class="user-actions">
-                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
-                                            Manage
+                                        {% if can_manage_members %}
+                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                            <i class="material-icons left">settings</i>Manage
                                         </a>
+                                        {% else %}
+                                        <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                            <i class="material-icons left">visibility</i>View Profile
+                                        </a>
+                                        {% endif %}
                                     </div>
                                 </li>
                                 {% empty %}
@@ -139,17 +194,35 @@
                                 {% for user in member_users %}
                                 <li class="user-item">
                                     <div class="user-info">
-                                        <img class="user-avatar" src="{{ user.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}">
+                                        <!-- Fixed Avatar Handling -->
+                                        {% if user.profile.avatar %}
+                                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                        {% else %}
+                                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                                        {% endif %}
+                                        
                                         <div class="user-details">
-                                            <span class="user-name">{{ user.username }}</span>
-                                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                            <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                            {% if user.profile.location %}
+                                                <span class="user-location">
+                                                    <i class="material-icons tiny">location_on</i>
+                                                    {{ user.profile.location }}
+                                                </span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     
                                     <div class="user-actions">
-                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light">
-                                            Manage
+                                        {% if can_manage_members %}
+                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                            <i class="material-icons left">settings</i>Manage
                                         </a>
+                                        {% else %}
+                                        <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                            <i class="material-icons left">visibility</i>View Profile
+                                        </a>
+                                        {% endif %}
                                     </div>
                                 </li>
                                 {% empty %}
@@ -170,4 +243,252 @@
         </div>
     </div>
 </div>
+
+<style>
+/* User List Styles */
+.user-list {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    margin: 10px 0;
+    background-color: var(--bg-color3);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--bg-color2);
+}
+
+.user-item:hover {
+    background-color: var(--bg-light);
+    border-left-color: var(--highlight);
+    transform: translateX(5px);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border: 2px solid var(--bg-color2);
+    transition: border-color 0.3s ease;
+}
+
+.user-avatar:hover {
+    border-color: var(--highlight);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.user-joined {
+    color: var(--text2ndary);
+    font-size: 0.85rem;
+}
+
+.user-location {
+    color: var(--text2ndary);
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.user-location .material-icons.tiny {
+    font-size: 14px;
+}
+
+.user-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.user-actions .btn-small {
+    padding: 0 12px;
+    height: 32px;
+    line-height: 32px;
+}
+
+.empty-list-message {
+    color: var(--text2ndary);
+    font-style: italic;
+    text-align: center;
+    padding: 30px;
+    background-color: var(--bg-light);
+    border-radius: 8px;
+    margin: 15px 0;
+    border: 2px dashed var(--bg-color3);
+}
+
+/* Group Summary Styles */
+.user-group-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, var(--bg-color3), var(--bg-light));
+    border-radius: 8px;
+    margin: 20px 0 10px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid var(--bg-color2);
+}
+
+.user-group-summary:hover {
+    background: linear-gradient(135deg, var(--bg-light), var(--bg-color3));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.user-group-title {
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-count {
+    background-color: var(--highlight);
+    color: var(--highlightdark);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    min-width: 30px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.user-group-content {
+    margin: 0 10px 20px 10px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+details[open] .user-group-content {
+    opacity: 1;
+    max-height: none;
+    margin: 10px 10px 20px 10px;
+}
+
+.user-group-desc {
+    color: var(--text2ndary);
+    font-size: 0.95rem;
+    margin: 15px 0 20px 0;
+    line-height: 1.5;
+    padding: 12px;
+    background-color: var(--bg-color2);
+    border-radius: 6px;
+    border-left: 3px solid var(--highlight);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .user-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 20px 15px;
+    }
+    
+    .user-info {
+        width: 100%;
+    }
+    
+    .user-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .user-actions .btn-small {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .user-group-summary {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        padding: 15px;
+    }
+    
+    .user-avatar {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .user-name {
+        font-size: 0.95rem;
+    }
+}
+
+/* Details/Summary styling improvements */
+details > summary {
+    list-style: none;
+    outline: none;
+}
+
+details > summary::-webkit-details-marker {
+    display: none;
+}
+
+details > summary::before {
+    content: '▶';
+    color: var(--highlight);
+    font-size: 0.8rem;
+    margin-right: 8px;
+    transition: transform 0.3s ease;
+}
+
+details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+/* Material Icons Fix */
+.material-icons.tiny {
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+/* Card improvements */
+.card {
+    background-color: var(--bg-color2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-title {
+    color: var(--text);
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+</style>
+
 {% endblock %}

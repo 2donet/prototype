@@ -121,115 +121,6 @@
         </blockquote>
     {% endif %}
 
-<style>
-/* Creator Info Styles */
-.creator-info {
-    background-color: var(--bg-color2);
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
-    border-left: 4px solid var(--highlight);
-}
-
-.creator-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.creator-avatar img {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-}
-
-.creator-details h6 {
-    margin: 0 0 5px 0;
-    color: var(--text2ndary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.creator-name {
-    color: var(--text);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.creator-name:hover {
-    color: var(--highlight);
-    text-decoration: underline;
-}
-
-.creator-bio {
-    background-color: var(--bg-color3);
-    border-left: 4px solid var(--highlight);
-    padding: 15px 20px;
-    margin: 15px 0;
-    border-radius: 0 4px 4px 0;
-    color: var(--text);
-    font-style: italic;
-    line-height: 1.6;
-}
-
-.creator-bio.no-bio {
-    border-left-color: var(--text2ndary);
-    color: var(--text2ndary);
-}
-
-.creator-bio.no-creator {
-    border-left-color: var(--warning);
-    color: var(--text2ndary);
-}
-
-.creator-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid var(--bg-color3);
-}
-
-.creator-location,
-.creator-website,
-.creator-joined {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text2ndary);
-    font-size: 0.9rem;
-}
-
-.creator-website a {
-    color: var(--highlight);
-    text-decoration: none;
-}
-
-.creator-website a:hover {
-    text-decoration: underline;
-}
-
-.material-icons.tiny {
-    font-size: 16px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .creator-header {
-        flex-direction: column;
-        text-align: center;
-        gap: 10px;
-    }
-    
-    .creator-meta {
-        align-items: center;
-    }
-}
-</style>
 
 </div>
 
@@ -246,178 +137,225 @@
 
         <div class="members-container card">
             {% include "components/join_or_leave.html" %}
-            <div class="card-content">
-                <span class="card-title">👥 Project Members</span>
-                {% if can_manage_members %}
-                <a href="{% url 'project:project_members' content.id %}" class="btn waves-effect waves-light blue">
-                    <i class="material-icons left">group</i>Manage Members
-                </a>
-                <a href="{% url 'project:add_member' content.id %}" class="btn waves-effect waves-light green">
-                    <i class="material-icons left">person_add</i>Add Member
-                </a>
-                {% endif %}
-                <!-- Administrators group -->
-                <details open>
-                    <summary class="user-group-summary">
-                        <span class="user-group-title">👑 Administrators</span>
-                        <span class="user-count">{{ admin_users|length }}</span>
-                    </summary>
-                    <div class="user-group-content">
-                        <p class="user-group-desc">Project administrators have full control over the project, including managing members and settings.</p>
+<div class="card-content">
+    <span class="card-title">👥 Project Members</span>
+    {% if can_manage_members %}
+    <a href="{% url 'project:project_members' content.id %}" class="btn waves-effect waves-light blue">
+        <i class="material-icons left">group</i>Manage Members
+    </a>
+    <a href="{% url 'project:add_member' content.id %}" class="btn waves-effect waves-light green">
+        <i class="material-icons left">person_add</i>Add Member
+    </a>
+    {% endif %}
+    
+    <!-- Administrators group -->
+    <details open>
+        <summary class="user-group-summary">
+            <span class="user-group-title">👑 Administrators</span>
+            <span class="user-count">{{ admin_users|length }}</span>
+        </summary>
+        <div class="user-group-content">
+            <p class="user-group-desc">Project administrators have full control over the project, including managing members and settings.</p>
+            
+            <ul class="user-list">
+                {% for user in admin_users %}
+                <li class="user-item">
+                    <div class="user-info">
+                        <!-- Fixed Avatar Handling -->
+                        {% if user.profile.avatar %}
+                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                        {% else %}
+                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                        {% endif %}
                         
-                        <ul class="user-list">
-                            {% for user in admin_users %}
-                            <li class="user-item">
-                                <div class="user-info">
-                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
-                                    <div class="user-details">
-                                        <span class="user-name">{{ user.username }}</span>
-                                        <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="user-actions dropdown-trigger" data-target="admin-actions-{{ user.id }}">
-                                    <span class="user-menu-icon">⋮</span>
-                                </div>
-                                
-                                <!-- Dropdown menu -->
-                                <ul id="admin-actions-{{ user.id }}" class="dropdown-content">
-                                    <li><a href="/u/{{ user.id }}/">🧑 Profile</a></li>
-                                    <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
-
-                                    <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
-                                    <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
-                                    <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
-                                </ul>
-                            </li>
-                            {% empty %}
-                            <li class="empty-list-message">No administrators found</li>
-                            {% endfor %}
-                        </ul>
+                        <div class="user-details">
+                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                            {% if user.profile.location %}
+                                <span class="user-location">
+                                    <i class="material-icons tiny">location_on</i>
+                                    {{ user.profile.location }}
+                                </span>
+                            {% endif %}
+                        </div>
                     </div>
-                </details>
+                    
+                    <div class="user-actions dropdown-trigger" data-target="admin-actions-{{ user.id }}">
+                        <span class="user-menu-icon">⋮</span>
+                    </div>
+                    
+                    <!-- Dropdown menu -->
+                    <ul id="admin-actions-{{ user.id }}" class="dropdown-content">
+                        <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
+                        <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
+                        <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                        <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
+                        <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
+                    </ul>
+                </li>
+                {% empty %}
+                <li class="empty-list-message">No administrators found</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </details>
+    
+    <!-- Moderators group -->
+    <details>
+        <summary class="user-group-summary">
+            <span class="user-group-title">🛡️ Moderators</span>
+            <span class="user-count">{{ moderator_users|length }}</span>
+        </summary>
+        <div class="user-group-content">
+            <p class="user-group-desc">Moderators help manage project content and comments.</p>
+            
+            <ul class="user-list">
+                {% for user in moderator_users %}
+                <li class="user-item">
+                    <div class="user-info">
+                        <!-- Fixed Avatar Handling -->
+                        {% if user.profile.avatar %}
+                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                        {% else %}
+                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                        {% endif %}
+                        
+                        <div class="user-details">
+                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                            {% if user.profile.location %}
+                                <span class="user-location">
+                                    <i class="material-icons tiny">location_on</i>
+                                    {{ user.profile.location }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="user-actions dropdown-trigger" data-target="mod-actions-{{ user.id }}">
+                        <span class="user-menu-icon">⋮</span>
+                    </div>
+                    
+                    <!-- Dropdown menu -->
+                    <ul id="mod-actions-{{ user.id }}" class="dropdown-content">
+                        <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
+                        <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
+                        <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                        <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
+                        <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
+                    </ul>
+                </li>
+                {% empty %}
+                <li class="empty-list-message">No moderators found</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </details>
+    
+    <!-- Contributors group -->
+    <details>
+        <summary class="user-group-summary">
+            <span class="user-group-title">🔨 Contributors</span>
+            <span class="user-count">{{ contributor_users|length }}</span>
+        </summary>
+        <div class="user-group-content">
+            <p class="user-group-desc">Contributors actively help build and develop the project.</p>
+            
+            <ul class="user-list">
+                {% for user in contributor_users %}
+                <li class="user-item">
+                    <div class="user-info">
+                        <!-- Fixed Avatar Handling -->
+                        {% if user.profile.avatar %}
+                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                        {% else %}
+                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                        {% endif %}
+                        
+                        <div class="user-details">
+                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                            {% if user.profile.location %}
+                                <span class="user-location">
+                                    <i class="material-icons tiny">location_on</i>
+                                    {{ user.profile.location }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
                 
-                <!-- Moderators group -->
-                <details>
-                    <summary class="user-group-summary">
-                        <span class="user-group-title">🛡️ Moderators</span>
-                        <span class="user-count">{{ moderator_users|length }}</span>
-                    </summary>
-                    <div class="user-group-content">
-                        <p class="user-group-desc">Moderators help manage project content and comments.</p>
-                        
-                        <ul class="user-list">
-                            {% for user in moderator_users %}
-                            <li class="user-item">
-                                <div class="user-info">
-                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
-                                    <div class="user-details">
-                                        <span class="user-name">{{ user.username }}</span>
-                                        <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="user-actions dropdown-trigger" data-target="mod-actions-{{ user.id }}">
-                                    <span class="user-menu-icon">⋮</span>
-                                </div>
-                                
-                                <!-- Dropdown menu -->
-                                <ul id="mod-actions-{{ user.id }}" class="dropdown-content">
-                                    <li><a href="/u/{{ user.id }}/">🧑 Profile</a></li>
-                                    <li><a href="/project/{{ content.id }}/members/{{ user.id }}/">👥 Membership Details</a></li>
-                                    <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
-                                    <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
-                                    <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
-                                </ul>
-                            </li>
-                            {% empty %}
-                            <li class="empty-list-message">No moderators found</li>
-                            {% endfor %}
-                        </ul>
+                    <div class="user-actions dropdown-trigger" data-target="contrib-actions-{{ user.id }}">
+                        <span class="user-menu-icon">⋮</span>
                     </div>
-                </details>
                 
-                <!-- Contributors group -->
-                <details>
-                    <summary class="user-group-summary">
-                        <span class="user-group-title">🔨 Contributors</span>
-                        <span class="user-count">{{ contributor_users|length }}</span>
-                    </summary>
-                    <div class="user-group-content">
-                        <p class="user-group-desc">Contributors actively help build and develop the project.</p>
+                    <!-- Dropdown menu -->
+                    <ul id="contrib-actions-{{ user.id }}" class="dropdown-content">
+                        <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
+                        <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
+                        <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                        <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
+                        <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
+                    </ul>
+                </li>
+                {% empty %}
+                <li class="empty-list-message">No contributors found</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </details>
+    
+    <!-- Members/Supporters group -->
+    <details>
+        <summary class="user-group-summary">
+            <span class="user-group-title">👥 Members</span>
+            <span class="user-count">{{ member_users|length }}</span>
+        </summary>
+        <div class="user-group-content">
+            <p class="user-group-desc">Project members who follow and support the project.</p>
+            
+            <ul class="user-list">
+                {% for user in member_users %}
+                <li class="user-item">
+                    <div class="user-info">
+                        <!-- Fixed Avatar Handling -->
+                        {% if user.profile.avatar %}
+                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                        {% else %}
+                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                        {% endif %}
                         
-                        <ul class="user-list">
-                            {% for user in contributor_users %}
-                            <li class="user-item">
-                                <div class="user-info">
-                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
-                                    <div class="user-details">
-                                        <span class="user-name">{{ user.username }}</span>
-                                        <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
-                                    </div>
-                                </div>
-                            
-                                <div class="user-actions dropdown-trigger" data-target="contrib-actions-{{ user.id }}">
-                                    <button></button>
-                                    <span class="user-menu-icon">⋮</span>
-                                </div>
-                            
-                                <!-- Dropdown menu -->
-                                <ul id="contrib-actions-{{ user.id }}" class="dropdown-content">
-                                    <li><a href="/u/{{ user.id }}/">🧑 Profile</a></li>
-                                    <li><a href="/project/{{ content.id }}/members/{{ user.id }}/">👥 Membership Details</a></li>
-                                    <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
-                                    <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
-                                    <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
-                                </ul>
-                            </li>
-                            {% empty %}
-                            <li class="empty-list-message">No contributors found</li>
-                            {% endfor %}
-                        </ul>
+                        <div class="user-details">
+                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                            <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
+                            {% if user.profile.location %}
+                                <span class="user-location">
+                                    <i class="material-icons tiny">location_on</i>
+                                    {{ user.profile.location }}
+                                </span>
+                            {% endif %}
+                        </div>
                     </div>
-                </details>
-                
-                <!-- Members/Supporters group -->
-                <details>
-                    <summary class="user-group-summary">
-                        <span class="user-group-title">👥 Members</span>
-                        <span class="user-count">{{ member_users|length }}</span>
-                    </summary>
-                    <div class="user-group-content">
-                        <p class="user-group-desc">Project members who follow and support the project.</p>
-                        
-                        <ul class="user-list">
-                            {% for user in member_users %}
-                            <li class="user-item">
-                                <div class="user-info">
-                                    <img class="user-avatar" src="{{ user.avatar|default:'/static/icons/default-avatar.svg' }}" alt="{{ user.username }}">
-                                    <div class="user-details">
-                                        <span class="user-name">{{ user.username }}</span>
-                                        <span class="user-joined">Joined {{ user.date_joined|naturaltime }}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="user-actions dropdown-trigger" data-target="member-actions-{{ user.id }}">
-                                    <span class="user-menu-icon">⋮</span>
-                                </div>
-                                
-                                <!-- Dropdown menu -->
-                                <ul id="member-actions-{{ user.id }}" class="dropdown-content">
-                                    <li><a href="/u/{{ user.id }}/">🧑 Profile</a></li>
-                                    <li><a href="/project/{{ content.id }}/members/{{ user.id }}/">👥 Membership Details</a></li>
-                                    <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
-                                    <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
-                                    <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
-                                </ul>
-                            </li>
-                            {% empty %}
-                            <li class="empty-list-message">No members found</li>
-                            {% endfor %}
-                        </ul>
+                    
+                    <div class="user-actions dropdown-trigger" data-target="member-actions-{{ user.id }}">
+                        <span class="user-menu-icon">⋮</span>
                     </div>
-                </details>
-            </div>
+                    
+                    <!-- Dropdown menu -->
+                    <ul id="member-actions-{{ user.id }}" class="dropdown-content">
+                        <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
+                        <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
+                        <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                        <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
+                        <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
+                    </ul>
+                </li>
+                {% empty %}
+                <li class="empty-list-message">No members found</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </details>
+</div>
         </div>
 
 
