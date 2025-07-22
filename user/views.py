@@ -15,6 +15,7 @@ from user.models import Person
 
 from .forms import SignInForm, SignupForm, EditProfileForm
 from django.contrib.auth import get_user_model
+import os
 
 def userprofile(request, user_id):
     User = get_user_model()
@@ -162,11 +163,10 @@ def custom_logout(request):
     logout(request)  # Log out the user
     return redirect('/')  # Redirect to a specific page (e.g., home page)
 
-
 @login_required
 def edit_profile(request, user_id):
     """
-    Handle profile editing for authenticated users including avatar upload
+    Handle profile editing for authenticated users including hash-based avatar upload
     """
     User = get_user_model()
     user = get_object_or_404(User, pk=user_id)
@@ -183,9 +183,24 @@ def edit_profile(request, user_id):
         form = EditProfileForm(request.POST, request.FILES, instance=user, user_profile=user_profile)
         if form.is_valid():
             try:
+                # Get any hash info before saving
+                avatar_hash = form.cleaned_data.get('_avatar_hash')
+                
                 form.save()
+                
+                # Show avatar hash info if new avatar was uploaded
+                if avatar_hash and user_profile.avatar:
+                    # Safely get avatar info
+                    try:
+                        avatar_filename = os.path.basename(user_profile.avatar.name)
+                        hash_part = avatar_filename.split('.')[0]
+                        messages.info(request, f'Avatar uploaded successfully! File hash: {hash_part}')
+                    except:
+                        pass  # Ignore if we can't get hash info
+                
                 messages.success(request, 'Your profile has been updated successfully!')
                 return redirect('user:userprofile', user_id=user.id)
+                
             except Exception as e:
                 messages.error(request, 'An error occurred while updating your profile. Please try again.')
                 # Log the error for debugging
@@ -197,14 +212,27 @@ def edit_profile(request, user_id):
     else:
         form = EditProfileForm(instance=user, user_profile=user_profile)
     
+    # Simplified avatar info - just check if avatar exists
+    avatar_info = None
+    if user_profile.avatar and user_profile.avatar.name:
+        try:
+            avatar_info = {
+                'filename': os.path.basename(user_profile.avatar.name),
+                'hash': os.path.basename(user_profile.avatar.name).split('.')[0],
+                'exists': True
+            }
+        except:
+            avatar_info = {'exists': False}
+    
     context = {
         'form': form,
         'user': user,
-        'user_profile': user_profile
+        'user_profile': user_profile,
+        'avatar_info': avatar_info,  # Simplified avatar info
     }
     return render(request, 'edit_profile.html', context)
     """
-    Handle profile editing for authenticated users
+    Handle profile editing for authenticated users including hash-based avatar upload
     """
     User = get_user_model()
     user = get_object_or_404(User, pk=user_id)
@@ -218,12 +246,35 @@ def edit_profile(request, user_id):
     user_profile, created = UserProfile.objects.get_or_create(user=user)
     
     if request.method == 'POST':
-        form = EditProfileForm(request.POST, instance=user, user_profile=user_profile)
+        form = EditProfileForm(request.POST, request.FILES, instance=user, user_profile=user_profile)
         if form.is_valid():
             try:
+                # Get any hash info before saving
+                avatar_hash = form.cleaned_data.get('_avatar_hash')
+                
                 form.save()
+                
+                # Add any messages from the form processing
+                form_messages = form.get_messages()
+                for level, message in form_messages:
+                    if level == 'info':
+                        messages.info(request, message)
+                    elif level == 'success':
+                        messages.success(request, message)
+                    elif level == 'warning':
+                        messages.warning(request, message)
+                
+                # Show avatar hash info if new avatar was uploaded
+                if avatar_hash and user_profile.avatar:
+                    avatar_info = user_profile.get_avatar_info()
+                    if avatar_info:
+                        messages.info(request, 
+                            f'Avatar uploaded successfully! File hash: {avatar_info["hash"]}'
+                        )
+                
                 messages.success(request, 'Your profile has been updated successfully!')
                 return redirect('user:userprofile', user_id=user.id)
+                
             except Exception as e:
                 messages.error(request, 'An error occurred while updating your profile. Please try again.')
                 # Log the error for debugging
@@ -235,47 +286,13 @@ def edit_profile(request, user_id):
     else:
         form = EditProfileForm(instance=user, user_profile=user_profile)
     
-    context = {
-        'form': form,
-        'user': user,
-        'user_profile': user_profile
-    }
-    return render(request, 'edit_profile.html', context)
-    """
-    Handle profile editing for authenticated users
-    """
-    User = get_user_model()
-    user = get_object_or_404(User, pk=user_id)
-    
-    # Check if user can edit this profile (own profile or admin)
-    if request.user.id != user.id and not request.user.is_staff:
-        messages.error(request, "You don't have permission to edit this profile.")
-        return redirect('user:userprofile', user_id=user_id)
-    
-    # Get or create user profile
-    user_profile, created = UserProfile.objects.get_or_create(user=user)
-    
-    if request.method == 'POST':
-        form = EditProfileForm(request.POST, instance=user, user_profile=user_profile)
-        if form.is_valid():
-            try:
-                form.save()
-                messages.success(request, 'Your profile has been updated successfully!')
-                return redirect('user:userprofile', user_id=user.id)
-            except Exception as e:
-                messages.error(request, 'An error occurred while updating your profile. Please try again.')
-                # Log the error for debugging
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Profile update error: {e}")
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = EditProfileForm(instance=user, user_profile=user_profile)
+    # Add avatar info to context for debugging/admin use
+    avatar_info = user_profile.get_avatar_info() if user_profile.has_avatar() else None
     
     context = {
         'form': form,
         'user': user,
-        'user_profile': user_profile
+        'user_profile': user_profile,
+        'avatar_info': avatar_info,  # For debugging/admin display
     }
     return render(request, 'edit_profile.html', context)

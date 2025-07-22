@@ -5,7 +5,9 @@ from django.core.exceptions import ValidationError
 from .models import UserProfile
 import re
 from PIL import Image
+import hashlib
 import os
+
 
 
 class SignInForm(AuthenticationForm):
@@ -220,8 +222,9 @@ class EditProfileForm(forms.ModelForm):
             'id': 'avatar',
             'accept': 'image/jpeg,image/jpg,image/png,image/webp'
         }),
-        help_text="Upload a profile picture. Will be automatically resized to 400x400px and converted to WebP format."
+        help_text="Upload a profile picture. Will be automatically resized and optimized with secure hash-based naming."
     )
+
 
     class Meta:
         model = User
@@ -256,7 +259,7 @@ class EditProfileForm(forms.ModelForm):
         avatar = self.cleaned_data.get('avatar')
         
         if avatar:
-            # Check file size (5MB limit for upload, but we'll process it down)
+            # Check file size (5MB limit for upload)
             if avatar.size > 5 * 1024 * 1024:
                 raise ValidationError("Image file too large (max 5MB).")
             
@@ -265,7 +268,7 @@ class EditProfileForm(forms.ModelForm):
             if hasattr(avatar, 'content_type') and avatar.content_type not in allowed_types:
                 raise ValidationError("Unsupported image format. Please use JPEG, PNG, or WebP.")
             
-            # Validate image integrity and minimum size
+            # Validate image integrity and dimensions
             try:
                 # Open and verify the image
                 img = Image.open(avatar)
@@ -284,8 +287,16 @@ class EditProfileForm(forms.ModelForm):
                 if width > 5000 or height > 5000:
                     raise ValidationError("Image dimensions too large. Maximum size is 5000x5000 pixels.")
                 
-                # Reset file pointer again
+                # Reset file pointer again for processing
                 avatar.seek(0)
+                
+                # Generate preview hash for duplicate detection (optional)
+                file_content = avatar.read()
+                file_hash = hashlib.sha256(file_content).hexdigest()[:16]
+                avatar.seek(0)  # Reset again
+                
+                # Store hash in cleaned_data for potential duplicate checking
+                self.cleaned_data['_avatar_hash'] = file_hash
                 
             except Exception as e:
                 raise ValidationError("Invalid image file. Please upload a valid image.")
@@ -308,33 +319,57 @@ class EditProfileForm(forms.ModelForm):
             profile.location = self.cleaned_data.get('location', '')
             profile.website = self.cleaned_data.get('website', '')
             
-            # Handle avatar upload
+            # Handle avatar upload with hash-based naming
             avatar = self.cleaned_data.get('avatar')
             if avatar:
-                # Delete old avatar if it exists (ProcessedImageField will handle this automatically)
-                if profile.avatar:
-                    # Store old avatar path for cleanup
-                    old_avatar_path = profile.avatar.path if profile.avatar else None
+                # Get the hash we computed during validation
+                avatar_hash = self.cleaned_data.get('_avatar_hash')
+                
+                # Check if an avatar with this hash already exists (deduplication)
+                existing_profile_with_same_avatar = None
+                if avatar_hash:
+                    try:
+                        existing_profile_with_same_avatar = UserProfile.objects.filter(
+                            avatar__icontains=avatar_hash
+                        ).exclude(id=profile.id).first()
+                    except:
+                        pass
+                
+                if existing_profile_with_same_avatar:
+                    # Deduplication: Point to existing file instead of uploading duplicate
+                    old_avatar = profile.avatar
+                    profile.avatar = existing_profile_with_same_avatar.avatar
                     
-                    # Set new avatar (ProcessedImageField will process it automatically)
-                    profile.avatar = avatar
-                    profile.save()
-                    
-                    # Clean up old avatar file if it exists
-                    if old_avatar_path and os.path.exists(old_avatar_path):
-                        try:
-                            os.remove(old_avatar_path)
-                        except:
-                            pass  # Ignore cleanup errors
+                    # Clean up old avatar if it exists
+                    if old_avatar:
+                        profile.cleanup_old_avatar(old_avatar)
+                        
+                    self.add_message_to_request('info', 
+                        'Your avatar is identical to an existing one - storage optimized through deduplication!')
                 else:
+                    # New unique avatar - the ProcessedImageField will handle hash-based naming
+                    old_avatar = profile.avatar
                     profile.avatar = avatar
-                    profile.save()
+                    
+                    # Cleanup will be handled by the model's save method
+                
+                profile.save()
             else:
                 profile.save()
             
         return user
- 
-
+    
+    def add_message_to_request(self, level, message):
+        """Helper to add messages if request is available"""
+        # This would need to be called from the view with request context
+        # For now, just store it for the view to handle
+        if not hasattr(self, '_messages'):
+            self._messages = []
+        self._messages.append((level, message))
+    
+    def get_messages(self):
+        """Get any messages generated during form processing"""
+        return getattr(self, '_messages', [])
 
     # Update your EditProfileForm in user/forms.py
 
