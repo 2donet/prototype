@@ -58,7 +58,6 @@ def conversation_list(request):
     
     return render(request, 'messaging/conversation_list.html', context)
 
-
 @login_required
 def conversation_detail(request, username):
     """View and send messages in a conversation with a specific user"""
@@ -253,11 +252,12 @@ def ajax_mark_read(request, conversation_id):
 
 @login_required 
 def get_unread_count(request):
-    """AJAX endpoint to get total unread message count for navbar"""
-    total_unread = 0
+    """AJAX endpoint to get count of conversations with unread messages for navbar"""
+    conversations_with_unread = 0
     conversations = Conversation.objects.get_user_conversations(request.user)
     
     for conversation in conversations:
-        total_unread += conversation.get_unread_count(request.user)
+        if conversation.get_unread_count(request.user) > 0:
+            conversations_with_unread += 1
     
-    return JsonResponse({'unread_count': total_unread})
+    return JsonResponse({'unread_count': conversations_with_unread})

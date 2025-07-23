@@ -34,33 +34,34 @@
           $('.carousel').carousel();
           
           // Poll for unread messages count (for authenticated users)
-          {% if user.is_authenticated %}
-          function updateUnreadCount() {
-            $.get('/messages/ajax/unread-count/', function(data) {
-              const desktopBadge = $('#unread-count');
-              const mobileBadge = $('#unread-count-mobile');
-              
-              if (data.unread_count > 0) {
-                // Show badges with count
-                desktopBadge.text(data.unread_count).show();
-                mobileBadge.text(data.unread_count).show();
-              } else {
-                // Hide badges when no unread messages
-                desktopBadge.hide();
-                mobileBadge.hide();
-              }
-            }).fail(function() {
-              // Silently fail - don't show errors for this background task
-              console.log('Failed to fetch unread message count');
-            });
-          }
-          
-          // Initial count
-          updateUnreadCount();
-          
-          // Poll every 30 seconds
-          setInterval(updateUnreadCount, 30000);
-          {% endif %}
+// Poll for unread messages count (for authenticated users)
+{% if user.is_authenticated %}
+function updateUnreadCount() {
+  $.get('/messages/ajax/unread-count/', function(data) {
+    const desktopBadge = $('#unread-count');
+    const mobileBadge = $('#unread-count-mobile');
+    
+    if (data.unread_count > 0) {
+      // Show badges with count
+      desktopBadge.text(data.unread_count).css('display', 'inline-block');
+      mobileBadge.text(data.unread_count).css('display', 'inline-block');
+    } else {
+      // Completely hide badges when no unread messages
+      desktopBadge.css('display', 'none');
+      mobileBadge.css('display', 'none');
+    }
+  }).fail(function() {
+    // Silently fail - don't show errors for this background task
+    console.log('Failed to fetch unread message count');
+  });
+}
+
+// Initial count
+updateUnreadCount();
+
+// Poll every 30 seconds
+setInterval(updateUnreadCount, 30000);
+{% endif %}
         });
       </script>  
       <script src="{% static 'js/comment-rating.js' %}"></script>    

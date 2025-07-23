@@ -188,7 +188,7 @@
                     <ul id="admin-actions-{{ user.id }}" class="dropdown-content">
                         <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
                         <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
-                        <li><a href="/message/{{ user.username }}/">✉️ Message</a></li>
+                        <li><a href="/messages/{{ user.username }}/">✉️ Message</a></li>
                         <li><a href="/reward/{{ user.id }}/">🎁 Reward</a></li>
                         <li><a href="/report/user/{{ user.id }}/">🚩 Report</a></li>
                     </ul>

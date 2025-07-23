@@ -3528,7 +3528,7 @@ details:not([open]) .user-group-summary {
     line-height: 18px !important;
     text-align: center !important;
     margin-left: 8px !important;
-    display: inline-block !important;
+    display: inline-block;
 }
 
 /* Ensure proper spacing in navigation */
