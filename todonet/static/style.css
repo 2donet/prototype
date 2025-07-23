@@ -3041,7 +3041,9 @@ details:not([open]) .user-group-summary {
     font-size: 16px;
 }
 
+/* MESSAGING SYSTEM STYLES */
 
+/* Messages List Page */
 .messages-container {
     max-width: 800px;
     margin: 0 auto;
@@ -3438,7 +3440,15 @@ details:not([open]) .user-group-summary {
     text-align: center;
 }
 
-
+/* Debug styles (remove these after testing) */
+.debug-info {
+    background: var(--bg-color3);
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text2ndary);
+}
 
 /* Mobile responsiveness */
 @media only screen and (max-width: 600px) {
@@ -3507,7 +3517,28 @@ details:not([open]) .user-group-summary {
 }
 
 /* Navigation badge styling */
-#unread-count {
+#unread-count, #unread-count-mobile {
     background-color: var(--danger) !important;
     color: white !important;
+    border-radius: 50% !important;
+    font-size: 11px !important;
+    font-weight: bold !important;
+    min-width: 18px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+    text-align: center !important;
+    margin-left: 8px !important;
+    display: inline-block !important;
+}
+
+/* Ensure proper spacing in navigation */
+nav ul li a {
+    display: flex;
+    align-items: center;
+}
+
+/* Mobile sidenav badge styling */
+.sidenav #unread-count-mobile {
+    margin-left: auto !important;
+    margin-right: 15px !important;
 }

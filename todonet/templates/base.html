@@ -33,6 +33,34 @@
           M.updateTextFields();
           $('.carousel').carousel();
           
+          // Poll for unread messages count (for authenticated users)
+          {% if user.is_authenticated %}
+          function updateUnreadCount() {
+            $.get('/messages/ajax/unread-count/', function(data) {
+              const desktopBadge = $('#unread-count');
+              const mobileBadge = $('#unread-count-mobile');
+              
+              if (data.unread_count > 0) {
+                // Show badges with count
+                desktopBadge.text(data.unread_count).show();
+                mobileBadge.text(data.unread_count).show();
+              } else {
+                // Hide badges when no unread messages
+                desktopBadge.hide();
+                mobileBadge.hide();
+              }
+            }).fail(function() {
+              // Silently fail - don't show errors for this background task
+              console.log('Failed to fetch unread message count');
+            });
+          }
+          
+          // Initial count
+          updateUnreadCount();
+          
+          // Poll every 30 seconds
+          setInterval(updateUnreadCount, 30000);
+          {% endif %}
         });
       </script>  
       <script src="{% static 'js/comment-rating.js' %}"></script>    
@@ -60,6 +88,14 @@
           <ul class="right hide-on-med-and-down">
             <li><a href="/">Home</a></li>
             <li><a href="/1">2do.net</a></li>
+            {% if user.is_authenticated %}
+              <li>
+                <a href="/messages/">
+                  Messages 
+                  <span id="unread-count" class="new badge" data-badge-caption="" style="display: none;"></span>
+                </a>
+              </li>
+            {% endif %}
             <li><a href="/admin">admin</a></li>
             
             {% if user.is_authenticated %}
@@ -79,7 +115,6 @@
       <!-- Dropdown for Authenticated Users -->
       {% if user.is_authenticated %}
       <ul id="dropdown-user-nav" class="dropdown-content">
-        <li><a href="/messages/">Messages <span id="unread-count" class="new badge" data-badge-caption="" style="display: none;"></span></a></li>
         <li><a href="/u/{{ user.id }}">Profile</a></li>
         <li><a href="/u/logout">Logout</a></li>
       </ul>
@@ -96,12 +131,19 @@
       <ul class="sidenav" id="mobile-demo">
         <li><a href="/">Home</a></li>
         <li><a href="/1">2do.net</a></li>
+        {% if user.is_authenticated %}
+          <li>
+            <a href="/messages/">
+              Messages 
+              <span id="unread-count-mobile" class="new badge" data-badge-caption="" style="display: none;"></span>
+            </a>
+          </li>
+        {% endif %}
         <li><a href="/admin">admin</a></li>
         
         {% if user.is_authenticated %}
           <!-- Authenticated user mobile menu -->
           <li><a href="/u/{{ user.id }}">Profile</a></li>
-          <li><a href="/messages/">Messages <span id="unread-count" class="new badge" data-badge-caption="" style="display: none;"></span></a></li>
           <li><a href="/u/logout">Logout</a></li>
         {% else %}
           <!-- Non-authenticated user mobile menu -->
@@ -155,4 +197,3 @@
 </body>
 
 </html>
-
