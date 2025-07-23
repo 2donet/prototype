@@ -54,9 +54,13 @@
         
                 <!-- Comment actions -->
                 <div class="comment-actions">
-                    <a href="#" class="upvote">+</a>
-                    <span class="score">{{ comment.score }}</span>
-                    <a href="#" class="downvote">-</a>
+                <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
+                    <i>👍</i>
+                </a>
+                <span class="score">{{ comment.score }}</span>
+                <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
+                    <i>👎</i>
+                </a>
                     <a href="#" title="reward" class="reward">🎁</a>
         
                     <div class="dropdown">
@@ -71,6 +75,8 @@
                             <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
                             {% endif %}
                 <li><a href="{% url 'comments:report_comment' comment.id %}">Report</a></li>
+                                        <li><a href="/messages/{{ user.username }}/">✉️ Message</a></li>
+
                         </ul>
                     </div>
                 </div>
@@ -126,9 +132,13 @@
                         
                         <!-- Reply actions -->
                         <div class="comment-actions">
-                            <a href="#" class="upvote">+</a>
-                            <span class="score">{{ reply.score }}</span>
-                            <a href="#" class="downvote">-</a>
+                        <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
+                            <i>👍</i>
+                        </a>
+                        <span class="score">{{ reply.score }}</span>
+                        <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
+                            <i>👎</i>
+                        </a>
                             <a href="#" title="reward" class="reward">🎁</a>
                             
                             <div class="dropdown">
@@ -140,6 +150,8 @@
                                         <li><a href="/admin/comment/comment/{{ reply.id }}/change/">[ ADMIN ]</a></li>
                                     {% endif %}
                                     <li><a href="#" class="report-link">Report</a></li>
+                                    <li><a href="/messages/{{ reply.user.username }}/">✉️ Message</a></li>
+
                                 </ul>
                             </div>
                         </div>

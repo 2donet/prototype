@@ -347,9 +347,16 @@ class CommentVote(models.Model):
         return f"{self.user.username}'s {self.get_vote_type_display()} on comment {self.comment.id}"
     
     def save(self, *args, **kwargs):
+        if self.pk:
+            old_vote = CommentVote.objects.get(pk=self.pk)
+            vote_changed = old_vote.vote_type != self.vote_type
+        else:
+            vote_changed = True
+        
         super().save(*args, **kwargs)
-        # Update the comment's score
-        self.update_comment_score()
+        
+        if vote_changed:
+            self.update_comment_score()
         
     def delete(self, *args, **kwargs):
         comment = self.comment  # Store reference before deletion

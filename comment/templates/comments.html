@@ -38,7 +38,7 @@
                 <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
                 {% endif %}
                 <li>
-                    <a href="/{{ project.id }}/add_task/">add task</a>
+                        <a href="/messages/{{ comment.user.username }}/">✉️ Message</a>
                 </li>
                 <li><a href="{% url 'comments:report_comment' comment.id %}">Report</a></li>
             </ul>

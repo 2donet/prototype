@@ -1,6 +1,8 @@
 {% load static %}
 
-<img class="{{ css_class }}" 
-     src="{% if user and user.profile.avatar %}{{ user.profile.avatar_small.url }}{% else %}{% static 'icons/default-avatar.svg' %}{% endif %}" 
-     alt="{% if user %}{{ user.username }}{% else %}Anonymous{% endif %}"
-     onerror="this.src='{% static 'icons/default-avatar.svg' %}'">
+<a href="/u/{{user.id}}">
+     <img class="{{ css_class }}" 
+          src="{% if user and user.profile.avatar %}{{ user.profile.avatar_small.url }}{% else %}{% static 'icons/default-avatar.svg' %}{% endif %}" 
+          alt="{% if user %}{{ user.username }}{% else %}Anonymous{% endif %}"
+          onerror="this.src='{% static 'icons/default-avatar.svg' %}'">
+</a>
