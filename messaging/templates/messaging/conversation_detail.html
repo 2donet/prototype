@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Chat with {{ other_user.username }}{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header card">
+        <div class="card-content">
+            <div class="chat-header-content">
+                <div class="chat-user-info">
+                    <a href="{% url 'messaging:conversation_list' %}" class="btn-flat waves-effect">
+                        <i class="material-icons">arrow_back</i>
+                    </a>
+                    
+                    <div class="chat-avatar">
+                        {% if other_user.profile.avatar %}
+                            <img src="{{ other_user.profile.avatar_small.url }}" 
+                                 alt="{{ other_user.username }}" 
+                                 class="circle responsive-img">
+                        {% else %}
+                            <img src="{% static 'icons/default-avatar.svg' %}" 
+                                 alt="{{ other_user.username }}" 
+                                 class="circle responsive-img">
+                        {% endif %}
+                    </div>
+                    
+                    <div class="chat-user-details">
+                        <h5 class="chat-username">{{ other_user.username }}</h5>
+                        {% if other_user.first_name or other_user.last_name %}
+                            <p class="chat-fullname grey-text">{{ other_user.first_name }} {{ other_user.last_name }}</p>
+                        {% endif %}
+                        <a href="{% url 'user:userprofile' other_user.id %}" class="chat-profile-link">View Profile</a>
+                    </div>
+                </div>
+                
+                <div class="chat-controls">
+                    <!-- Sort Controls -->
+                    <div class="sort-controls">
+                        <a href="?sort_by=recent{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
+                           class="btn-small waves-effect {% if sort_by == 'recent' %}blue{% else %}grey lighten-2{% endif %}">
+                            Recent
+                        </a>
+                        <a href="?sort_by=oldest{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
+                           class="btn-small waves-effect {% if sort_by == 'oldest' %}blue{% else %}grey lighten-2{% endif %}">
+                            Oldest
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="messages-area">
+        {% if page_obj %}
+            <!-- Pagination (Top) -->
+            {% if page_obj.has_other_pages %}
+                <div class="pagination-container top-pagination">
+                    <ul class="pagination center-align">
+                        {% if page_obj.has_previous %}
+                            <li class="waves-effect">
+                                <a href="?page={{ page_obj.previous_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                                    <i class="material-icons">chevron_left</i> Older
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="pagination-info">
+                            <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="waves-effect">
+                                <a href="?page={{ page_obj.next_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                                    Newer <i class="material-icons">chevron_right</i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- Messages List -->
+            <div class="messages-list">
+                {% for message in page_obj %}
+                    <div class="message-wrapper {% if message.sender == request.user %}sent{% else %}received{% endif %}">
+                        <div class="message-bubble">
+                            <div class="message-content">
+                                {{ message.content|linebreaks }}
+                            </div>
+                            
+                            <div class="message-meta">
+                                <span class="message-time">{{ message.timestamp|naturaltime }}</span>
+                                
+                                {% if message.sender == request.user %}
+                                    <span class="message-status">
+                                        {% if message.read_status == 'read' %}
+                                            <i class="material-icons tiny blue-text">done_all</i>
+                                        {% elif message.read_status == 'delivered' %}
+                                            <i class="material-icons tiny grey-text">done_all</i>
+                                        {% else %}
+                                            <i class="material-icons tiny grey-text">done</i>
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if not forloop.last %}
+                            {% with next_message=page_obj|slice:forloop.counter0|slice:":1"|first %}
+                                {% if message.sender != next_message.sender %}
+                                    <div class="message-sender-change"></div>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination (Bottom) -->
+            {% if page_obj.has_other_pages %}
+                <div class="pagination-container bottom-pagination">
+                    <ul class="pagination center-align">
+                        {% if page_obj.has_previous %}
+                            <li class="waves-effect">
+                                <a href="?page={{ page_obj.previous_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                                    <i class="material-icons">chevron_left</i> Older
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="waves-effect">
+                                <a href="?page={{ page_obj.next_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                                    Newer <i class="material-icons">chevron_right</i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="no-messages center-align">
+                <i class="material-icons large grey-text">chat_bubble_outline</i>
+                <h5>No messages yet</h5>
+                <p class="grey-text">Start the conversation by sending a message below!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Message Input -->
+    <div class="message-input-container card">
+        <div class="card-content">
+            <form method="post" class="message-form">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col s12">
+                        {{ form.content }}
+                        <label for="id_message_content">Type your message...</label>
+                        {% if form.content.errors %}
+                            <div class="form-errors">
+                                {% for error in form.content.errors %}
+                                    <span class="red-text">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="message-form-actions">
+                    <div class="message-counter">
+                        <span id="char-count">0</span>/1000
+                    </div>
+                    <button type="submit" class="btn waves-effect waves-light">
+                        <i class="material-icons left">send</i>Send
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character counter
+    const textarea = document.getElementById('id_message_content');
+    const charCount = document.getElementById('char-count');
+    
+    if (textarea && charCount) {
+        textarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+            if (this.value.length > 900) {
+                charCount.style.color = '#f44336';
+            } else {
+                charCount.style.color = '#666';
+            }
+        });
+        
+        // Initial count
+        charCount.textContent = textarea.value.length;
+    }
+    
+    // Auto-scroll to bottom for recent messages
+    const sortBy = '{{ sort_by }}';
+    if (sortBy === 'recent' || !sortBy) {
+        const messagesArea = document.querySelector('.messages-area');
+        if (messagesArea) {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+    }
+    
+    // Auto-resize textarea
+    if (textarea) {
+        M.textareaAutoResize(textarea);
+    }
+});
+</script>
+{% endblock %}
+
+-bubble {
+    background: white;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    border-bottom-left-radius: 4px;
+}
+
+.message-content {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.message-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.sent .message-meta {
+    color: rgba(255,255,255,0.8);
+}
+
+.received .message -meta {
+    color: rgba(0,0,0,0.8);
+}

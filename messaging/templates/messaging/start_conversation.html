@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Start New Conversation{% endblock %}
+
+{% block content %}
+<div class="start-conversation-container">
+    <div class="row">
+        <div class="col s12 m8 offset-m2 l6 offset-l3">
+            <div class="card">
+                <div class="card-content">
+                    <div class="card-title-container">
+                        <a href="{% url 'messaging:conversation_list' %}" class="btn-flat waves-effect">
+                            <i class="material-icons">arrow_back</i>
+                        </a>
+                        <span class="card-title">Start New Conversation</span>
+                    </div>
+
+                    <form method="post" class="start-conversation-form">
+                        {% csrf_token %}
+                        
+                        <!-- Recipient Username Field -->
+                        <div class="row">
+                            <div class="input-field col s12">
+                                {{ form.recipient_username }}
+                                <label for="id_recipient_username">To: Username</label>
+                                {% if form.recipient_username.errors %}
+                                    <div class="form-errors">
+                                        {% for error in form.recipient_username.errors %}
+                                            <span class="red-text">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <span class="helper-text">{{ form.recipient_username.help_text }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Initial Message Field -->
+                        <div class="row">
+                            <div class="input-field col s12">
+                                {{ form.initial_message }}
+                                <label for="id_initial_message">Your message</label>
+                                {% if form.initial_message.errors %}
+                                    <div class="form-errors">
+                                        {% for error in form.initial_message.errors %}
+                                            <span class="red-text">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <span class="helper-text">{{ form.initial_message.help_text }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Character Counter -->
+                        <div class="row">
+                            <div class="col s12">
+                                <div class="message-counter right-align">
+                                    <span id="char-count">0</span>/1000 characters
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row">
+                            <div class="col s12">
+                                <div class="form-actions">
+                                    <a href="{% url 'messaging:conversation_list' %}" class="btn-flat waves-effect">
+                                        Cancel
+                                    </a>
+                                    <button type="submit" class="btn waves-effect waves-light">
+                                        <i class="material-icons left">send</i>Send Message
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Tips Section -->
+                    <div class="tips-section">
+                        <h6>Tips:</h6>
+                        <ul class="tips-list">
+                            <li>• Make sure to enter the exact username of the person you want to message</li>
+                            <li>• You can find usernames on user profiles or project pages</li>
+                            <li>• Your conversation will be private between you and the recipient</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Conversations -->
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Recent Conversations</span>
+                    <p class="grey-text">Or continue an existing conversation:</p>
+                    
+                    <div class="recent-conversations">
+                        <a href="{% url 'messaging:conversation_list' %}" class="btn-flat waves-effect full-width">
+                            <i class="material-icons left">chat</i>View All Conversations
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character counter for initial message
+    const textarea = document.getElementById('id_initial_message');
+    const charCount = document.getElementById('char-count');
+    
+    if (textarea && charCount) {
+        textarea.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = count;
+            
+            if (count > 900) {
+                charCount.style.color = '#f44336';
+            } else if (count > 800) {
+                charCount.style.color = '#ff9800';
+            } else {
+                charCount.style.color = '#666';
+            }
+        });
+        
+        // Initial count
+        charCount.textContent = textarea.value.length;
+        
+        // Auto-resize textarea
+        M.textareaAutoResize(textarea);
+    }
+    
+    // Focus on recipient field
+    const recipientField = document.getElementById('id_recipient_username');
+    if (recipientField && !recipientField.value) {
+        recipientField.focus();
+    }
+});
+</script>
+{% endblock %}

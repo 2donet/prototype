@@ -79,6 +79,7 @@
       <!-- Dropdown for Authenticated Users -->
       {% if user.is_authenticated %}
       <ul id="dropdown-user-nav" class="dropdown-content">
+        <li><a href="/messages/">Messages <span id="unread-count" class="new badge" data-badge-caption="" style="display: none;"></span></a></li>
         <li><a href="/u/{{ user.id }}">Profile</a></li>
         <li><a href="/u/logout">Logout</a></li>
       </ul>
@@ -100,6 +101,7 @@
         {% if user.is_authenticated %}
           <!-- Authenticated user mobile menu -->
           <li><a href="/u/{{ user.id }}">Profile</a></li>
+          <li><a href="/messages/">Messages <span id="unread-count" class="new badge" data-badge-caption="" style="display: none;"></span></a></li>
           <li><a href="/u/logout">Logout</a></li>
         {% else %}
           <!-- Non-authenticated user mobile menu -->

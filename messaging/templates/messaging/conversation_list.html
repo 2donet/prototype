@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<div class="messages-container">
+    <!-- Header -->
+    <div class="messages-header">
+        <div class="row">
+            <div class="col s12 m8">
+                <h4>Messages</h4>
+                <p class="grey-text">{{ total_conversations }} conversation{{ total_conversations|pluralize }}</p>
+            </div>
+            <div class="col s12 m4">
+                <a href="{% url 'messaging:start_conversation' %}" class="btn waves-effect waves-light right">
+                    <i class="material-icons left">add</i>New Message
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sort Controls -->
+    <div class="messages-controls">
+        <div class="row">
+            <div class="col s12">
+                <div class="sort-controls">
+                    <span>Sort by:</span>
+                    <a href="?sort_by=recent{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
+                       class="btn-small waves-effect {% if sort_by == 'recent' %}blue{% else %}grey lighten-2{% endif %}">
+                        Recent
+                    </a>
+                    <a href="?sort_by=oldest{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
+                       class="btn-small waves-effect {% if sort_by == 'oldest' %}blue{% else %}grey lighten-2{% endif %}">
+                        Oldest
+                    </a>
+                    <a href="?sort_by=unread{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
+                       class="btn-small waves-effect {% if sort_by == 'unread' %}blue{% else %}grey lighten-2{% endif %}">
+                        Unread
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversations List -->
+    <div class="conversations-list">
+
+        
+        {% if page_obj %}
+            {% for conversation in page_obj %}
+                <div class="conversation-item card">
+                    <div class="card-content">
+                        
+                        
+                        {% if conversation.other_user %}
+                            <a href="{% url 'messaging:conversation_detail' conversation.other_user.username %}" class="conversation-link">
+                        {% endif %}
+                            <div class="conversation-avatar">
+                                {% if conversation.other_user.profile.avatar %}
+                                    <img src="{{ conversation.other_user.profile.avatar_small.url }}" 
+                                         alt="{{ conversation.other_user.username }}" 
+                                         class="circle responsive-img">
+                                {% else %}
+                                    <img src="{% static 'icons/default-avatar.svg' %}" 
+                                         alt="{{ conversation.other_user.username }}" 
+                                         class="circle responsive-img">
+                                {% endif %}
+                                
+                                {% if conversation.unread_count > 0 %}
+                                    <span class="unread-badge">{{ conversation.unread_count }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="conversation-info">
+                                <div class="conversation-header">
+                                    <span class="conversation-name">
+                                        {% if conversation.other_user %}
+                                            {{ conversation.other_user.username }}
+                                            {% if conversation.other_user.first_name or conversation.other_user.last_name %}
+                                                <span class="grey-text">({{ conversation.other_user.first_name }} {{ conversation.other_user.last_name }})</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="red-text">Unknown User</span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="conversation-time grey-text">
+                                        {% if conversation.last_message %}
+                                            {{ conversation.last_message.timestamp|naturaltime }}
+                                        {% else %}
+                                            {{ conversation.created_at|naturaltime }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                <div class="conversation-preview">
+                                    {% if conversation.last_message %}
+                                        <span class="message-sender">
+                                            {% if conversation.last_message.sender == request.user %}
+                                                You:
+                                            {% else %}
+                                                {{ conversation.last_message.sender.username }}:
+                                            {% endif %}
+                                        </span>
+                                        <span class="message-preview {% if conversation.unread_count > 0 %}unread{% endif %}">
+                                            {{ conversation.last_message.content|truncatechars:100 }}
+                                        </span>
+                                    {% else %}
+                                        <span class="message-preview grey-text">No messages yet</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% if conversation.other_user %}
+                        </a>
+                        {% else %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-conversations card">
+                <div class="card-content center-align">
+                    <i class="material-icons large grey-text">chat_bubble_outline</i>
+                    <h5>No conversations yet</h5>
+                    <p class="grey-text">Start your first conversation by messaging someone!</p>
+                    <a href="{% url 'messaging:start_conversation' %}" class="btn waves-effect waves-light">
+                        <i class="material-icons left">add</i>Start Conversation
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <ul class="pagination center-align">
+                {% if page_obj.has_previous %}
+                    <li class="waves-effect">
+                        <a href="?page=1{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                            <i class="material-icons">first_page</i>
+                        </a>
+                    </li>
+                    <li class="waves-effect">
+                        <a href="?page={{ page_obj.previous_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                            <i class="material-icons">chevron_left</i>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="active blue">
+                            <a href="#!">{{ num }}</a>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="waves-effect">
+                            <a href="?page={{ num }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="waves-effect">
+                        <a href="?page={{ page_obj.next_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                            <i class="material-icons">chevron_right</i>
+                        </a>
+                    </li>
+                    <li class="waves-effect">
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                            <i class="material-icons">last_page</i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+            
+            <div class="pagination-info center-align grey-text">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                ({{ page_obj.paginator.count }} conversation{{ page_obj.paginator.count|pluralize }} total)
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+
+{% endblock %}

@@ -44,7 +44,7 @@
             
             <div class="profile-actions">
                 {% if request.user.is_authenticated and request.user.id != user.id %}
-                <a href="/message/{{ user.username }}/" class="btn waves-effect waves-light">
+                <a href="/messages/{{ user.username }}/" class="btn waves-effect waves-light">
                     <i class="material-icons left">email</i>Message
                 </a>
                 {% endif %}

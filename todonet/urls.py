@@ -31,7 +31,7 @@ urlpatterns = [
     path('', include('skills.urls')),  
     path("", include("project.urls")),
     path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'favicon.ico', permanent=True)),
-
+    path("messages/", include("messaging.urls")),
     # path("project_constructor/", include("project_constructor.urls")),
 
 ]
