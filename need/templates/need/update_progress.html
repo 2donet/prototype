@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Assign Need: {{ need.name }}{% endblock %}
+
+{% block content %c}
+<div class="template-section">
+    <div class="template-title">Template: need/update_progress.html</div>
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m8 offset-m2">
+                <div class="card">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-content">
+                            <span class="card-title">Update Progress: {{ need.name }}</span>
+                            <p>Current Progress: {{ need.progress }}%</p>
+                            
+                            <div class="row">
+                                <div class="input-field col s12">
+                                    <input id="progress" name="progress" type="range" min="0" max="100" value="{{ need.progress }}" class="range-field">
+                                    <label for="progress">Progress (%)</label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="input-field col s12">
+                                    <textarea id="notes" name="notes" class="materialize-textarea"></textarea>
+                                    <label for="notes">Progress Notes</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-action">
+                            <button type="submit" class="btn">Update Progress</button>
+                            <a href="{% url 'need:need' need.id %}" class="btn grey">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

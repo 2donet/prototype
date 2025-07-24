@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Log Time for {{ need.name }}{% endblock %}
+
+{% block content %}
+<div class="template-section">
+    <div class="template-title">Template: need/log_time.html</div>
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m8 offset-m2">
+                <div class="card">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-content">
+                            <span class="card-title">Log Time for: {{ need.name }}</span>
+                            
+                            <div class="row">
+                                <div class="input-field col s6">
+                                    <input id="hours" name="hours" type="number" min="0" step="0.5" value="0">
+                                    <label for="hours">Hours</label>
+                                </div>
+                                
+                                <div class="input-field col s6">
+                                    <input id="minutes" name="minutes" type="number" min="0" max="59" step="1" value="0">
+                                    <label for="minutes">Minutes</label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="input-field col s12">
+                                    <textarea id="description" name="description" class="materialize-textarea"></textarea>
+                                    <label for="description">Description (optional)</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-action">
+                            <button type="submit" class="btn">Log Time</button>
+                            <a href="{% url 'need:need' need.id %}" class="btn grey">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

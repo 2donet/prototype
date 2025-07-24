@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}
-2do.net - {{ content.name }} (Need)
+2do.net - {{ need.name }} (Need)
 {% endblock %}
 
 {% block content %}
@@ -8,116 +8,578 @@
 {% load humanize %}
 <script src="{% static 'comment/comments.js' %}"></script>
 
-<div class="grid2">
-    <div class="ncard">
-        <div class="box">
-            <h2>{{ content.name }}</h2>
-<a href="{% url 'submissions:create_submission_for_content' 'need' content.id %}"
-   class="btn blue waves-effect waves-light">
-    <i class="material-icons left">assignment</i>Apply Now
-</a>
-<a href="{% url 'submissions:submission_list' 'need' content.id %}" class="btn blue">
-    View Submissions ({{ content.submissions.count }})
-</a>
-
-            <span class="priority-badge">Priority: {{ content.priority }}</span>
-            <span class="status-badge">Status: {{ content.get_status_display }}</span>
-            <p class="need-summary">{{ content.desc }}</p>
-            
-            {% if can_edit %}
-            <a href="{% url 'need:edit_need' content.id %}" class="btn waves-effect waves-light">
-                <i class="material-icons left">edit</i>Edit Need
-            </a>
-            {% endif %}
-            
-            {% if content.to_project %}
-            <p>Part of project: <a href="{% url 'project:project' content.to_project.id %}">{{ content.to_project.name }}</a></p>
-            {% endif %}
-            
-            {% if content.to_task %}
-            <p>Related to task: <a href="{% url 'task:task' content.to_task.id %}">{{ content.to_task.name }}</a></p>
-            {% endif %}
-        </div>
-    </div>
-    
-    <div class="ninfo">
-        <div class="user-info-card">
-            <h4>Created by</h4>
-            <a href="/u/{{content.created_by.id}}">{{content.created_by.username}}</a>
-            <p>Created: {{ content.created_date|naturaltime }}</p>
-            {% if content.tags %}
-            <div class="tags">
-{% if content.tags %}
-<div class="tags">
-    <span class="chip">{{ content.tags }}</span>
-</div>
-{% endif %}
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    
-    <div class="ntab">
-        <ul class="tabs">
-            <li class="tab col s4"><a class="active" href="#discussion">Discussion</a></li>
-            <li class="tab col s4"><a href="#contributions">Contributions</a></li>
-            <li class="tab col s4"><a href="#history">History</a></li>
-        </ul>
-        
-        <div id="discussion" class="tab-content">
-            <!-- Comments section -->
-            <div class="comments-section">
-                <h4>Comments</h4>
-{% if comments %}
-                <div class="input-field col s12">
-                    <select>
-                        <option value="" disabled>Sorting by</option>
-                        <option value="0" selected>Highest reviews</option>
-                        <option value="1">Lowest reviews</option>
-                        <option value="2">Newest</option>
-                        <option value="3">Oldest</option>
-                    </select>
-
-                    <label>Sorting by</label>
-
+<div class="container">
+    <!-- Need Header Section -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card-panel" style="background-color: var(--bg-color2); border-radius: 8px;">
+                <div class="row valign-wrapper">
+                    <div class="col s10">
+                        <h2 style="color: var(--highlight); margin: 0;">
+                            {{ need.name }}
+                            <span class="new badge" data-badge-caption="" style="background-color: 
+                                {% if need.status == 'fulfilled' %}var(--confirm)
+                                {% elif need.status == 'in_progress' %}var(--information)
+                                {% elif need.status == 'canceled' %}var(--danger)
+                                {% else %}var(--warning){% endif %}">
+                                {{ need.get_status_display }}
+                            </span>
+                        </h2>
+                        <p class="flow-text" style="color: var(--text2ndary);">{{ need.desc }}</p>
+                    </div>
+                    <div class="col s2 right-align">
+                        {% if can_edit %}
+                        <a href="{% url 'need:edit_need' need.id %}" 
+                           class="btn-floating btn-large waves-effect waves-light" 
+                           style="background-color: var(--highlight);">
+                            <i class="material-icons">edit</i>
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
-                <label>
-                    <input type="checkbox" class="filled-in"  />
-                    <span>Show comments from anonymous Users</span>
-                  </label>
-
-                {% include "comments.html" with comments=comments %}
-                {% else %}
-                <p>No comments</p>
-                {% endif %}
-                
-                <form id="add-comment-form" method="post" action="{% url 'comments:add_comment' %}">
-                    {% csrf_token %}
-                    <textarea name="content" placeholder="Add a comment..."></textarea>
-                    <input type="hidden" name="to_need_id" value="{{ content.id }}">
-                    <button type="submit" class="btn">Submit</button>
-                </form>
             </div>
         </div>
-        
-        <div id="contributions" class="tab-content">
-            <h4>Contributions</h4>
-            <p>This section will show who has contributed to addressing this need.</p>
-            <!-- Future content for contributions -->
+    </div>
+
+    <!-- Quick Actions Row -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card-panel" style="background-color: var(--bg-color3); border-radius: 8px;">
+                <div class="row">
+                    <div class="col s12 m4">
+                        <a href="{% url 'submissions:create_submission_for_content' 'need' need.id %}"
+                           class="btn waves-effect waves-light full-width" 
+                           style="background-color: var(--confirm);">
+                            <i class="material-icons left">assignment</i>Apply Now
+                        </a>
+                    </div>
+                    <div class="col s12 m4">
+                        <a href="{% url 'submissions:submission_list' 'need' need.id %}" 
+                           class="btn waves-effect waves-light full-width" 
+                           style="background-color: var(--information);">
+                            <i class="material-icons left">list</i>View Submissions ({{ need.submissions.count }})
+                        </a>
+                    </div>
+                    <div class="col s12 m4">
+                        <a href="#log-time-modal" 
+                           class="btn waves-effect waves-light full-width modal-trigger" 
+                           style="background-color: var(--highlight);">
+                            <i class="material-icons left">access_time</i>Log Time
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div id="history" class="tab-content">
-            <h4>Change History</h4>
-            <p>This section will track changes to the need over time.</p>
-            <!-- Future content for history -->
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Left Column - Need Details -->
+        <div class="col s12 m8">
+            <div class="card-panel" style="background-color: var(--bg-color2); border-radius: 8px;">
+                <ul class="tabs tabs-fixed-width">
+                    <li class="tab col s4"><a class="active" href="#details">Details</a></li>
+                    <li class="tab col s4"><a href="#discussion">Discussion</a></li>
+                    <li class="tab col s4"><a href="#history">History</a></li>
+                </ul>
+
+                <!-- Details Tab -->
+                <div id="details" class="tab-content">
+                    <div class="row">
+                        <div class="col s12 m6">
+                            <h5 style="color: var(--highlight);">Basic Information</h5>
+                            <table class="striped" style="color: var(--text2ndary);">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Priority</strong></td>
+                                        <td>
+                                            <div class="progress" style="background-color: var(--bg-light);">
+                                                <div class="determinate" style="width: {{ need.priority|default:0 }}%; 
+                                                    background-color: 
+                                                    {% if need.priority > 70 %}var(--danger)
+                                                    {% elif need.priority > 40 %}var(--warning)
+                                                    {% else %}var(--confirm){% endif %};">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Created</strong></td>
+                                        <td>{{ need.created_date|naturaltime }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Last Updated</strong></td>
+                                        <td>{{ need.modified_date|naturaltime }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Visibility</strong></td>
+                                        <td>{{ need.get_visibility_display }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="col s12 m6">
+                            <h5 style="color: var(--highlight);">Time & Resources</h5>
+                            <table class="striped" style="color: var(--text2ndary);">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Estimated Time</strong></td>
+                                        <td>{{ need.estimated_time|default:"Not specified" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Time Logged</strong></td>
+                                        <td>{{ need.actual_time|default:"None logged" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Cost Estimate</strong></td>
+                                        <td>
+                                            {% if need.cost_estimate %}
+                                            ${{ need.cost_estimate|floatformat:2 }}
+                                            {% else %}
+                                            Not specified
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Deadline</strong></td>
+                                        <td>
+                                            {% if need.deadline %}
+                                            {{ need.deadline|date:"M d, Y" }}
+                                            {% if need.deadline < timezone.now %}
+                                            <span class="new badge red" data-badge-caption="Overdue"></span>
+                                            {% endif %}
+                                            {% else %}
+                                            No deadline
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Skills Section -->
+                    {% if need.required_skills.exists %}
+                    <div class="row">
+                        <div class="col s12">
+                            <h5 style="color: var(--highlight);">Required Skills</h5>
+                            <div class="chip-container">
+                                {% for skill in need.required_skills.all %}
+                                <div class="chip" style="background-color: var(--bg-color3); color: var(--highlight);">
+                                    {{ skill.name }}
+                                    {% if skill_level %}
+                                    <span class="skill-level-badge">{{ need.get_skill_level_display }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Parent Project/Task -->
+                    <div class="row">
+                        <div class="col s12">
+                            <h5 style="color: var(--highlight);">Related To</h5>
+                            <div class="collection" style="border-color: var(--bg-color3);">
+                                {% if need.to_project %}
+                                <a href="{% url 'project:project' need.to_project.id %}" 
+                                   class="collection-item" style="background-color: var(--bg-color3); color: var(--highlight);">
+                                    <i class="material-icons left">folder</i>
+                                    Project: {{ need.to_project.name }}
+                                </a>
+                                {% endif %}
+                                {% if need.to_task %}
+                                <a href="{% url 'task:task' need.to_task.id %}" 
+                                   class="collection-item" style="background-color: var(--bg-color3); color: var(--highlight);">
+                                    <i class="material-icons left">assignment</i>
+                                    Task: {{ need.to_task.name }}
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discussion Tab -->
+                <div id="discussion" class="tab-content">
+                    <h5 style="color: var(--highlight);">Discussion</h5>
+                    {% if comments %}
+                    <div class="row">
+                        <div class="col s12">
+                            <div class="input-field">
+                                <select id="comment-sort">
+                                    <option value="0" selected>Highest reviews</option>
+                                    <option value="1">Lowest reviews</option>
+                                    <option value="2">Newest</option>
+                                    <option value="3">Oldest</option>
+                                </select>
+                                <label>Sort Comments</label>
+                            </div>
+                            <label>
+                                <input type="checkbox" class="filled-in" id="show-anonymous" />
+                                <span style="color: var(--text2ndary);">Show anonymous comments</span>
+                            </label>
+                        </div>
+                    </div>
+                    {% include "comments.html" with comments=comments %}
+                    {% else %}
+                    <p style="color: var(--text2ndary);">No comments yet</p>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col s12">
+                            <form id="add-comment-form" method="post" action="{% url 'comments:add_comment' %}">
+                                {% csrf_token %}
+                                <div class="input-field">
+                                    <textarea id="comment-content" name="content" class="materialize-textarea" 
+                                              style="color: var(--text);"></textarea>
+                                    <label for="comment-content">Add a comment...</label>
+                                </div>
+                                <input type="hidden" name="to_need_id" value="{{ need.id }}">
+                                <button type="submit" class="btn waves-effect waves-light" 
+                                        style="background-color: var(--highlight);">
+                                    Submit
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div id="history" class="tab-content">
+                    <h5 style="color: var(--highlight);">Change History</h5>
+                    {% if need.history.all %}
+                    <ul class="collection" style="border-color: var(--bg-color3);">
+                        {% for entry in need.history.all %}
+                        <li class="collection-item" style="background-color: var(--bg-color3);">
+                            <div style="color: var(--text2ndary);">
+                                <span class="title">{{ entry.changed_at|naturaltime }}</span>
+                                <p>Changed by: {{ entry.changed_by.username }}</p>
+                                <div class="changes">
+                                    {% for field, values in entry.changes.items %}
+                                    <p><strong>{{ field|title }}:</strong> 
+                                        <span style="color: var(--danger);">{{ values.0 }}</span> → 
+                                        <span style="color: var(--confirm);">{{ values.1 }}</span>
+                                    </p>
+                                    {% endfor %}
+                                </div>
+                                {% if entry.change_reason %}
+                                <p><strong>Reason:</strong> {{ entry.change_reason }}</p>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p style="color: var(--text2ndary);">No history recorded</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
+
+        <!-- Right Column - Meta Information -->
+        <div class="col s12 m4">
+            <!-- Created By Card -->
+            <div class="card-panel" style="background-color: var(--bg-color2); border-radius: 8px;">
+                <div class="row valign-wrapper">
+                    <div class="col s3">
+                        <img src="{% static 'icons/default-avatar.svg' %}" alt="" class="circle responsive-img">
+                    </div>
+                    <div class="col s9">
+                        <span class="black-text">
+                            <h6 style="color: var(--highlight); margin: 0;">Created By</h6>
+                            <a href="/u/{{ need.created_by.id }}" style="color: var(--text);">
+                                {{ need.created_by.username }}
+                            </a>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Card -->
+            <div class="card-panel" style="background-color: var(--bg-color2); border-radius: 8px;">
+                <h5 style="color: var(--highlight); margin-top: 0;">Progress</h5>
+                <div class="progress-container">
+                    <div class="progress" style="height: 20px; background-color: var(--bg-light);">
+                        <div class="determinate" style="width: {{ need.progress }}%; 
+                            background-color: var(--confirm);"></div>
+                    </div>
+                    <p style="text-align: center; color: var(--text2ndary); margin-top: 5px;">
+                        {{ need.progress }}% Complete
+                    </p>
+                    {% if can_edit %}
+                    <a href="#progress-modal" class="btn waves-effect waves-light full-width modal-trigger" 
+                       style="background-color: var(--highlight); margin-top: 10px;">
+                        Update Progress
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Assignments Card -->
+            <div class="card-panel" style="background-color: var(--bg-color2); border-radius: 8px;">
+                <div class="row" style="margin-bottom: 0;">
+                    <div class="col s8">
+                        <h5 style="color: var(--highlight); margin-top: 0;">Assigned To</h5>
+                    </div>
+                    <div class="col s4 right-align">
+                        {% if can_assign %}
+                        <a href="#assign-modal" class="btn-floating btn-small waves-effect waves-light modal-trigger" 
+                           style="background-color: var(--highlight);">
+                            <i class="material-icons">add</i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if need.assignments.exists %}
+                <ul class="collection" style="border-color: var(--bg-color3);">
+                    {% for assignment in need.assignments.all %}
+                    <li class="collection-item avatar" style="background-color: var(--bg-color3);">
+                        <img src="{% static 'icons/default-avatar.svg' %}" alt="" class="circle">
+                        <span class="title" style="color: var(--text);">{{ assignment.user.username }}</span>
+                        <p style="color: var(--text2ndary);">
+                            {{ assignment.get_role_display }}<br>
+                            Assigned {{ assignment.assigned_at|naturaltime }}
+                        </p>
+                        {% if can_assign %}
+                        <a href="{% url 'need:unassign_need' need.id assignment.id %}" 
+                           class="secondary-content" style="color: var(--danger);">
+                            <i class="material-icons">close</i>
+                        </a>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p style="color: var(--text2ndary);">No assignments yet</p>
+                {% endif %}
+            </div>
+
+            <!-- Status Actions Card -->
+            <div class="card-panel" style="background-color: var(--bg-color2); border-radius: 8px;">
+                <h5 style="color: var(--highlight); margin-top: 0;">Status Actions</h5>
+                <div class="status-actions">
+                    <div class="row">
+                        {% if need.status != 'pending' %}
+                        <div class="col s6">
+                            <a href="{% url 'need:update_need_status' need.id 'pending' %}" 
+                               class="btn waves-effect waves-light full-width" 
+                               style="background-color: var(--warning);">
+                                Mark Pending
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if need.status != 'in_progress' %}
+                        <div class="col s6">
+                            <a href="{% url 'need:update_need_status' need.id 'in_progress' %}" 
+                               class="btn waves-effect waves-light full-width" 
+                               style="background-color: var(--information);">
+                                Start Progress
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row" style="margin-top: 10px;">
+                        {% if need.status != 'fulfilled' %}
+                        <div class="col s6">
+                            <a href="{% url 'need:update_need_status' need.id 'fulfilled' %}" 
+                               class="btn waves-effect waves-light full-width" 
+                               style="background-color: var(--confirm);">
+                                Mark Fulfilled
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if need.status != 'canceled' %}
+                        <div class="col s6">
+                            <a href="{% url 'need:update_need_status' need.id 'canceled' %}" 
+                               class="btn waves-effect waves-light full-width" 
+                               style="background-color: var(--danger);">
+                                Cancel
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Log Time Modal -->
+<div id="log-time-modal" class="modal" style="background-color: var(--bgpopup);">
+    <div class="modal-content">
+        <h4 style="color: var(--highlight);">Log Time</h4>
+        <form method="post" action="{% url 'need:log_time' need.id %}">
+            {% csrf_token %}
+            <div class="row">
+                <div class="input-field col s6">
+                    <input id="hours" name="hours" type="number" min="0" class="validate" value="0">
+                    <label for="hours">Hours</label>
+                </div>
+                <div class="input-field col s6">
+                    <input id="minutes" name="minutes" type="number" min="0" max="59" class="validate" value="0">
+                    <label for="minutes">Minutes</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="description" name="description" class="materialize-textarea"></textarea>
+                    <label for="description">Description (optional)</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-close btn-flat" style="color: var(--danger);">Cancel</button>
+                <button type="submit" class="btn waves-effect waves-light" style="background-color: var(--confirm);">
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Update Progress Modal -->
+<div id="progress-modal" class="modal" style="background-color: var(--bgpopup);">
+    <div class="modal-content">
+        <h4 style="color: var(--highlight);">Update Progress</h4>
+        <form method="post" action="{% url 'need:update_progress' need.id %}">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col s12">
+                    <p class="range-field">
+                        <input type="range" id="progress" name="progress" min="0" max="100" value="{{ need.progress }}" />
+                    </p>
+                    <p style="text-align: center; color: var(--text2ndary);">
+                        Current Progress: <span id="progress-value">{{ need.progress }}</span>%
+                    </p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="notes" name="notes" class="materialize-textarea">{{ need.completion_notes }}</textarea>
+                    <label for="notes">Completion Notes</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-close btn-flat" style="color: var(--danger);">Cancel</button>
+                <button type="submit" class="btn waves-effect waves-light" style="background-color: var(--confirm);">
+                    Update
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assign Need Modal -->
+<div id="assign-modal" class="modal" style="background-color: var(--bgpopup);">
+    <div class="modal-content">
+        <h4 style="color: var(--highlight);">Assign Need</h4>
+        <form method="post" action="{% url 'need:assign_need' need.id %}">
+            {% csrf_token %}
+            <div class="row">
+                <div class="input-field col s12">
+                    <select name="user_id" required>
+                        <option value="" disabled selected>Choose user</option>
+                        {% for user in potential_volunteers %}
+                        <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>Assign To</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <select name="role">
+                        <option value="volunteer" selected>Volunteer</option>
+                        <option value="lead">Lead</option>
+                        <option value="reviewer">Reviewer</option>
+                    </select>
+                    <label>Role</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-close btn-flat" style="color: var(--danger);">Cancel</button>
+                <button type="submit" class="btn waves-effect waves-light" style="background-color: var(--confirm);">
+                    Assign
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var tabs = document.querySelectorAll('.tabs');
-        M.Tabs.init(tabs);
+        // Initialize Materialize components
+        M.Tabs.init(document.querySelectorAll('.tabs'));
+        M.Modal.init(document.querySelectorAll('.modal'));
+        M.FormSelect.init(document.querySelectorAll('select'));
+        
+        // Initialize comment sort select
+        var commentSort = document.getElementById('comment-sort');
+        if (commentSort) {
+            M.FormSelect.init(commentSort);
+        }
+        
+        // Progress slider update
+        var progressSlider = document.getElementById('progress');
+        if (progressSlider) {
+            progressSlider.addEventListener('input', function() {
+                document.getElementById('progress-value').textContent = this.value;
+            });
+        }
+        
+        // Initialize character counter for textareas
+        M.CharacterCounter.init(document.querySelectorAll('textarea'));
     });
 </script>
+
+<style>
+    .chip-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .skill-level-badge {
+        margin-left: 8px;
+        padding: 2px 6px;
+        background-color: var(--highlightmenu);
+        border-radius: 10px;
+        font-size: 0.8em;
+    }
+    
+    .progress-container {
+        margin: 20px 0;
+    }
+    
+    .status-actions .btn {
+        margin-bottom: 10px;
+    }
+    
+    .tabs .indicator {
+        background-color: var(--highlight);
+    }
+    
+    .tabs .tab a {
+        color: var(--text2ndary);
+    }
+    
+    .tabs .tab a:hover, .tabs .tab a.active {
+        color: var(--highlight);
+    }
+    
+    .collection .collection-item.avatar {
+        min-height: 60px;
+    }
+    
+    .full-width {
+        width: 100%;
+    }
+</style>
 {% endblock %}

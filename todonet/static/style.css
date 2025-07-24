@@ -3544,3 +3544,93 @@ nav ul li a {
 }
 
 
+/* new styling? */
+        .card {
+            background-color: var(--bg-light);
+            color: var(--text);
+        }
+
+        .btn {
+            background-color: var(--highlight);
+            color: var(--bg-color);
+        }
+
+        .btn:hover {
+            background-color: var(--highlight-dark);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: var(--text);
+        }
+
+        .btn-confirm {
+            background-color: var(--confirm);
+            color: var(--bg-color);
+        }
+
+        .input-field input, .input-field textarea {
+            color: var(--text);
+            border-bottom: 1px solid var(--text2ndary);
+        }
+
+        .input-field label {
+            color: var(--text2ndary);
+        }
+
+        .input-field label.active {
+            color: var(--highlight);
+        }
+
+        .select-wrapper input.select-dropdown {
+            color: var(--text);
+            border-bottom: 1px solid var(--text2ndary);
+        }
+
+        .dropdown-content {
+            background-color: var(--bg-light);
+        }
+
+        .dropdown-content li > a, .dropdown-content li > span {
+            color: var(--text);
+        }
+
+        .navbar-fixed nav {
+            background-color: var(--bg-menu);
+        }
+
+        .collection {
+            background-color: var(--bg-light);
+            border: 1px solid var(--bg-color3);
+        }
+
+        .collection .collection-item {
+            background-color: var(--bg-light);
+            color: var(--text);
+            border-bottom: 1px solid var(--bg-color3);
+        }
+
+        .chips {
+            background-color: var(--bg-color2);
+            border: 1px solid var(--bg-color3);
+        }
+
+        .chip {
+            background-color: var(--highlight);
+            color: var(--bg-color);
+        }
+
+        .template-section {
+            border: 2px solid var(--bg-color3);
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .template-title {
+            color: var(--highlight);
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--highlight);
+            padding-bottom: 10px;
+        }

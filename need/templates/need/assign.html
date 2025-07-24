@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Assign Need: {{ need.name }}{% endblock %}
+
+{% block content %}
+<div class="template-section">
+    <div class="template-title">Template: need/assign.html</div>
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m8 offset-m2">
+                <div class="card">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-content">
+                            <span class="card-title">Assign Need: {{ need.name }}</span>
+                            
+                            <div class="row">
+                                <div class="input-field col s12">
+                                    <select name="user_id" required>
+                                        <option value="" disabled selected>Choose a user</option>
+                                        {% for user in potential_assignees %}
+                                        <option value="{{ user.id }}">{{ user.username }} - {{ user.email }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <label>Assign to User</label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="input-field col s12">
+                                    <select name="role">
+                                        <option value="volunteer" selected>Volunteer</option>
+                                        <option value="lead">Lead</option>
+                                        <option value="reviewer">Reviewer</option>
+                                    </select>
+                                    <label>Role</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-action">
+                            <button type="submit" class="btn">Assign User</button>
+                            <a href="{% url 'need:need' need.id %}" class="btn grey">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

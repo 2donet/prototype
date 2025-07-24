@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Need History: {{ need.name }}{% endblock %}
+
+{% block content %}
+<div class="template-section">
+    <div class="template-title">Template: need/history.html</div>
+    <div class="container">
+        <div class="row">
+            <div class="col s12">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">History: {{ need.name }}</span>
+                        
+                        {% if history %}
+                        <div class="collection">
+                            {% for entry in history %}
+                            <div class="collection-item">
+                                <div class="row">
+                                    <div class="col s9">
+                                        <strong>{{ entry.field_name }}</strong> changed 
+                                        {% if entry.old_value %}from "{{ entry.old_value }}"{% endif %}
+                                        to "{{ entry.new_value }}"
+                                        {% if entry.notes %}
+                                        <p><em>{{ entry.notes }}</em></p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col s3 right-align">
+                                        <small>
+                                            {{ entry.changed_by.username }}<br>
+                                            {{ entry.changed_at|date:"M d, Y H:i" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p>No history available.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-action">
+                        <a href="{% url 'need:need' need.id %}" class="btn">Back to Need</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

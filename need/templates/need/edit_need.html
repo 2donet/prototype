@@ -1,68 +1,95 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}
-2do.net - {% if mode == 'create' %}Create{% else %}Edit{% endif %} Need
-{% endblock %}
+{% load humanize %}
+
+{% block title %}{% if mode == 'edit' %}Edit Need{% else %}Create Need{% endif %}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row">
-        <div class="col s12 m8 offset-m2">
-            <div class="card">
-                <div class="card-content">
-                    <span class="card-title">
-                        {% if mode == 'create' %}
-                            {% if project %}
-                            Create Need for {{ project.name }}
-                            {% elif task %}
-                            Create Need for Task: {{ task.name }}
-                            {% endif %}
-                        {% else %}
-                            Edit Need: {{ need.name }}
-                        {% endif %}
-                    </span>
-                    
+<div class="template-section">
+
+    <div class="container">
+        <div class="row">
+            <div class="col s12">
+                <div class="card">
                     <form method="post">
                         {% csrf_token %}
-                        
-                        <div class="input-field">
-                            <input id="name" name="name" type="text" class="validate" required 
-                                   {% if need %}value="{{ need.name }}"{% endif %}>
-                            <label for="name">Need Name</label>
-                        </div>
-                        
-                        <div class="input-field">
-                            <textarea id="desc" name="desc" class="materialize-textarea">{% if need %}{{ need.desc }}{% endif %}</textarea>
-                            <label for="desc">Description</label>
-                        </div>
-                        
-                        <div class="input-field">
-                            <input id="priority" name="priority" type="number" min="0" max="10" class="validate" 
-                                   value="{% if need %}{{ need.priority }}{% else %}0{% endif %}">
-                            <label for="priority">Priority (0-10)</label>
+                        <div class="card-content">
+                            <span class="card-title">
+                                {% if mode == 'edit' %}Edit Need{% else %}Create Need{% endif %}
+                            </span>
+                            
+                            <div class="row">
+                                <div class="input-field col s12">
+                                    <input id="name" name="name" type="text" value="{{ need.name|default:'' }}" required>
+                                    <label for="name">Name</label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="input-field col s12">
+                                    <textarea id="desc" name="desc" class="materialize-textarea">{{ need.desc|default:'' }}</textarea>
+                                    <label for="desc">Description</label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="input-field col s6">
+                                    <select name="priority">
+                                        <option value="0" {% if need.priority == 0 %}selected{% endif %}>Low</option>
+                                        <option value="1" {% if need.priority == 1 %}selected{% endif %}>Medium</option>
+                                        <option value="2" {% if need.priority == 2 %}selected{% endif %}>High</option>
+                                        <option value="3" {% if need.priority == 3 %}selected{% endif %}>Critical</option>
+                                    </select>
+                                    <label>Priority</label>
+                                </div>
+                                
+                                <div class="input-field col s6">
+                                    <select name="status">
+                                        <option value="open" {% if need.status == 'open' %}selected{% endif %}>Open</option>
+                                        <option value="in_progress" {% if need.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="fulfilled" {% if need.status == 'fulfilled' %}selected{% endif %}>Fulfilled</option>
+                                        <option value="canceled" {% if need.status == 'canceled' %}selected{% endif %}>Canceled</option>
+                                    </select>
+                                    <label>Status</label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="input-field col s6">
+                                    <input id="deadline" name="deadline" type="date" value="{{ need.deadline|date:'Y-m-d' }}">
+                                    <label for="deadline">Deadline</label>
+                                </div>
+                                
+                                <div class="input-field col s6">
+                                    <input id="cost_estimate" name="cost_estimate" type="number" step="0.01" value="{{ need.cost_estimate|default:'' }}">
+                                    <label for="cost_estimate">Cost Estimate</label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col s12">
+                                    <p>
+                                        <label>
+                                            <input type="checkbox" name="is_remote" {% if need.is_remote %}checked{% endif %}>
+                                            <span>Remote Work</span>
+                                        </label>
+                                    </p>
+                                    <p>
+                                        <label>
+                                            <input type="checkbox" name="is_stationary" {% if need.is_stationary %}checked{% endif %}>
+                                            <span>Stationary Work</span>
+                                        </label>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="card-action">
-                            <button type="submit" class="btn waves-effect waves-light">
-                                {% if mode == 'create' %}Create{% else %}Update{% endif %} Need
-                                <i class="material-icons right">send</i>
+                            <button type="submit" class="btn">
+                                {% if mode == 'edit' %}Update Need{% else %}Create Need{% endif %}
                             </button>
-                            
-                            {% if mode == 'create' %}
-                                {% if project %}
-                                <a href="{% url 'project:project' project.id %}" class="btn-flat waves-effect">
-                                    Cancel
-                                </a>
-                                {% elif task %}
-                                <a href="{% url 'task:task' task.id %}" class="btn-flat waves-effect">
-                                    Cancel
-                                </a>
-                                {% endif %}
-                            {% else %}
-                                <a href="{% url 'need:need' need.id %}" class="btn-flat waves-effect">
-                                    Cancel
-                                </a>
-                            {% endif %}
+                            <a href="{% if mode == 'edit' %}{% url 'need:need' need.id %}{% else %}{% url 'project:project' project.id %}{% endif %}" class="btn grey">Cancel</a>
                         </div>
                     </form>
                 </div>
