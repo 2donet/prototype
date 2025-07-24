@@ -1,0 +1,17 @@
+{% load comment_tags %}
+
+<div class="comment-moderation-status">
+    {% if has_reports %}
+        <div class="moderation-indicators">
+            {% if pending_reports > 0 %}
+                <span class="badge red white-text">{{ pending_reports }} Report{{ pending_reports|pluralize }}</span>
+            {% endif %}
+            
+            {% if comment.status == 'FLAGGED' %}
+                <span class="badge orange white-text">Under Review</span>
+            {% elif comment.status == 'REJECTED' %}
+                <span class="badge grey white-text">Removed</span>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>

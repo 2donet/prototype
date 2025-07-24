@@ -40,8 +40,12 @@
                 <li>
                         <a href="/messages/{{ comment.user.username }}/">✉️ Message</a>
                 </li>
-                <li><a href="{% url 'comments:report_comment' comment.id %}">Report</a></li>
-            </ul>
+        <li>
+            <a href="{% url 'comments:report_comment' comment.id %}" 
+               onclick="console.log('Report link clicked for comment {{ comment.id }}')">
+                🚩 Report
+            </a>
+        </li>            </ul>
         </div>
     </span>
 

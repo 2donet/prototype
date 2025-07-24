@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Review Reports for Comment #{{ comment.id }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <h3>Report Review - Comment #{{ comment.id }}</h3>
+            <div class="breadcrumb">
+                <a href="/">Home</a> &gt;
+                <a href="{% url 'comments:enhanced_report_list' %}">Report Groups</a> &gt;
+                Comment #{{ comment.id }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Summary Card -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Report Summary</span>
+                    
+                    {% if report_group %}
+                        <div class="row">
+                            <div class="col s12 m3">
+                                <div class="stat-item">
+                                    <h4 class="{% if report_group.total_reports >= 5 %}red-text{% elif report_group.total_reports >= 3 %}orange-text{% endif %}">
+                                        {{ report_group.total_reports }}
+                                    </h4>
+                                    <p class="grey-text">Total Reports</p>
+                                </div>
+                            </div>
+                            <div class="col s12 m6">
+                                <div class="stat-item">
+                                    <h5>{{ report_group.get_report_types_display }}</h5>
+                                    <p class="grey-text">Report Types</p>
+                                </div>
+                            </div>
+                            <div class="col s12 m3">
+                                <div class="stat-item">
+                                    <span class="status-badge status-{{ report_group.status|lower }}">
+                                        {{ report_group.get_status_display }}
+                                    </span>
+                                    <p class="grey-text">Current Status</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reported Comment -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Reported Comment</span>
+                    
+                    <div class="reported-comment">
+                        <div class="comment-meta">
+                            <strong>
+                                {% if comment.user %}
+                                    <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
+                                {% else %}
+                                    Anonymous
+                                {% endif %}
+                            </strong>
+                            <span class="time grey-text">{{ comment.created_at|naturaltime }}</span>
+                            <span class="comment-status">
+                                Status: {{ comment.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="comment-content">
+                            <p>{{ comment.content | linebreaks }}</p>
+                        </div>
+                        
+                        <div class="comment-actions">
+                            <a href="{% url 'comments:single_comment' comment.id %}" 
+                               class="btn-small" target="_blank">
+                                View in Context
+                            </a>
+                            <span class="grey-text">Score: {{ comment.score }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Individual Reports -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Individual Reports ({{ reports.count }})</span>
+                    
+                    {% if reports %}
+                        <div class="collection">
+                            {% for report in reports %}
+                                <div class="collection-item">
+                                    <div class="row valign-wrapper">
+                                        <div class="col s12 m2">
+                                            <span class="report-type-badge {{ report.report_type|lower }}">
+                                                {{ report.get_report_type_display }}
+                                            </span>
+                                        </div>
+                                        <div class="col s12 m3">
+                                            <strong>
+                                                {% if report.reportee %}
+                                                    <a href="/u/{{ report.reportee.id }}">{{ report.reportee.username }}</a>
+                                                {% else %}
+                                                    Anonymous
+                                                {% endif %}
+                                            </strong>
+                                            <br>
+                                            <small class="grey-text">{{ report.created_at|naturaltime }}</small>
+                                        </div>
+                                        <div class="col s12 m5">
+                                            {% if report.description %}
+                                                <p class="description">{{ report.description|truncatechars:100 }}</p>
+                                            {% else %}
+                                                <p class="grey-text">No additional details provided</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col s12 m2">
+                                            <span class="status-badge status-{{ report.status|lower }}">
+                                                {{ report.get_status_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="grey-text">No reports found for this comment.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Moderation Action Form -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Take Moderation Action</span>
+                    
+                    <form method="post" id="moderation-form">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="error-container">
+                                {% for error in form.non_field_errors %}
+                                    <p class="error-message red-text">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Decision Type -->
+                        <div class="form-group">
+                            <label>{{ form.decision.label }}</label>
+                            {% if form.decision.errors %}
+                                <div class="error-message red-text">{{ form.decision.errors }}</div>
+                            {% endif %}
+                            
+                            <div class="decision-options">
+                                {% for value, text in form.decision.field.choices %}
+                                    <p>
+                                        <label>
+                                            <input type="radio" name="{{ form.decision.name }}" 
+                                                   value="{{ value }}" class="decision-radio"
+                                                   {% if form.decision.value == value %}checked{% endif %}>
+                                            <span>{{ text }}</span>
+                                        </label>
+                                    </p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Decision Scope -->
+                        <div class="form-group">
+                            <label>{{ form.decision_scope.label }}</label>
+                            {% if form.decision_scope.errors %}
+                                <div class="error-message red-text">{{ form.decision_scope.errors }}</div>
+                            {% endif %}
+                            
+                            <div class="scope-options">
+                                {% for value, text in form.decision_scope.field.choices %}
+                                    <p>
+                                        <label>
+                                            <input type="radio" name="{{ form.decision_scope.name }}" 
+                                                   value="{{ value }}" class="scope-radio"
+                                                   {% if form.decision_scope.value == value %}checked{% endif %}>
+                                            <span>{{ text }}</span>
+                                        </label>
+                                    </p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Target Report Type (conditional) -->
+                        <div class="form-group" id="target-report-type" style="display: none;">
+                            <label for="{{ form.target_report_type.id_for_label }}">{{ form.target_report_type.label }}</label>
+                            {{ form.target_report_type }}
+                        </div>
+                        
+                        <!-- Reason -->
+                        <div class="form-group">
+                            <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>
+                            {% if form.reason.errors %}
+                                <div class="error-message red-text">{{ form.reason.errors }}</div>
+                            {% endif %}
+                            <div class="input-field">
+                                {{ form.reason }}
+                            </div>
+                        </div>
+                        
+                        <!-- New Content (conditional) -->
+                        <div class="form-group" id="new-content-group" style="display: none;">
+                            <label for="{{ form.new_content.id_for_label }}">{{ form.new_content.label }}</label>
+                            {% if form.new_content.errors %}
+                                <div class="error-message red-text">{{ form.new_content.errors }}</div>
+                            {% endif %}
+                            <div class="input-field">
+                                {{ form.new_content }}
+                            </div>
+                        </div>
+                        
+                        <!-- Suspension Days (conditional) -->
+                        <div class="form-group" id="suspension-days-group" style="display: none;">
+                            <label for="{{ form.suspension_days.id_for_label }}">{{ form.suspension_days.label }}</label>
+                            {% if form.suspension_days.errors %}
+                                <div class="error-message red-text">{{ form.suspension_days.errors }}</div>
+                            {% endif %}
+                            <div class="input-field">
+                                {{ form.suspension_days }}
+                            </div>
+                        </div>
+                        
+                        <!-- Options -->
+                        <div class="form-group">
+                            <p>
+                                <label>
+                                    {{ form.notify_reporters }}
+                                    <span>{{ form.notify_reporters.label }}</span>
+                                </label>
+                            </p>
+                            <p>
+                                <label>
+                                    {{ form.escalate_to_platform }}
+                                    <span>{{ form.escalate_to_platform.label }}</span>
+                                </label>
+                            </p>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn waves-effect waves-light red">
+                                Apply Moderation Action
+                            </button>
+                            <a href="{% url 'comments:enhanced_report_list' %}" 
+                               class="btn-flat waves-effect">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Moderation History -->
+    {% if moderation_history %}
+        <div class="row">
+            <div class="col s12">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">Moderation History</span>
+                        
+                        <div class="collection">
+                            {% for action in moderation_history %}
+                                <div class="collection-item">
+                                    <div class="row">
+                                        <div class="col s12 m3">
+                                            <strong>{{ action.get_decision_display }}</strong>
+                                            <br>
+                                            <small class="grey-text">{{ action.created_at|naturaltime }}</small>
+                                        </div>
+                                        <div class="col s12 m3">
+                                            <strong>{{ action.moderator.username }}</strong>
+                                            <br>
+                                            <small class="grey-text">{{ action.get_decision_scope_display }}</small>
+                                        </div>
+                                        <div class="col s12 m6">
+                                            <p>{{ action.reason|truncatechars:150 }}</p>
+                                            {% if action.escalate_to_platform %}
+                                                <span class="chip red white-text">Escalated to Platform</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle conditional form fields
+    const decisionRadios = document.querySelectorAll('.decision-radio');
+    const scopeRadios = document.querySelectorAll('.scope-radio');
+    
+    function updateConditionalFields() {
+        const selectedDecision = document.querySelector('input[name="decision"]:checked');
+        const selectedScope = document.querySelector('input[name="decision_scope"]:checked');
+        
+        // Show/hide target report type field
+        const targetReportType = document.getElementById('target-report-type');
+        if (selectedScope && selectedScope.value === 'REPORT_TYPE') {
+            targetReportType.style.display = 'block';
+        } else {
+            targetReportType.style.display = 'none';
+        }
+        
+        // Show/hide new content field
+        const newContentGroup = document.getElementById('new-content-group');
+        if (selectedDecision && selectedDecision.value === 'EDIT') {
+            newContentGroup.style.display = 'block';
+            // Pre-fill with current content
+            const textarea = newContentGroup.querySelector('textarea');
+            if (textarea && !textarea.value) {
+                textarea.value = `{{ comment.content|escapejs }}`;
+            }
+        } else {
+            newContentGroup.style.display = 'none';
+        }
+        
+        // Show/hide suspension days field
+        const suspensionDaysGroup = document.getElementById('suspension-days-group');
+        if (selectedDecision && selectedDecision.value === 'SUSPEND_USER') {
+            suspensionDaysGroup.style.display = 'block';
+        } else {
+            suspensionDaysGroup.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners
+    decisionRadios.forEach(radio => {
+        radio.addEventListener('change', updateConditionalFields);
+    });
+    
+    scopeRadios.forEach(radio => {
+        radio.addEventListener('change', updateConditionalFields);
+    });
+    
+    // Initial update
+    updateConditionalFields();
+    
+    // Form submission confirmation
+    document.getElementById('moderation-form').addEventListener('submit', function(e) {
+        const selectedDecision = document.querySelector('input[name="decision"]:checked');
+        if (selectedDecision) {
+            const decisionText = selectedDecision.nextElementSibling.textContent;
+            if (!confirm(`Are you sure you want to apply "${decisionText}" to this comment?`)) {
+                e.preventDefault();
+            }
+        }
+    });
+});
+</script>
+
+<style>
+    .reported-comment {
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 3px solid #ff5252;
+        background-color: var(--bg-color3);
+    }
+    
+    .comment-meta {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .comment-status {
+        padding: 3px 8px;
+        background-color: var(--bg-color2);
+        border-radius: 12px;
+        font-size: 0.8em;
+    }
+    
+    .stat-item h4, .stat-item h5 {
+        margin: 0 0 5px 0;
+    }
+    
+    .report-type-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        color: white;
+        display: inline-block;
+    }
+    
+    .report-type-badge.spam { background-color: #f44336; }
+    .report-type-badge.harassment { background-color: #e91e63; }
+    .report-type-badge.hate_speech { background-color: #9c27b0; }
+    .report-type-badge.misinformation { background-color: #ff9800; }
+    .report-type-badge.other { background-color: #607d8b; }
+    
+    .decision-options, .scope-options {
+        margin: 15px 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .form-actions {
+        margin-top: 30px;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 20px;
+    }
+</style>
+{% endblock %}

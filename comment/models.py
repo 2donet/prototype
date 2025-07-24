@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from django.conf import settings
 from django.utils import timezone
 
-from django.db.models import Sum
+from django.db.models import Sum, Count, Q
 from django.utils.translation import gettext_lazy as _
 
 
@@ -376,3 +376,273 @@ class CommentVote(models.Model):
         comment.score = upvotes - downvotes
         comment.save(update_fields=['score'])
 
+class ModeratorLevel(models.TextChoices):
+    """Different levels of moderators with different permissions"""
+    JUNIOR = 'JUNIOR', 'Junior Moderator'
+    SENIOR = 'SENIOR', 'Senior Moderator'
+    ADMIN = 'ADMIN', 'Admin Moderator'
+
+
+class ModerationDecision(models.TextChoices):
+    """Types of moderation decisions"""
+    APPROVE = 'APPROVE', 'Approve Comment (Dismiss Reports)'
+    HIDE = 'HIDE', 'Hide Comment'
+    REMOVE = 'REMOVE', 'Remove Comment'
+    EDIT = 'EDIT', 'Edit Comment Content'
+    WARN_USER = 'WARN_USER', 'Warn User'
+    SUSPEND_USER = 'SUSPEND_USER', 'Suspend User'
+    BAN_USER = 'BAN_USER', 'Ban User'
+    FALSE_REPORT = 'FALSE_REPORT', 'Mark as False Report'
+
+
+class DecisionScope(models.TextChoices):
+    """Scope of moderation decision application"""
+    ALL_REPORTS = 'ALL_REPORTS', 'Apply to All Reports'
+    REPORT_TYPE = 'REPORT_TYPE', 'Apply to Specific Report Type'
+    SINGLE_REPORT = 'SINGLE_REPORT', 'Apply to Single Report Only'
+
+
+class ModerationAction(models.Model):
+    """Model to track all moderation actions for audit trail"""
+    
+    # Basic info
+    moderator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='moderation_actions'
+    )
+    comment = models.ForeignKey(
+        'Comment',
+        on_delete=models.CASCADE,
+        related_name='moderation_actions'
+    )
+    
+    # Decision details
+    decision = models.CharField(
+        max_length=20,
+        choices=ModerationDecision.choices
+    )
+    decision_scope = models.CharField(
+        max_length=20,
+        choices=DecisionScope.choices,
+        default=DecisionScope.ALL_REPORTS
+    )
+    target_report_type = models.CharField(
+        max_length=20,
+        choices=ReportType.choices,
+        null=True,
+        blank=True,
+        help_text="Only used when scope is REPORT_TYPE"
+    )
+    target_report = models.ForeignKey(
+        'CommentReport',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text="Only used when scope is SINGLE_REPORT"
+    )
+    
+    # Action details
+    reason = models.TextField(help_text="Moderator's reason for this decision")
+    notify_reporters = models.BooleanField(default=True)
+    escalate_to_platform = models.BooleanField(
+        default=False,
+        help_text="Report to platform-wide moderation"
+    )
+    
+    # Content changes (for EDIT decisions)
+    original_content = models.TextField(blank=True, null=True)
+    new_content = models.TextField(blank=True, null=True)
+    
+    # User impact (for user-level decisions)
+    affected_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='moderation_impacts'
+    )
+    suspension_until = models.DateTimeField(null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Project context
+    project = models.ForeignKey(
+        "project.Project",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="moderation_actions"
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['decision']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['moderator']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_decision_display()} by {self.moderator.username} on comment {self.comment.id}"
+    
+    def apply_decision(self):
+        """Apply the moderation decision to the comment and related objects"""
+        
+        # Apply comment-level changes
+        if self.decision == ModerationDecision.APPROVE:
+            self.comment.status = CommentStatus.APPROVED
+            self.comment.moderated_by = self.moderator
+            self.comment.moderated_at = timezone.now()
+            
+        elif self.decision == ModerationDecision.HIDE:
+            self.comment.status = CommentStatus.FLAGGED
+            self.comment.moderated_by = self.moderator
+            self.comment.moderated_at = timezone.now()
+            
+        elif self.decision == ModerationDecision.REMOVE:
+            self.comment.status = CommentStatus.REJECTED
+            self.comment.moderated_by = self.moderator
+            self.comment.moderated_at = timezone.now()
+            
+        elif self.decision == ModerationDecision.EDIT:
+            if self.new_content:
+                self.original_content = self.comment.content
+                self.comment.content = self.new_content
+                self.comment.is_edited = True
+                
+        self.comment.save()
+        
+        # Apply to reports based on scope
+        reports_to_resolve = []
+        
+        if self.decision_scope == DecisionScope.ALL_REPORTS:
+            reports_to_resolve = self.comment.reports.filter(
+                status__in=[ReportStatus.PENDING, ReportStatus.REVIEWED]
+            )
+        elif self.decision_scope == DecisionScope.REPORT_TYPE:
+            reports_to_resolve = self.comment.reports.filter(
+                status__in=[ReportStatus.PENDING, ReportStatus.REVIEWED],
+                report_type=self.target_report_type
+            )
+        elif self.decision_scope == DecisionScope.SINGLE_REPORT:
+            if self.target_report:
+                reports_to_resolve = [self.target_report]
+        
+        # Update report statuses
+        for report in reports_to_resolve:
+            if self.decision == ModerationDecision.FALSE_REPORT:
+                report.status = ReportStatus.REJECTED
+            else:
+                report.status = ReportStatus.RESOLVED
+            report.reviewed_by = self.moderator
+            report.moderator_notes = f"Resolved via moderation action: {self.get_decision_display()}"
+            report.save()
+        
+        # Handle user-level decisions
+        if self.decision in [ModerationDecision.WARN_USER, ModerationDecision.SUSPEND_USER, ModerationDecision.BAN_USER]:
+            self.affected_user = self.comment.user
+            # User impact will be implemented later as requested
+        
+        # Notify reporters if requested
+        if self.notify_reporters:
+            self.notify_reporters_func()
+    
+    def notify_reporters_func(self):
+        """Notify reporters about the moderation decision"""
+        # Get relevant reports based on scope
+        if self.decision_scope == DecisionScope.ALL_REPORTS:
+            reports = self.comment.reports.all()
+        elif self.decision_scope == DecisionScope.REPORT_TYPE:
+            reports = self.comment.reports.filter(report_type=self.target_report_type)
+        elif self.decision_scope == DecisionScope.SINGLE_REPORT:
+            reports = [self.target_report] if self.target_report else []
+        
+        for report in reports:
+            if report.reportee:
+                # For now, just print as requested
+                print(f"Report by {report.reportee.username} of comment '{self.comment.content[:50]}...' resolved as {self.get_decision_display()}")
+                
+                # TODO: Later implement actual notification system
+                # This could be email, in-app notification, etc.
+
+
+class CommentReportGroup(models.Model):
+    """Virtual model to represent grouped reports for the same comment"""
+    comment = models.OneToOneField(
+        'Comment',
+        on_delete=models.CASCADE,
+        related_name='report_group'
+    )
+    total_reports = models.PositiveIntegerField(default=0)
+    report_types_summary = models.JSONField(default=dict)  # {"SPAM": 3, "HARASSMENT": 2}
+    first_reported_at = models.DateTimeField()
+    last_reported_at = models.DateTimeField()
+    status = models.CharField(
+        max_length=20,
+        choices=ReportStatus.choices,
+        default=ReportStatus.PENDING
+    )
+    
+    class Meta:
+        ordering = ['-last_reported_at']
+    
+    @classmethod
+    def update_for_comment(cls, comment):
+        """Update or create report group for a comment"""
+        reports = comment.reports.all()
+        
+        if not reports.exists():
+            # Delete group if no reports
+            cls.objects.filter(comment=comment).delete()
+            return None
+        
+        # Calculate summary
+        report_summary = {}
+        for report_type, _ in ReportType.choices:
+            count = reports.filter(report_type=report_type).count()
+            if count > 0:
+                report_summary[report_type] = count
+        
+        # Determine overall status
+        if reports.filter(status=ReportStatus.PENDING).exists():
+            group_status = ReportStatus.PENDING
+        elif reports.filter(status=ReportStatus.REVIEWED).exists():
+            group_status = ReportStatus.REVIEWED
+        else:
+            group_status = ReportStatus.RESOLVED
+        
+        group, created = cls.objects.update_or_create(
+            comment=comment,
+            defaults={
+                'total_reports': reports.count(),
+                'report_types_summary': report_summary,
+                'first_reported_at': reports.order_by('created_at').first().created_at,
+                'last_reported_at': reports.order_by('-created_at').first().created_at,
+                'status': group_status,
+            }
+        )
+        return group
+    
+    def get_report_types_display(self):
+        """Get human-readable report types summary"""
+        display_parts = []
+        for report_type, count in self.report_types_summary.items():
+            type_display = dict(ReportType.choices)[report_type]
+            display_parts.append(f"{count} {type_display}")
+        return ", ".join(display_parts)
+    
+    def __str__(self):
+        return f"{self.total_reports} reports on comment {self.comment.id}"
+    
+
+# Update CommentReport model with signals
+@receiver(post_save, sender=CommentReport)
+def update_report_group_on_save(sender, instance, **kwargs):
+    CommentReportGroup.update_for_comment(instance.comment)
+
+
+@receiver(post_delete, sender=CommentReport)
+def update_report_group_on_delete(sender, instance, **kwargs):
+    CommentReportGroup.update_for_comment(instance.comment)

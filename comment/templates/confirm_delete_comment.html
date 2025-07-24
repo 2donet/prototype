@@ -1,0 +1,298 @@
+<!-- comment/templates/confirm_delete_comment.html -->
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Delete Comment - Confirmation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <h3>Delete Comment - Confirmation</h3>
+            <div class="breadcrumb">
+                <a href="/">Home</a> &gt;
+                <a href="{% url 'comments:enhanced_report_list' %}">Report Groups</a> &gt;
+                <a href="{% url 'comments:enhanced_report_detail' comment.id %}">Comment #{{ comment.id }}</a> &gt;
+                Delete
+            </div>
+        </div>
+    </div>
+    
+    <!-- Warning Card -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card red lighten-4">
+                <div class="card-content">
+                    <span class="card-title red-text">
+                        <i class="material-icons left">warning</i>
+                        Confirm Comment Deletion
+                    </span>
+                    <p><strong>This action cannot be undone!</strong> The comment and all its replies will be permanently deleted.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comment to be deleted -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Comment to be Deleted</span>
+                    
+                    <div class="comment-preview">
+                        <div class="comment-meta">
+                            <strong>
+                                {% if comment.user %}
+                                    <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
+                                {% else %}
+                                    Anonymous
+                                {% endif %}
+                            </strong>
+                            <span class="time grey-text">{{ comment.created_at|naturaltime }}</span>
+                            <span class="comment-id grey-text">ID: {{ comment.id }}</span>
+                        </div>
+                        
+                        <div class="comment-content">
+                            <p>{{ comment.content | linebreaks }}</p>
+                        </div>
+                        
+                        <div class="comment-stats">
+                            <span class="grey-text">Score: {{ comment.score }}</span>
+                            <span class="grey-text">• Replies: {{ comment.total_replies }}</span>
+                            {% if reports %}
+                                <span class="red-text">• {{ report_count }} report{{ report_count|pluralize }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Impact Information -->
+    {% if comment.total_replies > 0 %}
+    <div class="row">
+        <div class="col s12">
+            <div class="card orange lighten-4">
+                <div class="card-content">
+                    <span class="card-title orange-text">
+                        <i class="material-icons left">info_outline</i>
+                        Deletion Impact
+                    </span>
+                    <p>This comment has <strong>{{ comment.total_replies }} repl{{ comment.total_replies|pluralize:"y,ies" }}</strong> that will also be deleted.</p>
+                    <p>Consider if this action is proportional to the violation.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Reports Summary -->
+    {% if reports %}
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Reports on this Comment ({{ report_count }})</span>
+                    
+                    <div class="collection">
+                        {% for report in reports %}
+                            <div class="collection-item">
+                                <div class="row valign-wrapper">
+                                    <div class="col s3">
+                                        <span class="report-type-badge {{ report.report_type|lower }}">
+                                            {{ report.get_report_type_display }}
+                                        </span>
+                                    </div>
+                                    <div class="col s3">
+                                        {% if report.reportee %}
+                                            {{ report.reportee.username }}
+                                        {% else %}
+                                            Anonymous
+                                        {% endif %}
+                                    </div>
+                                    <div class="col s3">
+                                        {{ report.created_at|naturaltime }}
+                                    </div>
+                                    <div class="col s3">
+                                        <span class="status-badge status-{{ report.status|lower }}">
+                                            {{ report.get_status_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Deletion Form -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Deletion Details</span>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="reason">Reason for Deletion</label>
+                            <div class="input-field">
+                                <textarea name="reason" id="reason" class="materialize-textarea" required></textarea>
+                                <label for="reason">Explain why this comment is being deleted (for audit trail)</label>
+                            </div>
+                        </div>
+                        
+                        {% if reports %}
+                        <div class="form-group">
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="apply_to_all" value="true" checked>
+                                    <span>Mark all reports as resolved</span>
+                                </label>
+                            </p>
+                            <p class="grey-text">This will resolve all {{ report_count }} report{{ report_count|pluralize }} on this comment.</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn red waves-effect waves-light">
+                                <i class="material-icons left">delete_forever</i>
+                                Yes, Delete Comment
+                            </button>
+                            <a href="{% url 'comments:enhanced_report_detail' comment.id %}" 
+                               class="btn-flat waves-effect">
+                                <i class="material-icons left">cancel</i>
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .comment-preview {
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 3px solid #ff5252;
+        background-color: var(--bg-color3);
+    }
+    
+    .comment-meta {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .comment-content {
+        margin: 15px 0;
+    }
+    
+    .comment-stats {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        font-size: 0.9em;
+    }
+    
+    .report-type-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        color: white;
+        display: inline-block;
+    }
+    
+    .report-type-badge.spam { background-color: #f44336; }
+    .report-type-badge.scam { background-color: #e91e63; }
+    .report-type-badge.theft { background-color: #9c27b0; }
+    .report-type-badge.harassment { background-color: #673ab7; }
+    .report-type-badge.hate_speech { background-color: #3f51b5; }
+    .report-type-badge.misinformation { background-color: #ff9800; }
+    .report-type-badge.other { background-color: #607d8b; }
+    
+    .status-badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        display: inline-block;
+    }
+    
+    .status-pending {
+        background-color: #FFC107;
+        color: #333;
+    }
+    
+    .status-reviewed {
+        background-color: #2196F3;
+        color: white;
+    }
+    
+    .status-rejected {
+        background-color: #9E9E9E;
+        color: white;
+    }
+    
+    .status-resolved {
+        background-color: #4CAF50;
+        color: white;
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .form-actions {
+        margin-top: 30px;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 20px;
+    }
+    
+    .form-actions .btn {
+        margin-right: 10px;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.textareaAutoResize(document.getElementById('reason'));
+    
+    // Add confirmation on form submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const confirmation = confirm(
+            'Are you absolutely sure you want to delete this comment?\n\n' +
+            'This action cannot be undone and will permanently remove:\n' +
+            '• The comment content\n' +
+            {% if comment.total_replies > 0 %}'• {{ comment.total_replies }} repl{{ comment.total_replies|pluralize:"y,ies" }}\n' +{% endif %}
+            {% if reports %}'• All {{ report_count }} report{{ report_count|pluralize }} will be marked as resolved\n' +{% endif %}
+            '\nType "DELETE" to confirm:'
+        );
+        
+        if (!confirmation) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Additional text confirmation for high-impact deletions
+        {% if comment.total_replies > 2 or report_count > 3 %}
+        const textConfirm = prompt('This is a high-impact deletion. Type "DELETE" to confirm:');
+        if (textConfirm !== 'DELETE') {
+            e.preventDefault();
+            alert('Deletion cancelled. You must type "DELETE" exactly to confirm.');
+            return false;
+        }
+        {% endif %}
+    });
+});
+</script>
+{% endblock %}

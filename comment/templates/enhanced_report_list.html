@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Enhanced Moderation Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col s12">
+            <h3>Enhanced Moderation Dashboard</h3>
+            <div class="breadcrumb">Moderation &gt; Report Groups</div>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col s12 m4">
+            <div class="card blue-grey darken-1">
+                <div class="card-content white-text">
+                    <span class="card-title">{{ stats.total_groups }}</span>
+                    <p>Total Report Groups</p>
+                </div>
+            </div>
+        </div>
+        <div class="col s12 m4">
+            <div class="card orange darken-1">
+                <div class="card-content white-text">
+                    <span class="card-title">{{ stats.pending_groups }}</span>
+                    <p>Pending Review</p>
+                </div>
+            </div>
+        </div>
+        <div class="col s12 m4">
+            <div class="card red darken-1">
+                <div class="card-content white-text">
+                    <span class="card-title">{{ stats.high_priority }}</span>
+                    <p>High Priority (3+ Reports)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters and Sorting -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Filters & Sorting</span>
+                    
+                    <form method="get" class="row">
+                        <div class="col s12 m3">
+                            <select name="status" class="browser-default">
+                                <option value="">All Statuses</option>
+                                {% for status_value, status_label in statuses.choices %}
+                                    <option value="{{ status_value }}" 
+                                        {% if current_filters.status == status_value %}selected{% endif %}>
+                                        {{ status_label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <label>Status</label>
+                        </div>
+                        
+                        <div class="col s12 m3">
+                            <select name="report_type" class="browser-default">
+                                <option value="">All Report Types</option>
+                                {% for type_value, type_label in report_types.choices %}
+                                    <option value="{{ type_value }}" 
+                                        {% if current_filters.report_type == type_value %}selected{% endif %}>
+                                        {{ type_label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <label>Report Type</label>
+                        </div>
+                        
+                        <div class="col s12 m3">
+                            <select name="sort" class="browser-default">
+                                <option value="-last_reported_at" 
+                                    {% if current_filters.sort == '-last_reported_at' %}selected{% endif %}>
+                                    Latest First
+                                </option>
+                                <option value="last_reported_at" 
+                                    {% if current_filters.sort == 'last_reported_at' %}selected{% endif %}>
+                                    Oldest First
+                                </option>
+                                <option value="-total_reports" 
+                                    {% if current_filters.sort == '-total_reports' %}selected{% endif %}>
+                                    Most Reports
+                                </option>
+                                <option value="total_reports" 
+                                    {% if current_filters.sort == 'total_reports' %}selected{% endif %}>
+                                    Least Reports
+                                </option>
+                            </select>
+                            <label>Sort By</label>
+                        </div>
+                        
+                        <div class="col s12 m3">
+                            <button type="submit" class="btn waves-effect waves-light">
+                                Apply Filters
+                            </button>
+                            <a href="{% url 'comments:enhanced_report_list' %}" class="btn-flat">
+                                Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Groups Table -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    {% if report_groups %}
+                        <table class="responsive-table highlight">
+                            <thead>
+                                <tr>
+                                    <th>Comment Preview</th>
+                                    <th>Author</th>
+                                    <th>Report Types</th>
+                                    <th>Total Reports</th>
+                                    <th>First/Last Reported</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            
+                            <tbody>
+                                {% for group in report_groups %}
+                                    <tr class="report-group-row {% if group.status == 'PENDING' %}pending{% endif %} {% if group.total_reports >= 5 %}high-priority{% elif group.total_reports >= 3 %}medium-priority{% endif %}">
+                                        <td>
+                                            <div class="comment-preview">
+                                                <p class="truncate">{{ group.comment.content|truncatechars:80 }}</p>
+                                                <small class="grey-text">ID: {{ group.comment.id }}</small>
+                                            </div>
+                                        </td>
+                                        
+                                        <td>
+                                            {% if group.comment.user %}
+                                                <a href="/u/{{ group.comment.user.id }}">
+                                                    {{ group.comment.user.username }}
+                                                </a>
+                                            {% else %}
+                                                <span class="grey-text">Anonymous</span>
+                                            {% endif %}
+                                        </td>
+                                        
+                                        <td>
+                                            <div class="report-types-summary">
+                                                {{ group.get_report_types_display }}
+                                            </div>
+                                        </td>
+                                        
+                                        <td>
+                                            <span class="report-count {% if group.total_reports >= 5 %}red-text{% elif group.total_reports >= 3 %}orange-text{% endif %}">
+                                                {{ group.total_reports }}
+                                            </span>
+                                        </td>
+                                        
+                                        <td>
+                                            <div class="report-dates">
+                                                <div><strong>First:</strong> {{ group.first_reported_at|naturaltime }}</div>
+                                                <div><strong>Last:</strong> {{ group.last_reported_at|naturaltime }}</div>
+                                            </div>
+                                        </td>
+                                        
+                                        <td>
+                                            <span class="status-badge status-{{ group.status|lower }}">
+                                                {{ group.get_status_display }}
+                                            </span>
+                                        </td>
+                                        
+                                        <td>
+                                            {% if group.total_reports >= 5 %}
+                                                <span class="badge red">High</span>
+                                            {% elif group.total_reports >= 3 %}
+                                                <span class="badge orange">Medium</span>
+                                            {% else %}
+                                                <span class="badge grey">Normal</span>
+                                            {% endif %}
+                                        </td>
+                                        
+                                        <td>
+                                            <a href="{% url 'comments:enhanced_report_detail' group.comment.id %}" 
+                                               class="btn-small waves-effect waves-light">
+                                                Review
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        
+                        <!-- Pagination -->
+                        {% if report_groups.has_other_pages %}
+                            <div class="pagination-wrapper center-align">
+                                <ul class="pagination">
+                                    {% if report_groups.has_previous %}
+                                        <li class="waves-effect">
+                                            <a href="?page={{ report_groups.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                                <i class="material-icons">chevron_left</i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for num in report_groups.paginator.page_range %}
+                                        {% if report_groups.number == num %}
+                                            <li class="active"><a href="#">{{ num }}</a></li>
+                                        {% else %}
+                                            <li class="waves-effect">
+                                                <a href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if report_groups.has_next %}
+                                        <li class="waves-effect">
+                                            <a href="?page={{ report_groups.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                                <i class="material-icons">chevron_right</i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="empty-state center-align">
+                            <h5>No report groups found</h5>
+                            <p>There are no reports matching your current filters.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-group-row.pending {
+        background-color: rgba(255, 235, 238, 0.3);
+    }
+    
+    .report-group-row.high-priority {
+        border-left: 4px solid #f44336;
+    }
+    
+    .report-group-row.medium-priority {
+        border-left: 4px solid #ff9800;
+    }
+    
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.85em;
+        display: inline-block;
+    }
+    
+    .status-pending {
+        background-color: #FFC107;
+        color: #333;
+    }
+    
+    .status-reviewed {
+        background-color: #2196F3;
+        color: white;
+    }
+    
+    .status-rejected {
+        background-color: #9E9E9E;
+        color: white;
+    }
+    
+    .status-resolved {
+        background-color: #4CAF50;
+        color: white;
+    }
+    
+    .comment-preview {
+        max-width: 200px;
+    }
+    
+    .report-types-summary {
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+    
+    .report-dates {
+        font-size: 0.85em;
+        line-height: 1.3;
+    }
+    
+    .report-count {
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+</style>
+{% endblock %}

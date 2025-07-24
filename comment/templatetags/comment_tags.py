@@ -3,6 +3,11 @@ from django import template
 
 from django.templatetags.static import static
 
+from django.utils.safestring import mark_safe
+from comment.models import ModeratorLevel
+
+register = template.Library()
+
 
 register = template.Library()
 @register.filter
@@ -65,4 +70,52 @@ def comment_avatar(user, css_class='miniavatar circle'):
         'user': user,
         'avatar_url': user_avatar_url(user, 'small'),
         'css_class': css_class
+    }
+
+
+
+
+@register.simple_tag
+def comment_avatar(user, size='small'):
+    """Render user avatar for comments"""
+    if user and hasattr(user, 'profile') and user.profile.avatar:
+        if size == 'small':
+            avatar_url = user.profile.avatar_small.url
+        else:
+            avatar_url = user.profile.avatar.url
+    else:
+        avatar_url = '/static/icons/default-avatar.svg'
+    
+    return mark_safe(f'<img src="{avatar_url}" alt="{user.username if user else "Anonymous"}" class="comment-avatar {size}">')
+
+
+@register.filter
+def moderator_level_badge(user):
+    """Display moderator level badge"""
+    if not user.is_authenticated:
+        return ""
+    
+    if user.is_superuser:
+        return mark_safe('<span class="badge red">Admin</span>')
+    elif getattr(user, 'is_senior_moderator', False):
+        return mark_safe('<span class="badge orange">Senior Mod</span>')
+    elif getattr(user, 'is_moderator', False):
+        return mark_safe('<span class="badge blue">Moderator</span>')
+    
+    return ""
+
+
+@register.filter 
+def can_moderate_comment(user, comment):
+    """Check if user can moderate a specific comment"""
+    return comment.can_moderate(user)
+
+
+@register.inclusion_tag('comment_moderation_status.html')
+def show_moderation_status(comment):
+    """Show moderation status for a comment"""
+    return {
+        'comment': comment,
+        'has_reports': comment.reports.exists(),
+        'pending_reports': comment.reports.filter(status='PENDING').count(),
     }
