@@ -6,6 +6,7 @@
 {% block content %}
 {% load static %}
 {% load humanize %}
+<script src="{% static 'comment/comments.js' %}"></script>
 
 <div class="grid2">
     <div class="ncard">
@@ -58,19 +59,36 @@
     
     <div class="ntab">
         <ul class="tabs">
-            <li class="tab col s3"><a class="active" href="#discussion">Discussion</a></li>
-            <li class="tab col s3"><a href="#contributions">Contributions</a></li>
-            <li class="tab col s3"><a href="#history">History</a></li>
+            <li class="tab col s4"><a class="active" href="#discussion">Discussion</a></li>
+            <li class="tab col s4"><a href="#contributions">Contributions</a></li>
+            <li class="tab col s4"><a href="#history">History</a></li>
         </ul>
         
         <div id="discussion" class="tab-content">
             <!-- Comments section -->
             <div class="comments-section">
                 <h4>Comments</h4>
-                {% if comments %}
+{% if comments %}
+                <div class="input-field col s12">
+                    <select>
+                        <option value="" disabled>Sorting by</option>
+                        <option value="0" selected>Highest reviews</option>
+                        <option value="1">Lowest reviews</option>
+                        <option value="2">Newest</option>
+                        <option value="3">Oldest</option>
+                    </select>
+
+                    <label>Sorting by</label>
+
+                </div>
+                <label>
+                    <input type="checkbox" class="filled-in"  />
+                    <span>Show comments from anonymous Users</span>
+                  </label>
+
                 {% include "comments.html" with comments=comments %}
                 {% else %}
-                <p>No comments yet.</p>
+                <p>No comments</p>
                 {% endif %}
                 
                 <form id="add-comment-form" method="post" action="{% url 'comments:add_comment' %}">

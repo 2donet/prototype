@@ -1,3 +1,4 @@
+console.log('Comments script loaded');
 document.addEventListener('DOMContentLoaded', function() {
     // Helper function to get CSRF token
     function getCSRFToken() {

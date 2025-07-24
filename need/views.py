@@ -18,8 +18,18 @@ from project.models import Project
 def need(request, need_id):
     content = get_object_or_404(Need, pk=need_id)
     
-    comments = Comment.objects.filter(to_need=need_id).prefetch_related(
-        Prefetch("replies", queryset=Comment.objects.select_related("user"))
+    comments = Comment.objects.filter(
+        to_need=content.id,
+        parent__isnull=True
+    ).select_related(
+        'user', 
+        'user__profile'  # Load comment author profiles
+    ).prefetch_related(
+        Prefetch(
+            'replies', 
+            queryset=Comment.objects.select_related('user', 'user__profile')  # Load reply author profiles
+        ),
+        'votes'
     )
     context = {"content": content,
     "comments":comments,
