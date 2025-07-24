@@ -2,7 +2,160 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Chat with {{ other_user.username }}{% endblock %}
+{% block title %}Submission Discussion{% endblock %}
+
+{% block extra_css %}
+<style>
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    display: inline-block;
+}
+.status-pending { background-color: #ffab40; color: white; }
+.status-reviewed { background-color: #42a5f5; color: white; }
+.status-accepted { background-color: #66bb6a; color: white; }
+.status-rejected { background-color: #ef5350; color: white; }
+.status-archived { background-color: #bdbdbd; color: white; }
+
+.submission-info {
+    margin-bottom: 1rem;
+}
+
+.chat-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.chat-header {
+    margin-bottom: 1rem;
+}
+
+.chat-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chat-avatar img {
+    width: 50px;
+    height: 50px;
+}
+
+.chat-username {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.chat-fullname {
+    margin: 0 0 0.5rem 0;
+}
+
+.chat-profile-link {
+    color: #2196f3;
+    text-decoration: none;
+}
+
+.messages-area {
+    min-height: 400px;
+    max-height: 600px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.messages-list {
+    padding: 1rem;
+}
+
+.message-wrapper {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.message-wrapper.sent {
+    align-items: flex-end;
+}
+
+.message-wrapper.received {
+    align-items: flex-start;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 0.8rem 1rem;
+    border-radius: 18px;
+    position: relative;
+}
+
+.sent .message-bubble {
+    background: #2196f3;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.received .message-bubble {
+    background: white;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    border-bottom-left-radius: 4px;
+}
+
+.message-content {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.message-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.sent .message-meta {
+    color: rgba(255,255,255,0.8);
+}
+
+.received .message-meta {
+    color: rgba(0,0,0,0.8);
+}
+
+.message-form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.message-counter {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.sort-controls a {
+    margin-right: 0.5rem;
+}
+
+.pagination-container {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.pagination-info {
+    color: #666;
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="chat-container">
@@ -11,7 +164,7 @@
         <div class="card-content">
             <div class="chat-header-content">
                 <div class="chat-user-info">
-                    <a href="{% url 'messaging:conversation_list' %}" class="btn-flat waves-effect">
+                    <a href="{% url 'submissions:submission_detail' submission.id %}" class="btn-flat waves-effect">
                         <i class="material-icons">arrow_back</i>
                     </a>
                     
@@ -28,11 +181,17 @@
                     </div>
                     
                     <div class="chat-user-details">
-                        <h5 class="chat-username">{{ other_user.username }}</h5>
-                        {% if other_user.first_name or other_user.last_name %}
-                            <p class="chat-fullname grey-text">{{ other_user.first_name }} {{ other_user.last_name }}</p>
-                        {% endif %}
-                        <a href="{% url 'user:userprofile' other_user.id %}" class="chat-profile-link">View Profile</a>
+                        <h5 class="chat-username">{{ conversation }}</h5>
+                        <p class="chat-fullname grey-text">
+                            {% if submission.to_project %}
+                                Project Discussion
+                            {% elif submission.to_task %}
+                                Task Discussion
+                            {% else %}
+                                Need Discussion
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'submissions:submission_detail' submission.id %}" class="chat-profile-link">View Submission</a>
                     </div>
                 </div>
                 
@@ -48,6 +207,33 @@
                             Oldest
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submission Info Card -->
+    <div class="submission-info card">
+        <div class="card-content">
+            <h6>Submission Information</h6>
+            <div class="row">
+                <div class="col s12 m6">
+                    <p><strong>Applicant:</strong> {{ submission.applicant.get_full_name|default:submission.applicant.username }}</p>
+                    <p><strong>Applied:</strong> {{ submission.submitted_at|date:"F d, Y H:i" }}</p>
+                </div>
+                <div class="col s12 m6">
+                    <p><strong>Status:</strong> 
+                        <span class="status-badge status-{{ submission.status|lower }}">
+                            {{ submission.get_status_display }}
+                        </span>
+                    </p>
+                    {% if submission.to_project %}
+                        <p><strong>Project:</strong> {{ submission.to_project.title }}</p>
+                    {% elif submission.to_task %}
+                        <p><strong>Task:</strong> {{ submission.to_task.title }}</p>
+                    {% else %}
+                        <p><strong>Need:</strong> {{ submission.to_need.name }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -182,141 +368,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-.chat-container {
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.chat-header {
-    margin-bottom: 1rem;
-}
-
-.chat-header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.chat-user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.chat-avatar img {
-    width: 50px;
-    height: 50px;
-}
-
-.chat-username {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.2rem;
-}
-
-.chat-fullname {
-    margin: 0 0 0.5rem 0;
-}
-
-.chat-profile-link {
-    color: #2196f3;
-    text-decoration: none;
-}
-
-.messages-area {
-    min-height: 400px;
-    max-height: 600px;
-    overflow-y: auto;
-    margin-bottom: 1rem;
-}
-
-.messages-list {
-    padding: 1rem;
-}
-
-.message-wrapper {
-    margin-bottom: 1rem;
-    display: flex;
-    flex-direction: column;
-}
-
-.message-wrapper.sent {
-    align-items: flex-end;
-}
-
-.message-wrapper.received {
-    align-items: flex-start;
-}
-
-.message-bubble {
-    max-width: 70%;
-    padding: 0.8rem 1rem;
-    border-radius: 18px;
-    position: relative;
-}
-
-.sent .message-bubble {
-    background: #2196f3;
-    color: white;
-    border-bottom-right-radius: 4px;
-}
-
-.received .message-bubble {
-    background: white;
-    color: #333;
-    border: 1px solid #e0e0e0;
-    border-bottom-left-radius: 4px;
-}
-
-.message-content {
-    margin-bottom: 5px;
-    line-height: 1.4;
-}
-
-.message-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 11px;
-    opacity: 0.7;
-}
-
-.sent .message-meta {
-    color: rgba(255,255,255,0.8);
-}
-
-.received .message-meta {
-    color: rgba(0,0,0,0.8);
-}
-
-.message-form-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1rem;
-}
-
-.message-counter {
-    font-size: 0.9em;
-    color: #666;
-}
-
-.sort-controls a {
-    margin-right: 0.5rem;
-}
-
-.pagination-container {
-    text-align: center;
-    margin: 1rem 0;
-}
-
-.pagination-info {
-    color: #666;
-    font-size: 0.9em;
-}
-</style>
-
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Character counter

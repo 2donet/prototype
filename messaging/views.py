@@ -10,6 +10,7 @@ from django.urls import reverse
 
 from .models import Conversation, Message, ConversationParticipant
 from .forms import MessageForm, StartConversationForm
+from submissions.models import Submission
 
 User = get_user_model()
 
@@ -45,9 +46,42 @@ def conversation_list(request):
     
     # Add unread counts and last message for each conversation
     for conversation in page_obj:
-        conversation.unread_count = conversation.get_unread_count(request.user)
+        # Only show unread count if user is a participant
+        if conversation.participants.filter(id=request.user.id).exists():
+            conversation.unread_count = conversation.get_unread_count(request.user)
+        else:
+            conversation.unread_count = 0
+            
         conversation.last_message = conversation.get_last_message()
-        conversation.other_user = conversation.get_other_participant(request.user)
+        
+        # For submission conversations, determine if user can see admin names
+        if conversation.conversation_type == 'submission':
+            conversation.other_user = None
+            # Check if current user can manage this submission
+            if conversation.submission:
+                content_object = (conversation.submission.to_project or 
+                                conversation.submission.to_task or 
+                                conversation.submission.to_need)
+                from submissions.views import user_can_manage_submissions
+                conversation.user_can_see_admin_names = user_can_manage_submissions(request.user, content_object)
+            else:
+                conversation.user_can_see_admin_names = False
+        else:
+            conversation.other_user = conversation.get_other_participant(request.user)
+            conversation.user_can_see_admin_names = False
+        
+    # Clear any messages related to submission conversations to avoid notifications
+    # on submission detail pages
+    from django.contrib import messages as django_messages
+    storage = django_messages.get_messages(request)
+    filtered_messages = []
+    for message in storage:
+        # Filter out message-related notifications
+        if not any(keyword in str(message).lower() for keyword in ['message', 'conversation', 'discussion', 'chat']):
+            filtered_messages.append(message)
+    # Clear the storage and re-add filtered messages
+    storage.used = False
+    storage._queued_messages = filtered_messages
         
 
     context = {

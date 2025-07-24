@@ -46,6 +46,16 @@
     .change-status-btn:disabled {
         opacity: 0.6;
     }
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+    }
+    .action-buttons .btn-small {
+        flex: 1;
+        min-width: 80px;
+    }
 </style>
 {% endblock %}
 
@@ -205,11 +215,29 @@
                                         </button>
                                     </div>
                                     
-                                    <div style="margin-top: 10px;">
+                                    <!-- Action Buttons -->
+                                    <div class="action-buttons">
                                         <a href="{% url 'submissions:submission_detail' submission.id %}" 
                                            class="btn-small blue waves-effect waves-light">
                                             <i class="material-icons left">visibility</i>View
                                         </a>
+                                        
+                                        <!-- Message Button -->
+                                        {% if submission.conversation %}
+                                            <a href="{% url 'submissions:submission_detail' submission.id %}" 
+                                               class="btn-small green waves-effect waves-light">
+                                                <i class="material-icons left">chat</i>
+                                                Chat
+                                                {% if submission.unread_count > 0 %}
+                                                    <span class="new badge red" data-badge-caption="" style="margin-left: 5px;">{{ submission.unread_count }}</span>
+                                                {% endif %}
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'submissions:submission_detail' submission.id %}" 
+                                               class="btn-small teal waves-effect waves-light">
+                                                <i class="material-icons left">chat_bubble_outline</i>Start Chat
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>

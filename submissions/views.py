@@ -16,6 +16,7 @@ from project.models import Project
 from task.models import Task
 from need.models import Need
 from skills.models import Skill
+from messaging.models import Conversation
 
 
 @login_required
@@ -239,11 +240,37 @@ def submission_list(request, content_type, content_id):
     else:
         submissions = submissions.order_by('-submitted_at')
 
-    submissions = submissions.select_related('applicant').prefetch_related('relevant_skills')
+    submissions = submissions.select_related('applicant').prefetch_related('relevant_skills', 'conversations')
 
     paginator = Paginator(submissions, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    # Add conversation info for each submission
+    for submission in page_obj:
+        # Get the submission conversation (there should only be one per submission)
+        conversation = submission.conversations.first()
+        submission.conversation = conversation
+        
+        # Check if current user can access this conversation
+        if conversation:
+            # For admins: show conversation even if not a participant yet
+            # For participants: show if they're a participant
+            if user_can_manage_submissions(request.user, submission.to_project or submission.to_task or submission.to_need):
+                # Admin can see conversation
+                if conversation.participants.filter(id=request.user.id).exists():
+                    submission.unread_count = conversation.get_unread_count(request.user)
+                else:
+                    submission.unread_count = 0  # Admin can see but no unread count if not participant
+            elif conversation.participants.filter(id=request.user.id).exists():
+                # User is a participant (submitee)
+                submission.unread_count = conversation.get_unread_count(request.user)
+            else:
+                # User cannot access this conversation
+                submission.conversation = None
+                submission.unread_count = 0
+        else:
+            submission.unread_count = 0
 
     stats = {
         'total': submissions.count(),
@@ -319,7 +346,7 @@ def update_submission_status(request, submission_id):
 @login_required
 def submission_detail(request, submission_id):
     submission = get_object_or_404(
-        Submission.objects.select_related('applicant').prefetch_related('relevant_skills'),
+        Submission.objects.select_related('applicant').prefetch_related('relevant_skills', 'conversations'),
         id=submission_id
     )
 
@@ -330,8 +357,11 @@ def submission_detail(request, submission_id):
     is_applicant = request.user == submission.applicant
     
     if not (can_manage or is_applicant):
-        messages.error(request, _('You do not have permission to view this submission.'))
-        return render(request, 'submissions/error.html', {'error': 'Permission denied'})
+        # Don't show error message on submission detail - redirect to appropriate page
+        if is_applicant:
+            return redirect('messaging:conversation_list')
+        else:
+            return redirect('submissions:submission_list', content_type, content_object.id)
 
     if submission.to_project:
         content_type = 'project'
@@ -343,6 +373,119 @@ def submission_detail(request, submission_id):
         content_type = 'need'
         content_type_name = 'Need'
 
+    # Get conversation info - find submission conversation
+    conversation = submission.conversations.first()  # There should only be one per submission
+    
+    # Check if current user should have access to the conversation
+    user_can_access_conversation = False
+    user_is_participant = False
+    if conversation:
+        user_is_participant = conversation.participants.filter(id=request.user.id).exists()
+        if is_applicant:
+            # Submitee can access if they're a participant
+            user_can_access_conversation = user_is_participant
+        elif can_manage:
+            # Any admin with manage permissions can access, even if not a participant yet
+            user_can_access_conversation = True
+    
+    unread_count = 0
+    if conversation and user_is_participant:
+        unread_count = conversation.get_unread_count(request.user)
+
+    # Handle message sending
+    from messaging.forms import MessageForm
+    message_form = MessageForm()
+    
+    if request.method == 'POST' and request.POST.get('action') == 'send_message':
+        message_form = MessageForm(request.POST)
+        if message_form.is_valid():
+            # Check if user has permission to participate
+            if not (can_manage or is_applicant):
+                return redirect('submissions:submission_detail', submission_id)
+            
+            # For admins, verify they still have permission to manage this submission
+            if can_manage:
+                # Re-verify admin permissions
+                if not user_can_manage_submissions(request.user, content_object):
+                    return redirect('submissions:submission_detail', submission_id)
+            
+            # Create or get conversation
+            if not conversation:
+                if can_manage:
+                    from messaging.models import Conversation
+                    conversation = Conversation.objects.get_or_create_submission_conversation(
+                        request.user, submission.applicant, submission
+                    )
+                    user_is_participant = True
+                else:
+                    # Submitee cannot start conversation
+                    return redirect('submissions:submission_detail', submission_id)
+            else:
+                # For existing conversation, add admin as participant if they're not already
+                if can_manage and not user_is_participant:
+                    # Verify admin still has permissions
+                    if user_can_manage_submissions(request.user, content_object):
+                        conversation.participants.add(request.user)
+                        user_is_participant = True
+                    else:
+                        return redirect('submissions:submission_detail', submission_id)
+                elif not user_is_participant:
+                    # User not participant and not admin
+                    return redirect('submissions:submission_detail', submission_id)
+            
+            # Create message
+            from messaging.models import Message
+            message = message_form.save(commit=False)
+            message.conversation = conversation
+            message.sender = request.user
+            message.save()
+            
+            # Update conversation timestamp
+            from django.utils import timezone
+            conversation.updated_at = timezone.now()
+            conversation.save(update_fields=['updated_at'])
+            
+            # Don't show success message - the message appearing in the chat is enough feedback
+            return redirect('submissions:submission_detail', submission_id)
+        # Don't show error messages for form validation - just let the form show the errors
+
+    # Get messages with pagination - show to all who can access
+    conversation_messages = None
+    if conversation and user_can_access_conversation:
+        sort_by = request.GET.get('sort_by', 'recent')
+        
+        conversation_messages = conversation.messages.select_related('sender')
+        
+        if sort_by == 'oldest':
+            conversation_messages = conversation_messages.order_by('timestamp')
+        else:  # recent (default)
+            conversation_messages = conversation_messages.order_by('-timestamp')
+        
+        # Pagination
+        from django.core.paginator import Paginator
+        paginator = Paginator(conversation_messages, 20)  # 20 messages per page
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # If showing recent messages (default), reverse the order for display
+        if sort_by != 'oldest':
+            page_obj.object_list = list(reversed(page_obj.object_list))
+        
+        conversation_messages = page_obj
+        
+        # Mark conversation as read (only if user is a participant)
+        if user_is_participant:
+            try:
+                from messaging.models import ConversationParticipant
+                participant = ConversationParticipant.objects.get(
+                    conversation=conversation, 
+                    user=request.user
+                )
+                participant.mark_as_read()
+                unread_count = 0  # Reset since we just marked as read
+            except ConversationParticipant.DoesNotExist:
+                pass
+
     context = {
         'submission': submission,
         'content_object': content_object,
@@ -350,6 +493,15 @@ def submission_detail(request, submission_id):
         'content_type_name': content_type_name,
         'status_choices': Submission.STATUS_CHOICES,
         'can_edit': can_manage,
+        'can_manage': can_manage,
+        'is_applicant': is_applicant,
+        'conversation': conversation,
+        'unread_count': unread_count,
+        'messages': conversation_messages,
+        'message_form': message_form,
+        'sort_by': request.GET.get('sort_by', 'recent'),
+        'user_can_access_conversation': user_can_access_conversation,
+        'user_is_participant': user_is_participant,
     }
 
     return render(request, 'submissions/detail.html', context)

@@ -21,6 +21,29 @@ class ConversationManager(models.Manager):
         
         return conversation
     
+    def get_or_create_submission_conversation(self, admin_user, submitter, submission):
+        """Get or create a submission-related conversation - one conversation per submission"""
+        # Find existing conversation for this submission
+        conversation = self.filter(
+            conversation_type='submission',
+            submission=submission
+        ).first()
+        
+        if not conversation:
+            # Create new conversation for this submission
+            conversation = self.create(
+                conversation_type='submission',
+                submission=submission
+            )
+            # Add both the admin and submitter as participants
+            conversation.participants.add(admin_user, submitter)
+        else:
+            # Add admin to existing conversation if not already a participant
+            if not conversation.participants.filter(id=admin_user.id).exists():
+                conversation.participants.add(admin_user)
+        
+        return conversation
+    
     def get_user_conversations(self, user):
         """Get all conversations for a user, ordered by last message"""
         return self.filter(
@@ -36,6 +59,7 @@ class Conversation(models.Model):
     CONVERSATION_TYPES = [
         ('direct', 'Direct Message'),
         ('thread', 'Thread Discussion'),  # For future use
+        ('submission', 'Submission Discussion'),  # New type
     ]
     
     conversation_type = models.CharField(
@@ -51,12 +75,22 @@ class Conversation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Link to submission for submission conversations
+    submission = models.ForeignKey(
+        'submissions.Submission',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='conversations'
+    )
+    
     objects = ConversationManager()
     
     class Meta:
         ordering = ['-updated_at']
         indexes = [
             models.Index(fields=['conversation_type', '-updated_at']),
+            models.Index(fields=['submission', '-updated_at']),
         ]
     
     def __str__(self):
@@ -64,11 +98,22 @@ class Conversation(models.Model):
             users = list(self.participants.all()[:2])
             if len(users) == 2:
                 return f"Conversation: {users[0].username} & {users[1].username}"
+        elif self.conversation_type == 'submission' and self.submission:
+            # Format: "Project: Project Name (User's Name)"
+            content_obj = self.submission.to_project or self.submission.to_task or self.submission.to_need
+            content_type = 'Project' if self.submission.to_project else ('Task' if self.submission.to_task else 'Need')
+            content_title = getattr(content_obj, 'title', getattr(content_obj, 'name', 'Unknown'))
+            
+            # Get submitter's display name
+            submitter = self.submission.applicant
+            submitter_name = submitter.get_full_name() or submitter.username
+            
+            return f"{content_type}: {content_title} ({submitter_name})"
         return f"Conversation {self.id}"
     
     def get_other_participant(self, user):
         """Get the other participant in a direct conversation"""
-        if self.conversation_type != 'direct':
+        if self.conversation_type not in ['direct', 'submission']:
             return None
             
         participants = list(self.participants.all())

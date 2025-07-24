@@ -1,7 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Submission Details{% endblock %}
+
+{% block messages %}
+<!-- Suppress Django messages on submission detail page -->
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -35,10 +40,97 @@
     .change-status-btn:disabled {
         opacity: 0.6;
     }
+    
+    /* Messaging Styles */
+    .messages-section {
+        margin-top: 1rem;
+    }
+    .messages-area {
+        min-height: 300px;
+        max-height: 500px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        background-color: #fafafa;
+    }
+    .messages-list {
+        padding: 1rem;
+    }
+    .message-wrapper {
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+    }
+    .message-wrapper.sent {
+        align-items: flex-end;
+    }
+    .message-wrapper.received {
+        align-items: flex-start;
+    }
+    .message-bubble {
+        max-width: 70%;
+        padding: 0.8rem 1rem;
+        border-radius: 18px;
+        position: relative;
+    }
+    /* Admin message styling to match style.css pattern */
+    .admin-message .message-bubble {
+        background: var(--bg-color3) !important;
+        color: var(--highlightdark) !important;
+        border-bottom-left-radius: 4px !important;
+        border: none !important;
+    }
+    .admin-message .message-meta {
+        color: var(--highlightdark) !important;
+        opacity: 0.7;
+    }
+    .admin-message .message-sender {
+        color: var(--highlightdark) !important;
+        opacity: 0.8;
+    }
+    .message-content {
+        margin-bottom: 5px;
+        line-height: 1.4;
+    }
+    .message-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        opacity: 0.7;
+    }
+    .sent .message-meta {
+        color: rgba(255,255,255,0.8);
+    }
+    .received .message-meta {
+        color: rgba(0,0,0,0.8);
+    }
+    /* Other admin message meta styling */
+    .admin-message .message-meta {
+        color: var(--highlightdark) !important;
+        opacity: 0.7;
+    }
+    .message-sender {
+        font-size: 10px;
+        margin-bottom: 2px;
+        opacity: 0.8;
+    }
+    .sent .message-sender {
+        text-align: right;
+        color: rgba(255,255,255,0.8);
+    }
+    .received .message-sender {
+        text-align: left;
+        color: rgba(0,0,0,0.8);
+    }
+    /* Other admin message sender styling */
+
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Don't show Django messages on submission detail page -->
 <div class="container">
     <!-- CSRF Token for AJAX -->
     {% csrf_token %}
@@ -169,12 +261,283 @@
             </div>
         </div>
     </div>
+
+    <!-- Messages Section -->
+    <div class="row">
+        <div class="col s12 {% if can_manage %}m8{% else %}s12{% endif %}">
+            <div class="card messages-section">
+                <div class="card-content">
+                    <h5>
+                        <i class="material-icons left">chat</i>
+                        Discussion with 
+                        {% if can_manage %}
+                            {{ submission.applicant.get_full_name|default:submission.applicant.username }}
+                        {% else %}
+                            {{ content_type_name }} Team
+                        {% endif %}
+                        {% if unread_count > 0 %}
+                            <span class="new badge red" data-badge-caption="">{{ unread_count }}</span>
+                        {% endif %}
+                    </h5>
+                    
+                    {% if conversation %}
+                        <p class="grey-text">
+                            <i class="material-icons tiny">schedule</i>
+                            Conversation started {{ conversation.created_at|date:"F d, Y H:i" }}
+                        </p>
+                    {% endif %}
+
+                    <!-- Sort Controls -->
+                    {% if messages %}
+                        <div class="sort-controls">
+                            <a href="?sort_by=recent{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
+                               class="btn-small waves-effect {% if sort_by == 'recent' %}blue{% else %}grey lighten-2{% endif %}">
+                                Recent
+                            </a>
+                            <a href="?sort_by=oldest{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
+                               class="btn-small waves-effect {% if sort_by == 'oldest' %}blue{% else %}grey lighten-2{% endif %}">
+                                Oldest
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    <!-- Messages Area -->
+                    <div class="messages-area">
+                        {% if messages %}
+                            <!-- Pagination (Top) -->
+                            {% if messages.has_other_pages %}
+                                <div class="pagination-container">
+                                    <ul class="pagination center-align">
+                                        {% if messages.has_previous %}
+                                            <li class="waves-effect">
+                                                <a href="?page={{ messages.previous_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                                                    <i class="material-icons">chevron_left</i> Older
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        
+                                        <li class="pagination-info">
+                                            <span>Page {{ messages.number }} of {{ messages.paginator.num_pages }}</span>
+                                        </li>
+                                        
+                                        {% if messages.has_next %}
+                                            <li class="waves-effect">
+                                                <a href="?page={{ messages.next_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                                                    Newer <i class="material-icons">chevron_right</i>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                            <!-- Messages List -->
+                            <div class="messages-list">
+                                {% for message in messages %}
+                                    {% comment %}
+                                    Determine message wrapper class:
+                                    - sent: current user's messages (blue)
+                                    - admin-message: other admin messages (dark blue #30344a)  
+                                    - received: submitee messages or non-admin messages (white)
+                                    {% endcomment %}
+                                    {% if message.sender == request.user %}
+                                        <div class="message-wrapper sent">
+                                    {% else %}
+                                        {% comment %}Check if the message sender is an admin{% endcomment %}
+                                        {% if can_manage %}
+                                            {% comment %}Current user is admin, check if message sender is also admin{% endcomment %}
+                                            {% if message.sender != submission.applicant %}
+                                                {% comment %}Message is from another admin{% endcomment %}
+                                                <div class="message-wrapper admin-message">
+                                            {% else %}
+                                                {% comment %}Message is from submitee{% endcomment %}
+                                                <div class="message-wrapper received">
+                                            {% endif %}
+                                        {% else %}
+                                            {% comment %}Current user is submitee, all other messages are from admins but use received class{% endcomment %}
+                                            <div class="message-wrapper received">
+                                        {% endif %}
+                                    {% endif %}
+                                        
+                                        {% if message.sender != request.user %}
+                                            <!-- Show sender info for received messages -->
+                                            <div class="message-sender">
+                                                {% if can_manage %}
+                                                    <!-- Admins see specific admin names, just username -->
+                                                    {{ message.sender.get_full_name|default:message.sender.username }}
+                                                {% else %}
+                                                    <!-- Submitees see generic team name -->
+                                                    {{ content_type_name }} Team
+                                                {% endif %}
+                                            </div>
+                                        {% elif message.sender == request.user %}
+                                            <!-- Show "You" for own messages -->
+                                            <div class="message-sender">
+                                                You
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="message-bubble">
+                                            <div class="message-content">
+                                                {{ message.content|linebreaks }}
+                                            </div>
+                                            
+                                            <div class="message-meta">
+                                                <span class="message-time">{{ message.timestamp|naturaltime }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Pagination (Bottom) -->
+                            {% if messages.has_other_pages %}
+                                <div class="pagination-container">
+                                    <ul class="pagination center-align">
+                                        {% if messages.has_previous %}
+                                            <li class="waves-effect">
+                                                <a href="?page={{ messages.previous_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                                                    <i class="material-icons">chevron_left</i> Older
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        
+                                        {% if messages.has_next %}
+                                            <li class="waves-effect">
+                                                <a href="?page={{ messages.next_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">
+                                                    Newer <i class="material-icons">chevron_right</i>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="no-messages">
+                                <i class="material-icons large grey-text">chat_bubble_outline</i>
+                                <h5>No messages yet</h5>
+                                {% if can_manage %}
+                                    <p class="grey-text">Start the conversation by sending a message below!</p>
+                                {% else %}
+                                    <p class="grey-text">The {{ content_type_name|lower }} team hasn't started a discussion yet.</p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Message Input -->
+                    {% if user_can_access_conversation or can_manage %}
+                        <div class="message-input-container">
+                            <form method="post" class="message-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="send_message">
+                                <div class="row">
+                                    <div class="col s12">
+                                        {{ message_form.content }}
+                                        <label for="id_message_content">Type your message...</label>
+                                        {% if message_form.content.errors %}
+                                            <div class="form-errors">
+                                                {% for error in message_form.content.errors %}
+                                                    <span class="red-text">{{ error }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="message-form-actions">
+                                    <div class="message-counter">
+                                        <span id="char-count">0</span>/1000
+                                    </div>
+                                    <button type="submit" class="btn waves-effect waves-light">
+                                        <i class="material-icons left">send</i>Send
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar for admin discussion (placeholder) -->
+        {% if can_manage %}
+        <div class="col s12 m4">
+            <div class="card discussion-placeholder">
+                <div class="card-content">
+                    <h6><i class="material-icons left">construction</i>Work in Progress</h6>
+                    <p>Discussion between admins will be implemented here as a comment section, invisible to the submitee.</p>
+                    <small class="grey-text">This will use comments.html in the future.</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Hide all Django messages/notifications on submission detail page
+    const allMessages = document.querySelectorAll('.card-panel, .toast, .alert, [class*="message"]');
+    allMessages.forEach(element => {
+        // Check if it's a Django message notification
+        if (element.classList.contains('card-panel') && 
+            (element.classList.contains('blue') || 
+             element.classList.contains('green') || 
+             element.classList.contains('red') || 
+             element.classList.contains('orange') ||
+             element.textContent.includes('Message') ||
+             element.textContent.includes('sent') ||
+             element.textContent.includes('conversation'))) {
+            element.style.display = 'none';
+        }
+    });
+    
+    // Also hide any messages in the contentBASE area that might be Django messages
+    const contentBase = document.querySelector('.contentBASE');
+    if (contentBase) {
+        const djangoMessages = contentBase.querySelectorAll('.card-panel');
+        djangoMessages.forEach(msg => {
+            if (msg.querySelector('i.material-icons')) {
+                msg.style.display = 'none';
+            }
+        });
+    }
+    
+    // Character counter
+    const textarea = document.getElementById('id_message_content');
+    const charCount = document.getElementById('char-count');
+    
+    if (textarea && charCount) {
+        textarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+            if (this.value.length > 900) {
+                charCount.style.color = '#f44336';
+            } else {
+                charCount.style.color = '#666';
+            }
+        });
+        
+        // Initial count
+        charCount.textContent = textarea.value.length;
+    }
+    
+    // Auto-scroll to bottom for recent messages
+    const sortBy = '{{ sort_by }}';
+    if (sortBy === 'recent' || !sortBy) {
+        const messagesArea = document.querySelector('.messages-area');
+        if (messagesArea) {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+    }
+    
+    // Auto-resize textarea
+    if (textarea) {
+        M.textareaAutoResize(textarea);
+    }
+
     // Get CSRF token
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;

@@ -46,75 +46,136 @@
 
     <!-- Conversations List -->
     <div class="conversations-list">
-
-        
         {% if page_obj %}
             {% for conversation in page_obj %}
                 <div class="conversation-item card">
                     <div class="card-content">
-                        
-                        
-                        {% if conversation.other_user %}
-                            <a href="{% url 'messaging:conversation_detail' conversation.other_user.username %}" class="conversation-link">
-                        {% endif %}
-                            <div class="conversation-avatar">
-                                {% if conversation.other_user.profile.avatar %}
-                                    <img src="{{ conversation.other_user.profile.avatar_small.url }}" 
-                                         alt="{{ conversation.other_user.username }}" 
-                                         class="circle responsive-img">
-                                {% else %}
-                                    <img src="{% static 'icons/default-avatar.svg' %}" 
-                                         alt="{{ conversation.other_user.username }}" 
-                                         class="circle responsive-img">
-                                {% endif %}
-                                
-                                {% if conversation.unread_count > 0 %}
-                                    <span class="unread-badge">{{ conversation.unread_count }}</span>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="conversation-info">
-                                <div class="conversation-header">
-                                    <span class="conversation-name">
-                                        {% if conversation.other_user %}
-                                            {{ conversation.other_user.username }}
-                                            {% if conversation.other_user.first_name or conversation.other_user.last_name %}
-                                                <span class="grey-text">({{ conversation.other_user.first_name }} {{ conversation.other_user.last_name }})</span>
-                                            {% endif %}
+                        {% if conversation.conversation_type == 'submission' %}
+                            <!-- Submission conversation -->
+                            <a href="{% url 'submissions:submission_detail' conversation.submission.id %}" class="conversation-link">
+                                <div class="conversation-avatar">
+                                    {% if conversation.conversation_type == 'submission' %}
+                                        <!-- Show project/task/need icon for submission conversations -->
+                                        {% if conversation.submission.to_project %}
+                                            <i class="material-icons circle blue white-text" style="font-size: 40px; width: 50px; height: 50px; line-height: 50px; text-align: center;">work</i>
+                                        {% elif conversation.submission.to_task %}
+                                            <i class="material-icons circle green white-text" style="font-size: 40px; width: 50px; height: 50px; line-height: 50px; text-align: center;">assignment</i>
                                         {% else %}
-                                            <span class="red-text">Unknown User</span>
+                                            <i class="material-icons circle orange white-text" style="font-size: 40px; width: 50px; height: 50px; line-height: 50px; text-align: center;">help</i>
                                         {% endif %}
-                                    </span>
-                                    <span class="conversation-time grey-text">
-                                        {% if conversation.last_message %}
-                                            {{ conversation.last_message.timestamp|naturaltime }}
-                                        {% else %}
-                                            {{ conversation.created_at|naturaltime }}
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                
-                                <div class="conversation-preview">
-                                    {% if conversation.last_message %}
-                                        <span class="message-sender">
-                                            {% if conversation.last_message.sender == request.user %}
-                                                You:
-                                            {% else %}
-                                                {{ conversation.last_message.sender.username }}:
-                                            {% endif %}
-                                        </span>
-                                        <span class="message-preview {% if conversation.unread_count > 0 %}unread{% endif %}">
-                                            {{ conversation.last_message.content|truncatechars:100 }}
-                                        </span>
-                                    {% else %}
-                                        <span class="message-preview grey-text">No messages yet</span>
+                                    {% endif %}
+                                    
+                                    {% if conversation.unread_count > 0 %}
+                                        <span class="unread-badge">{{ conversation.unread_count }}</span>
                                     {% endif %}
                                 </div>
-                            </div>
-                        {% if conversation.other_user %}
-                        </a>
+                                
+                                <div class="conversation-info">
+                                    <div class="conversation-header">
+                                        <span class="conversation-name">
+                                            {{ conversation }}
+                                        </span>
+                                        <span class="conversation-time grey-text">
+                                            {% if conversation.last_message %}
+                                                {{ conversation.last_message.timestamp|naturaltime }}
+                                            {% else %}
+                                                {{ conversation.created_at|naturaltime }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="conversation-preview">
+                                        {% if conversation.last_message %}
+                                            <span class="message-sender">
+                                                {% if conversation.last_message.sender == request.user %}
+                                                    You:
+                                                {% else %}
+                                                    {% if conversation.user_can_see_admin_names %}
+                                                        <!-- Admins see specific admin names -->
+                                                        {{ conversation.last_message.sender.username }}:
+                                                    {% else %}
+                                                        <!-- Submitees see generic team name -->
+                                                        {% if conversation.submission.to_project %}
+                                                            Project Team:
+                                                        {% elif conversation.submission.to_task %}
+                                                            Task Team:
+                                                        {% else %}
+                                                            Need Team:
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            </span>
+                                            <span class="message-preview {% if conversation.unread_count > 0 %}unread{% endif %}">
+                                                {{ conversation.last_message.content|truncatechars:100 }}
+                                            </span>
+                                        {% else %}
+                                            <span class="message-preview grey-text">No messages yet</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
                         {% else %}
-                        </div>
+                            <!-- Regular direct conversation -->
+                            {% if conversation.other_user %}
+                                <a href="{% url 'messaging:conversation_detail' conversation.other_user.username %}" class="conversation-link">
+                            {% endif %}
+                                <div class="conversation-avatar">
+                                    {% if conversation.other_user.profile.avatar %}
+                                        <img src="{{ conversation.other_user.profile.avatar_small.url }}" 
+                                             alt="{{ conversation.other_user.username }}" 
+                                             class="circle responsive-img">
+                                    {% else %}
+                                        <img src="{% static 'icons/default-avatar.svg' %}" 
+                                             alt="{{ conversation.other_user.username }}" 
+                                             class="circle responsive-img">
+                                    {% endif %}
+                                    
+                                    {% if conversation.unread_count > 0 %}
+                                        <span class="unread-badge">{{ conversation.unread_count }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="conversation-info">
+                                    <div class="conversation-header">
+                                        <span class="conversation-name">
+                                            {% if conversation.other_user %}
+                                                {{ conversation.other_user.username }}
+                                                {% if conversation.other_user.first_name or conversation.other_user.last_name %}
+                                                    <span class="grey-text">({{ conversation.other_user.first_name }} {{ conversation.other_user.last_name }})</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="red-text">Unknown User</span>
+                                            {% endif %}
+                                        </span>
+                                        <span class="conversation-time grey-text">
+                                            {% if conversation.last_message %}
+                                                {{ conversation.last_message.timestamp|naturaltime }}
+                                            {% else %}
+                                                {{ conversation.created_at|naturaltime }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="conversation-preview">
+                                        {% if conversation.last_message %}
+                                            <span class="message-sender">
+                                                {% if conversation.last_message.sender == request.user %}
+                                                    You:
+                                                {% else %}
+                                                    {{ conversation.last_message.sender.username }}:
+                                                {% endif %}
+                                            </span>
+                                            <span class="message-preview {% if conversation.unread_count > 0 %}unread{% endif %}">
+                                                {{ conversation.last_message.content|truncatechars:100 }}
+                                            </span>
+                                        {% else %}
+                                            <span class="message-preview grey-text">No messages yet</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% if conversation.other_user %}
+                            </a>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -184,5 +245,82 @@
     {% endif %}
 </div>
 
+<style>
+.conversation-link {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+}
 
+.conversation-link:hover {
+    color: inherit;
+}
+
+.conversation-item {
+    transition: box-shadow 0.3s ease;
+}
+
+.conversation-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.conversation-avatar {
+    position: relative;
+    display: inline-block;
+    margin-right: 1rem;
+}
+
+.unread-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #f44336;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+}
+
+.conversation-info {
+    flex: 1;
+}
+
+.conversation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.conversation-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.conversation-time {
+    font-size: 0.9rem;
+}
+
+.conversation-preview {
+    display: flex;
+    align-items: center;
+}
+
+.message-sender {
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.message-preview.unread {
+    font-weight: bold;
+}
+
+.card-content {
+    display: flex;
+    align-items: center;
+}
+</style>
 {% endblock %}
