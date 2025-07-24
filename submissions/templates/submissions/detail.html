@@ -140,10 +140,31 @@
                 </div>
                 
                 <div class="card-action">
-                    <a href="{% url 'submissions:submission_list' content_type content_object.id %}" 
-                       class="btn-flat">
-                        <i class="material-icons left">arrow_back</i>Back to List
-                    </a>
+                    {% if can_edit %}
+                        <!-- Show "Back to List" for users who can manage submissions -->
+                        <a href="{% url 'submissions:submission_list' content_type content_object.id %}" 
+                           class="btn-flat">
+                            <i class="material-icons left">arrow_back</i>Back to Submissions List
+                        </a>
+                    {% else %}
+                        <!-- Show "Back to [Content Type]" for regular users -->
+                        {% if content_type == 'project' %}
+                            <a href="{% url 'project:project' content_object.id %}" 
+                               class="btn-flat">
+                                <i class="material-icons left">arrow_back</i>Back to Project
+                            </a>
+                        {% elif content_type == 'task' %}
+                            <a href="{% url 'task:task_detail' content_object.id %}" 
+                               class="btn-flat">
+                                <i class="material-icons left">arrow_back</i>Back to Task
+                            </a>
+                        {% elif content_type == 'need' %}
+                            <a href="{% url 'need:need' content_object.id %}" 
+                               class="btn-flat">
+                                <i class="material-icons left">arrow_back</i>Back to Need
+                            </a>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>
