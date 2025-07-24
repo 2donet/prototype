@@ -25,12 +25,7 @@
     .chips-container {
         margin-top: 1rem;
     }
-    .status-update-section {
-        margin-top: 2rem;
-        padding: 1rem;
-        background-color: #f5f5f5;
-        border-radius: 4px;
-    }
+
     .status-update-container {
         margin-bottom: 10px;
     }
@@ -50,9 +45,8 @@
         max-height: 500px;
         overflow-y: auto;
         margin-bottom: 1rem;
-        border: 1px solid #e0e0e0;
         border-radius: 4px;
-        background-color: #fafafa;
+        /* background-color: #fafafa; */
     }
     .messages-list {
         padding: 1rem;
@@ -74,12 +68,9 @@
         border-radius: 18px;
         position: relative;
     }
-    /* Admin message styling to match style.css pattern */
+    /* Admin message styling - other admin messages should have dark background */
     .admin-message .message-bubble {
-        background: var(--bg-color3) !important;
-        color: var(--highlightdark) !important;
-        border-bottom-left-radius: 4px !important;
-        border: none !important;
+        background-color: #30344a !important;
     }
     .admin-message .message-meta {
         color: var(--highlightdark) !important;
@@ -122,10 +113,49 @@
     }
     .received .message-sender {
         text-align: left;
-        color: rgba(0,0,0,0.8);
+        color: var(--text)
     }
     /* Other admin message sender styling */
-
+    .admin-message .message-sender {
+        text-align: left;
+        color: var(--highlight) !important;
+        opacity: 0.8;
+    }
+    .message-form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+    .message-counter {
+        font-size: 0.9em;
+        color: #666;
+    }
+    .no-messages {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+    }
+    .discussion-placeholder {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 4px;
+        color: #856404;
+        font-style: italic;
+    }
+    .pagination-container {
+        text-align: center;
+        margin: 1rem 0;
+    }
+    .sort-controls {
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    .sort-controls a {
+        margin-right: 0.5rem;
+    }
 </style>
 {% endblock %}
 
@@ -335,28 +365,17 @@
                             <div class="messages-list">
                                 {% for message in messages %}
                                     {% comment %}
-                                    Determine message wrapper class:
+                                    Determine message wrapper class based on clearer logic:
                                     - sent: current user's messages (blue)
                                     - admin-message: other admin messages (dark blue #30344a)  
-                                    - received: submitee messages or non-admin messages (white)
+                                    - received: submitee messages or default (white)
                                     {% endcomment %}
-                                    {% if message.sender == request.user %}
+                                    {% if message.is_from_current_user %}
                                         <div class="message-wrapper sent">
+                                    {% elif message.is_from_other_admin and can_manage %}
+                                        <div class="message-wrapper admin-message">
                                     {% else %}
-                                        {% comment %}Check if the message sender is an admin{% endcomment %}
-                                        {% if can_manage %}
-                                            {% comment %}Current user is admin, check if message sender is also admin{% endcomment %}
-                                            {% if message.sender != submission.applicant %}
-                                                {% comment %}Message is from another admin{% endcomment %}
-                                                <div class="message-wrapper admin-message">
-                                            {% else %}
-                                                {% comment %}Message is from submitee{% endcomment %}
-                                                <div class="message-wrapper received">
-                                            {% endif %}
-                                        {% else %}
-                                            {% comment %}Current user is submitee, all other messages are from admins but use received class{% endcomment %}
-                                            <div class="message-wrapper received">
-                                        {% endif %}
+                                        <div class="message-wrapper received">
                                     {% endif %}
                                         
                                         {% if message.sender != request.user %}

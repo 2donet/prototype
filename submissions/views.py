@@ -471,6 +471,12 @@ def submission_detail(request, submission_id):
         if sort_by != 'oldest':
             page_obj.object_list = list(reversed(page_obj.object_list))
         
+        # Add message type info for template
+        for message in page_obj.object_list:
+            message.is_from_current_user = (message.sender == request.user)
+            message.is_from_applicant = (message.sender == submission.applicant)
+            message.is_from_other_admin = (not message.is_from_current_user and not message.is_from_applicant)
+        
         conversation_messages = page_obj
         
         # Mark conversation as read (only if user is a participant)
