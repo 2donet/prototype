@@ -55,7 +55,15 @@
 
     <!-- Messages Area -->
     <div class="messages-area">
-        {% if page_obj %}
+        {% if is_new_conversation %}
+            <!-- New conversation - no messages yet -->
+            <div class="no-messages center-align">
+                <i class="material-icons large grey-text">chat_bubble_outline</i>
+                <h5>Start a conversation with {{ other_user.username }}</h5>
+                <p class="grey-text">This will be your first message to {{ other_user.username }}. Send a message below to start the conversation!</p>
+            </div>
+        {% elif page_obj %}
+            <!-- Existing conversation with messages -->
             <!-- Pagination (Top) -->
             {% if page_obj.has_other_pages %}
                 <div class="pagination-container top-pagination">
@@ -142,11 +150,19 @@
                     </ul>
                 </div>
             {% endif %}
-        {% else %}
+        {% elif conversation %}
+            <!-- Existing conversation but no messages -->
             <div class="no-messages center-align">
                 <i class="material-icons large grey-text">chat_bubble_outline</i>
                 <h5>No messages yet</h5>
                 <p class="grey-text">Start the conversation by sending a message below!</p>
+            </div>
+        {% else %}
+            <!-- This shouldn't happen, but just in case -->
+            <div class="no-messages center-align">
+                <i class="material-icons large grey-text">chat_bubble_outline</i>
+                <h5>Start a conversation with {{ other_user.username }}</h5>
+                <p class="grey-text">Send a message below to start the conversation!</p>
             </div>
         {% endif %}
     </div>
@@ -183,139 +199,7 @@
     </div>
 </div>
 
-<style>
-.chat-container {
-    max-width: 1000px;
-    margin: 0 auto;
-}
 
-.chat-header {
-    margin-bottom: 1rem;
-}
-
-.chat-header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.chat-user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.chat-avatar img {
-    width: 50px;
-    height: 50px;
-}
-
-.chat-username {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.2rem;
-}
-
-.chat-fullname {
-    margin: 0 0 0.5rem 0;
-}
-
-.chat-profile-link {
-    color: #2196f3;
-    text-decoration: none;
-}
-
-.messages-area {
-    min-height: 400px;
-    max-height: 600px;
-    overflow-y: auto;
-    margin-bottom: 1rem;
-}
-
-.messages-list {
-    padding: 1rem;
-}
-
-.message-wrapper {
-    margin-bottom: 1rem;
-    display: flex;
-    flex-direction: column;
-}
-
-.message-wrapper.sent {
-    align-items: flex-end;
-}
-
-.message-wrapper.received {
-    align-items: flex-start;
-}
-
-.message-bubble {
-    max-width: 70%;
-    padding: 0.8rem 1rem;
-    border-radius: 18px;
-    position: relative;
-}
-
-.sent .message-bubble {
-    background: #2196f3;
-    color: white;
-    border-bottom-right-radius: 4px;
-}
-
-.received .message-bubble {
-    background: white;
-    color: #333;
-    border: 1px solid #e0e0e0;
-    border-bottom-left-radius: 4px;
-}
-
-.message-content {
-    margin-bottom: 5px;
-    line-height: 1.4;
-}
-
-.message-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 11px;
-    opacity: 0.7;
-}
-
-.sent .message-meta {
-    color: rgba(255,255,255,0.8);
-}
-
-.received .message-meta {
-    color: rgba(0,0,0,0.8);
-}
-
-.message-form-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1rem;
-}
-
-.message-counter {
-    font-size: 0.9em;
-    color: #666;
-}
-
-.sort-controls a {
-    margin-right: 0.5rem;
-}
-
-.pagination-container {
-    text-align: center;
-    margin: 1rem 0;
-}
-
-.pagination-info {
-    color: #666;
-    font-size: 0.9em;
-}
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -352,4 +236,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-{% endblock %}
+{%endblock%}

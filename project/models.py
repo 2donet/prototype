@@ -1,3 +1,7 @@
+# to add:
+# requirements 
+# introductions
+
 from django.db import models
 from django.conf import settings
 from skills.models import Skill

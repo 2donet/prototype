@@ -3516,6 +3516,183 @@ details:not([open]) .user-group-summary {
     }
 }
 
+
+/* Start Conversation Page */
+.start-conversation-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card-title-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.card-title-container .card-title {
+    margin: 0;
+    font-size: 24px;
+    color: var(--highlight);
+}
+
+.start-conversation-form {
+    margin-bottom: 30px;
+}
+
+.form-errors {
+    margin-top: 5px;
+}
+
+.form-errors span {
+    display: block;
+    font-size: 12px;
+    color: var(--danger);
+}
+
+.message-counter {
+    font-size: 12px;
+    color: var(--text2ndary);
+    margin-bottom: 10px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.tips-section {
+    border-top: 1px solid var(--bg-color3);
+    padding-top: 20px;
+    margin-top: 20px;
+}
+
+.tips-section h6 {
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.tips-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.tips-list li {
+    color: var(--text2ndary);
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.recent-conversations {
+    margin-top: 15px;
+}
+
+.full-width {
+    width: 100%;
+    text-align: center;
+}
+
+
+
+
+/* Messaging Auth Page */
+.messaging-auth-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.target-user-info {
+    margin-bottom: 30px;
+    background-color: var(--bg-light);
+}
+
+.target-user-avatar img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    margin-bottom: 15px;
+}
+
+.target-user-info h4 {
+    color: var(--highlight);
+    margin-bottom: 10px;
+}
+
+.target-user-bio {
+    color: var(--text2ndary);
+    font-style: italic;
+    margin: 15px 0;
+}
+
+.auth-prompt {
+    color: var(--text);
+    font-weight: 500;
+    margin-top: 15px;
+}
+
+.btn-signin, .btn-signup {
+    background: var(--highlight) !important;
+    color: var(--highlightdark) !important;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.btn-signin:hover, .btn-signup:hover {
+    background: var(--highlight-dark) !important;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.checkbox-section {
+    margin: 15px 0;
+}
+
+.checkbox-section label {
+    color: var(--text2ndary) !important;
+    font-size: 0.9rem;
+}
+
+.helper-links {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.helper-links a {
+    color: var(--highlight);
+    font-size: 0.9rem;
+}
+
+.back-to-profile {
+    margin-top: 30px;
+}
+
+.back-to-profile a {
+    color: var(--text2ndary);
+}
+
+/* Mobile responsiveness for auth page */
+@media only screen and (max-width: 600px) {
+    .messaging-auth-container {
+        padding: 10px;
+    }
+    
+    .target-user-avatar img {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .target-user-info h4 {
+        font-size: 1.5rem;
+    }
+}
+
 /* Navigation badge styling */
 #unread-count, #unread-count-mobile {
     background-color: var(--danger) !important;

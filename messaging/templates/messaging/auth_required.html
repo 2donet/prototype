@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login to Message {{ target_user.username }} - 2do.net{% endblock %}
+
+{% block content %}
+<div class="messaging-auth-container">
+    <!-- Target User Info -->
+    <div class="target-user-info card">
+        <div class="card-content center-align">
+            <div class="target-user-avatar">
+                {% if target_user.profile.avatar %}
+                    <img src="{{ target_user.profile.avatar.url }}" 
+                         alt="{{ target_user.username }}" 
+                         class="circle responsive-img">
+                {% else %}
+                    <img src="{% static 'icons/default-avatar.svg' %}" 
+                         alt="{{ target_user.username }}" 
+                         class="circle responsive-img">
+                {% endif %}
+            </div>
+            <h4>Message {{ target_user.username }}</h4>
+            {% if target_user.first_name or target_user.last_name %}
+                <p class="grey-text">{{ target_user.first_name }} {{ target_user.last_name }}</p>
+            {% endif %}
+            {% if target_user.profile.bio %}
+                <p class="target-user-bio">{{ target_user.profile.bio|truncatechars:150 }}</p>
+            {% endif %}
+            <p class="auth-prompt">Please login or create an account to start messaging</p>
+        </div>
+    </div>
+
+    <!-- Auth Forms Row -->
+    <div class="row">
+        <!-- Login Form -->
+        <div class="col s12 m6">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Sign In</span>
+                    
+                    {% if signin_form.non_field_errors %}
+                        <div class="card-panel red lighten-4">
+                            <span class="red-text text-darken-4">
+                                {% for error in signin_form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'messaging:auth_required' target_user.username %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="signin">
+                        
+                        <div class="input-field">
+                            <i class="material-icons prefix">person</i>
+                            {{ signin_form.username }}
+                            <label for="{{ signin_form.username.id_for_label }}">Username</label>
+                            {% if signin_form.username.errors %}
+                                <ul class="errorlist">
+                                    {% for error in signin_form.username.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="input-field">
+                            <i class="material-icons prefix">lock</i>
+                            {{ signin_form.password }}
+                            <label for="{{ signin_form.password.id_for_label }}">Password</label>
+                            {% if signin_form.password.errors %}
+                                <ul class="errorlist">
+                                    {% for error in signin_form.password.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <button class="btn waves-effect waves-light btn-signin full-width" type="submit">
+                            <i class="material-icons left">login</i>
+                            Sign In & Message
+                        </button>
+                    </form>
+                    
+                    <div class="helper-links center-align">
+                        <a href="#" class="modal-trigger not-available tooltipped" 
+                           data-position="top" 
+                           data-tooltip="Password reset not available yet">
+                            Forgot Password?
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Form -->
+        <div class="col s12 m6">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Create Account</span>
+                    
+                    {% if signup_form.non_field_errors %}
+                        <div class="card-panel red lighten-4">
+                            <span class="red-text text-darken-4">
+                                {% for error in signup_form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'messaging:auth_required' target_user.username %}" id="signupForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="signup">
+                        
+                        <div class="input-field">
+                            <i class="material-icons prefix">person</i>
+                            {{ signup_form.username }}
+                            <label for="{{ signup_form.username.id_for_label }}">Username</label>
+                            {% if signup_form.username.errors %}
+                                <ul class="errorlist">
+                                    {% for error in signup_form.username.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="input-field">
+                            <i class="material-icons prefix">email</i>
+                            {{ signup_form.email }}
+                            <label for="{{ signup_form.email.id_for_label }}">Email</label>
+                            {% if signup_form.email.errors %}
+                                <ul class="errorlist">
+                                    {% for error in signup_form.email.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="input-field">
+                            <i class="material-icons prefix">lock</i>
+                            {{ signup_form.password }}
+                            <label for="{{ signup_form.password.id_for_label }}">Password</label>
+                            {% if signup_form.password.errors %}
+                                <ul class="errorlist">
+                                    {% for error in signup_form.password.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="input-field">
+                            <i class="material-icons prefix">lock_outline</i>
+                            {{ signup_form.confirm_password }}
+                            <label for="{{ signup_form.confirm_password.id_for_label }}">Confirm Password</label>
+                            {% if signup_form.confirm_password.errors %}
+                                <ul class="errorlist">
+                                    {% for error in signup_form.confirm_password.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="checkbox-section">
+                            <label>
+                                {{ signup_form.agree_terms }}
+                                <span>I agree to the <a href="#terms-modal" class="modal-trigger">Terms</a></span>
+                            </label>
+                            {% if signup_form.agree_terms.errors %}
+                                <ul class="errorlist">
+                                    {% for error in signup_form.agree_terms.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="checkbox-section">
+                            <label>
+                                {{ signup_form.agree_privacy }}
+                                <span>I agree to the <a href="#privacy-modal" class="modal-trigger">Privacy Policy</a></span>
+                            </label>
+                            {% if signup_form.agree_privacy.errors %}
+                                <ul class="errorlist">
+                                    {% for error in signup_form.agree_privacy.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <button class="btn waves-effect waves-light btn-signup full-width" type="submit" id="signup-btn">
+                            <i class="material-icons left">person_add</i>
+                            Create Account & Message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Profile Link -->
+    <div class="back-to-profile center-align">
+        <a href="{% url 'user:userprofile' target_user.id %}" class="btn-flat waves-effect">
+            <i class="material-icons left">arrow_back</i>
+            Back to {{ target_user.username }}'s Profile
+        </a>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+<div id="terms-modal" class="modal">
+    <div class="modal-content">
+        <h4>Terms & Conditions</h4>
+        <p>By creating an account on 2do.net, you agree to our terms of service.</p>
+        <ul>
+            <li>Use the service responsibly and legally</li>
+            <li>Respect other users' privacy and data</li>
+            <li>Do not use for illegal activities</li>
+            <li>Keep your account secure</li>
+        </ul>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close btn">Accept</a>
+    </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div id="privacy-modal" class="modal">
+    <div class="modal-content">
+        <h4>Privacy Policy</h4>
+        <p>We take your privacy seriously. We collect account information and project data to provide our service.</p>
+        <p>We do not sell your personal information to third parties.</p>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close btn">Understood</a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize modals
+    const modals = document.querySelectorAll('.modal');
+    M.Modal.init(modals);
+    
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('.tooltipped');
+    M.Tooltip.init(tooltips);
+    
+    // Prevent disabled links from opening modals
+    document.querySelectorAll('.not-available').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+
+    // Simple validation for signup form
+    const signupBtn = document.getElementById('signup-btn');
+    const agreeTerms = document.getElementById('{{ signup_form.agree_terms.id_for_label }}');
+    const agreePrivacy = document.getElementById('{{ signup_form.agree_privacy.id_for_label }}');
+    
+    function validateSignup() {
+        if (agreeTerms && agreePrivacy && signupBtn) {
+            const agreementsChecked = agreeTerms.checked && agreePrivacy.checked;
+            signupBtn.disabled = !agreementsChecked;
+        }
+    }
+    
+    if (agreeTerms && agreePrivacy) {
+        agreeTerms.addEventListener('change', validateSignup);
+        agreePrivacy.addEventListener('change', validateSignup);
+        validateSignup(); // Initial check
+    }
+});
+</script>
+{% endblock %}

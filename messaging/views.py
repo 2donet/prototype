@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate, login
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import Http404, JsonResponse
@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from .models import Conversation, Message, ConversationParticipant
 from .forms import MessageForm, StartConversationForm
-from submissions.models import Submission
+from user.forms import SignInForm, SignupForm
 
 User = get_user_model()
 
@@ -46,44 +46,14 @@ def conversation_list(request):
     
     # Add unread counts and last message for each conversation
     for conversation in page_obj:
-        # Only show unread count if user is a participant
-        if conversation.participants.filter(id=request.user.id).exists():
-            conversation.unread_count = conversation.get_unread_count(request.user)
-        else:
-            conversation.unread_count = 0
-            
+        conversation.unread_count = conversation.get_unread_count(request.user)
         conversation.last_message = conversation.get_last_message()
+        conversation.other_user = conversation.get_other_participant(request.user)
         
-        # For submission conversations, determine if user can see admin names
-        if conversation.conversation_type == 'submission':
-            conversation.other_user = None
-            # Check if current user can manage this submission
-            if conversation.submission:
-                content_object = (conversation.submission.to_project or 
-                                conversation.submission.to_task or 
-                                conversation.submission.to_need)
-                from submissions.views import user_can_manage_submissions
-                conversation.user_can_see_admin_names = user_can_manage_submissions(request.user, content_object)
-            else:
-                conversation.user_can_see_admin_names = False
-        else:
-            conversation.other_user = conversation.get_other_participant(request.user)
-            conversation.user_can_see_admin_names = False
-        
-    # Clear any messages related to submission conversations to avoid notifications
-    # on submission detail pages
-    from django.contrib import messages as django_messages
-    storage = django_messages.get_messages(request)
-    filtered_messages = []
-    for message in storage:
-        # Filter out message-related notifications
-        if not any(keyword in str(message).lower() for keyword in ['message', 'conversation', 'discussion', 'chat']):
-            filtered_messages.append(message)
-    # Clear the storage and re-add filtered messages
-    storage.used = False
-    storage._queued_messages = filtered_messages
-        
-
+        # Debug: Print to console (remove this after testing)
+        print(f"Conversation {conversation.id}: other_user = {conversation.other_user}, username = {conversation.other_user.username if conversation.other_user else 'None'}")
+    
+    
     context = {
         'page_obj': page_obj,
         'sort_by': sort_by,
@@ -91,6 +61,7 @@ def conversation_list(request):
     }
     
     return render(request, 'messaging/conversation_list.html', context)
+
 
 @login_required
 def conversation_detail(request, username):
@@ -106,15 +77,24 @@ def conversation_detail(request, username):
         messages.error(request, "You cannot message yourself.")
         return redirect('messaging:conversation_list')
     
-    # Get or create conversation
-    conversation = Conversation.objects.get_or_create_conversation(
-        request.user, other_user
-    )
+    # Try to get existing conversation (DON'T create one yet)
+    conversation = Conversation.objects.filter(
+        participants=request.user
+    ).filter(
+        participants=other_user
+    ).filter(
+        conversation_type='direct'
+    ).first()
     
     # Handle message sending
     if request.method == 'POST':
         form = MessageForm(request.POST)
         if form.is_valid():
+            # NOW create the conversation if it doesn't exist (when first message is sent)
+            if not conversation:
+                conversation = Conversation.objects.create(conversation_type='direct')
+                conversation.participants.add(request.user, other_user)
+            
             message = form.save(commit=False)
             message.conversation = conversation
             message.sender = request.user
@@ -131,7 +111,20 @@ def conversation_detail(request, username):
     else:
         form = MessageForm()
     
-    # Get messages with pagination
+    # If no conversation exists yet, show empty state
+    if not conversation:
+        context = {
+            'conversation': None,
+            'other_user': other_user,
+            'page_obj': None,
+            'form': form,
+            'sort_by': 'recent',
+            'total_messages': 0,
+            'is_new_conversation': True,
+        }
+        return render(request, 'messaging/conversation_detail.html', context)
+    
+    # Get messages with pagination (existing conversation)
     sort_by = request.GET.get('sort_by', 'recent')
     
     conversation_messages = conversation.messages.select_related('sender')
@@ -171,10 +164,10 @@ def conversation_detail(request, username):
         'form': form,
         'sort_by': sort_by,
         'total_messages': paginator.count,
+        'is_new_conversation': False,
     }
     
     return render(request, 'messaging/conversation_detail.html', context)
-
 
 @login_required
 def start_conversation(request):
@@ -188,12 +181,23 @@ def start_conversation(request):
             # Prevent messaging oneself
             if recipient == request.user:
                 messages.error(request, "You cannot message yourself.")
-                return render(request, 'messages/start_conversation.html', {'form': form})
+                return render(request, 'messaging/start_conversation.html', {'form': form})
             
-            # Get or create conversation
-            conversation = Conversation.objects.get_or_create_conversation(
-                request.user, recipient
-            )
+            # Check if conversation already exists
+            existing_conversation = Conversation.objects.filter(
+                participants=request.user
+            ).filter(
+                participants=recipient
+            ).filter(
+                conversation_type='direct'
+            ).first()
+            
+            # Create conversation only when sending the first message
+            if not existing_conversation:
+                conversation = Conversation.objects.create(conversation_type='direct')
+                conversation.participants.add(request.user, recipient)
+            else:
+                conversation = existing_conversation
             
             # Create the initial message
             message = Message.objects.create(
@@ -222,38 +226,106 @@ def start_conversation(request):
     return render(request, 'messaging/start_conversation.html', context)
 
 
-@login_required
 def message_with_user(request, username):
     """
-    Handle the /message/<username>/ URL from profile pages.
-    Redirects to existing conversation or start new conversation page.
+    Handle the /messages/<username>/ URL from profile pages.
+    For logged-in users: Redirects to conversation detail.
+    For anonymous users: Redirects to auth page.
     """
     try:
         other_user = User.objects.get(username=username)
     except User.DoesNotExist:
         messages.error(request, f"User '{username}' does not exist.")
-        return redirect('messaging:conversation_list')
+        if request.user.is_authenticated:
+            return redirect('messaging:conversation_list')
+        else:
+            return redirect('/')
+    
+    # For anonymous users, redirect to auth page
+    if not request.user.is_authenticated:
+        return redirect('messaging:auth_required', username=username)
     
     # Prevent messaging oneself
     if other_user == request.user:
         messages.error(request, "You cannot message yourself.")
         return redirect('messaging:conversation_list')
     
-    # Check if conversation already exists
-    existing_conversation = Conversation.objects.filter(
-        participants=request.user
-    ).filter(
-        participants=other_user
-    ).filter(
-        conversation_type='direct'
-    ).first()
+    # For logged-in users, go directly to conversation
+    return redirect('messaging:conversation_detail', username=username)
+
+
+def auth_required(request, username):
+    """
+    Show combined login/register page for messaging a specific user.
+    Handle both signin and signup forms on the same page.
+    """
+    try:
+        target_user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        messages.error(request, f"User '{username}' does not exist.")
+        return redirect('/')
     
-    if existing_conversation:
-        # Redirect to existing conversation
+    # If user is already logged in, redirect to conversation
+    if request.user.is_authenticated:
         return redirect('messaging:conversation_detail', username=username)
-    else:
-        # Redirect to start conversation page with pre-filled recipient
-        return redirect(f"{reverse('messaging:start_conversation')}?to={username}")
+    
+    signin_form = SignInForm()
+    signup_form = SignupForm()
+    
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type')
+        
+        if form_type == 'signin':
+            signin_form = SignInForm(request, data=request.POST)
+            if signin_form.is_valid():
+                username_input = signin_form.cleaned_data.get('username')
+                password = signin_form.cleaned_data.get('password')
+                
+                user = authenticate(username=username_input, password=password)
+                if user is not None:
+                    login(request, user)
+                    
+                    # Prevent messaging oneself after login
+                    if user == target_user:
+                        messages.error(request, "You cannot message yourself.")
+                        return redirect('messaging:conversation_list')
+                    
+                    messages.success(request, f'Welcome back, {user.username}!')
+                    return redirect('messaging:conversation_detail', username=target_user.username)
+                else:
+                    messages.error(request, 'Invalid username or password.')
+        
+        elif form_type == 'signup':
+            signup_form = SignupForm(request.POST)
+            if signup_form.is_valid():
+                try:
+                    user = signup_form.save()
+                    login(request, user)
+                    
+                    # Prevent messaging oneself after signup
+                    if user == target_user:
+                        messages.error(request, "You cannot message yourself.")
+                        return redirect('messaging:conversation_list')
+                    
+                    messages.success(request, 
+                        f'Welcome to 2do.net, {user.username}! Account created successfully.')
+                    return redirect('messaging:conversation_detail', username=target_user.username)
+                    
+                except Exception as e:
+                    messages.error(request, 'An error occurred while creating your account. Please try again.')
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"User registration error: {e}")
+            else:
+                messages.error(request, 'Please correct the errors below.')
+    
+    context = {
+        'target_user': target_user,
+        'signin_form': signin_form,
+        'signup_form': signup_form,
+    }
+    
+    return render(request, 'messaging/auth_required.html', context)
 
 
 @login_required
@@ -286,12 +358,11 @@ def ajax_mark_read(request, conversation_id):
 
 @login_required 
 def get_unread_count(request):
-    """AJAX endpoint to get count of conversations with unread messages for navbar"""
-    conversations_with_unread = 0
+    """AJAX endpoint to get total unread message count for navbar"""
+    total_unread = 0
     conversations = Conversation.objects.get_user_conversations(request.user)
     
     for conversation in conversations:
-        if conversation.get_unread_count(request.user) > 0:
-            conversations_with_unread += 1
+        total_unread += conversation.get_unread_count(request.user)
     
-    return JsonResponse({'unread_count': conversations_with_unread})
+    return JsonResponse({'unread_count': total_unread})
