@@ -3811,3 +3811,8 @@ nav ul li a {
             border-bottom: 1px solid var(--highlight);
             padding-bottom: 10px;
         }
+
+        .chips .input{
+        color: var(--text) !important;
+    
+}

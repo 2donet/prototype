@@ -3,6 +3,15 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .chips .chip {
+        background-color: #26a69a;
+        color: white;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="row">
@@ -18,6 +27,10 @@
                             <p><strong>{{ content_object.title|default:content_object.name }}</strong></p>
                             {% if content_object.description %}
                                 <p class="grey-text">{{ content_object.description|truncatewords:30 }}</p>
+                            {% elif content_object.desc %}
+                                <p class="grey-text">{{ content_object.desc|truncatewords:30 }}</p>
+                            {% elif content_object.summary %}
+                                <p class="grey-text">{{ content_object.summary|truncatewords:30 }}</p>
                             {% endif %}
                         </div>
                     </div>
@@ -33,21 +46,16 @@
                             <label for="why_fit">Why are you a good fit? (Optional)</label>
                         </div>
                         
-                        <!-- Skills -->
+                        <!-- Skills - Updated to use chips input -->
                         <div class="input-field">
-                            <label for="relevant_skills">Your Relevant Skills (Optional)</label>
-                            <select multiple name="relevant_skills" id="relevant_skills" 
-                                    class="browser-default" size="6">
-                                {% for skill in skills %}
-                                    <option value="{{ skill.id }}" 
-                                            {% if skill.id in form_data.relevant_skills %}selected{% endif %}>
-                                        {{ skill.name }}
-                                    </option>
-                                {% empty %}
-                                    <option disabled>No skills available</option>
-                                {% endfor %}
-                            </select>
+                            <div class="chips chips-autocomplete" id="skills-input"></div>
+                            <input type="hidden" name="skills" id="skills-hidden" value="">
                         </div>
+                        <blockquote>
+                            <i>Write each skill/tag, and press enter e.g.:</i>
+                            <code>JavaScript</code> press
+                            <kbd>enter</kbd> <code>Python</code> press <kbd>enter</kbd>
+                        </blockquote>
                         
                         <!-- Additional Info -->
                         <div class="input-field">
@@ -78,12 +86,73 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Materialize components
     M.textareaAutoResize(document.querySelectorAll('textarea'));
     M.updateTextFields();
+    
+    // Skills chips functionality - matching project creation
+    const skillsChipsElement = document.querySelector('#skills-input');
+    const skillsHidden = document.querySelector('#skills-hidden');
+    
+    if (skillsChipsElement && skillsHidden) {
+        // Initialize chips with autocomplete
+        const skillsChips = M.Chips.init(skillsChipsElement, {
+            placeholder: 'Enter a skill',
+            secondaryPlaceholder: '+Skill',
+            autocompleteOptions: {
+                data: {},
+                limit: Infinity,
+                minLength: 1
+            },
+            onChipAdd: function() {
+                updateSkillsHidden();
+            },
+            onChipDelete: function() {
+                updateSkillsHidden();
+            }
+        });
+        
+        // Function to update the hidden skills field
+        function updateSkillsHidden() {
+            const chipsData = M.Chips.getInstance(skillsChipsElement).chipsData;
+            const skillNames = chipsData.map(chip => chip.tag);
+            skillsHidden.value = JSON.stringify(skillNames);
+        }
+        
+        // Load existing skills if editing (for future use)
+        // This would be populated from form initial data
+        const existingSkills = [];  // This could be populated from Django context
+        if (existingSkills.length > 0) {
+            skillsChips.chips = existingSkills.map(skill => ({tag: skill}));
+            updateSkillsHidden();
+        }
+        
+        // Fetch skills for autocomplete
+        fetch('/skills/api/skills/')
+            .then(response => response.json())
+            .then(data => {
+                const autocompleteData = {};
+                data.forEach(skill => {
+                    autocompleteData[skill.name] = null;
+                });
+                
+                // Update autocomplete data
+                const autocomplete = M.Autocomplete.init(skillsChipsElement.querySelector('input'), {
+                    data: autocompleteData,
+                    limit: Infinity,
+                    minLength: 1
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching skills:', error);
+            });
+    }
 });
 </script>
-{% endblock %}
+{%endblock%}

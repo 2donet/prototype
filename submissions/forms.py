@@ -7,6 +7,7 @@ from submissions.models import Submission
 from project.models import Project
 from task.models import Task
 from need.models import Need
+import json
 
 
 class SubmissionForm(forms.ModelForm):
@@ -14,9 +15,16 @@ class SubmissionForm(forms.ModelForm):
     Enhanced form for creating submissions with better validation and UX
     """
     
+    # Add skills field to handle JSON input like project creation
+    skills = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+        help_text='JSON array of skill names'
+    )
+    
     class Meta:
         model = Submission
-        fields = ['to_project', 'to_task', 'to_need', 'why_fit', 'relevant_skills', 'additional_info']
+        fields = ['to_project', 'to_task', 'to_need', 'why_fit', 'additional_info']
         widgets = {
             'to_project': forms.Select(attrs={
                 'class': 'browser-default',
@@ -36,11 +44,6 @@ class SubmissionForm(forms.ModelForm):
                 'rows': 4,
                 'maxlength': 1000
             }),
-            'relevant_skills': forms.SelectMultiple(attrs={
-                'class': 'browser-default',
-                'multiple': True,
-                'size': 8
-            }),
             'additional_info': forms.Textarea(attrs={
                 'class': 'materialize-textarea',
                 'placeholder': 'Any additional information, links to portfolio, GitHub, LinkedIn, etc. (Optional)',
@@ -53,12 +56,10 @@ class SubmissionForm(forms.ModelForm):
             'to_task': 'Task',
             'to_need': 'Need',
             'why_fit': 'Why are you a good fit? (Optional)',
-            'relevant_skills': 'Relevant Skills (Optional)',
             'additional_info': 'Additional Information (Optional)',
         }
         help_texts = {
             'why_fit': 'Briefly describe your interest, qualifications, and what you can bring to this opportunity.',
-            'relevant_skills': 'Select skills from the list that are most relevant to this opportunity.',
             'additional_info': 'Provide any additional details, links to your work, or other relevant information.',
         }
 
@@ -73,42 +74,33 @@ class SubmissionForm(forms.ModelForm):
         
         # Make fields optional
         self.fields['why_fit'].required = False
-        self.fields['relevant_skills'].required = False
         self.fields['additional_info'].required = False
+        self.fields['skills'].required = False
         
         # Filter querysets to show only active/available items
         try:
             if hasattr(Project, 'is_active'):
-                self.fields['to_project'].queryset = Project.objects.filter(is_active=True).order_by('title')
+                self.fields['to_project'].queryset = Project.objects.filter(is_active=True).order_by('name')
             else:
-                self.fields['to_project'].queryset = Project.objects.order_by('title')
+                self.fields['to_project'].queryset = Project.objects.order_by('name')
         except:
             self.fields['to_project'].queryset = Project.objects.none()
         
         try:
             if hasattr(Task, 'is_active'):
-                self.fields['to_task'].queryset = Task.objects.filter(is_active=True).order_by('title')
+                self.fields['to_task'].queryset = Task.objects.filter(is_active=True).order_by('name')
             else:
-                self.fields['to_task'].queryset = Task.objects.order_by('title')
+                self.fields['to_task'].queryset = Task.objects.order_by('name')
         except:
             self.fields['to_task'].queryset = Task.objects.none()
         
         try:
             if hasattr(Need, 'is_active'):
-                self.fields['to_need'].queryset = Need.objects.filter(is_active=True).order_by('title')
+                self.fields['to_need'].queryset = Need.objects.filter(is_active=True).order_by('name')
             else:
-                self.fields['to_need'].queryset = Need.objects.order_by('title')
+                self.fields['to_need'].queryset = Need.objects.order_by('name')
         except:
             self.fields['to_need'].queryset = Need.objects.none()
-        
-        # Order skills alphabetically
-        try:
-            if hasattr(Skill, 'is_active'):
-                self.fields['relevant_skills'].queryset = Skill.objects.filter(is_active=True).order_by('name')
-            else:
-                self.fields['relevant_skills'].queryset = Skill.objects.order_by('name')
-        except:
-            self.fields['relevant_skills'].queryset = Skill.objects.none()
         
         # Add empty option to select fields
         self.fields['to_project'].empty_label = "Select a project..."
@@ -204,8 +196,21 @@ class SubmissionForm(forms.ModelForm):
         
         if commit:
             submission.save()
-            self.save_m2m()  # Save many-to-many relationships
-        
+            
+            # Handle skills similar to project creation
+            skills_json = self.cleaned_data.get('skills')
+            if skills_json:
+                try:
+                    skill_names = json.loads(skills_json)
+                    if skill_names:
+                        skills = []
+                        for skill_name in skill_names:
+                            skill = Skill.get_or_create_skill(skill_name.strip())
+                            skills.append(skill)
+                        submission.relevant_skills.set(skills)
+                except (json.JSONDecodeError, Exception) as e:
+                    print(f"DEBUG: Error processing skills: {e}")
+            
         return submission
 
 
@@ -214,19 +219,21 @@ class SubmissionQuickForm(forms.ModelForm):
     Simplified form for quick submissions from specific content pages
     """
     
+    # Add skills field for chips input
+    skills = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+        help_text='JSON array of skill names'
+    )
+    
     class Meta:
         model = Submission
-        fields = ['why_fit', 'relevant_skills', 'additional_info']
+        fields = ['why_fit', 'additional_info']
         widgets = {
             'why_fit': forms.Textarea(attrs={
                 'class': 'materialize-textarea',
                 'placeholder': 'Why are you interested in this opportunity? (Optional)',
                 'rows': 3
-            }),
-            'relevant_skills': forms.SelectMultiple(attrs={
-                'class': 'browser-default',
-                'multiple': True,
-                'size': 6
             }),
             'additional_info': forms.Textarea(attrs={
                 'class': 'materialize-textarea',
@@ -236,7 +243,6 @@ class SubmissionQuickForm(forms.ModelForm):
         }
         labels = {
             'why_fit': 'Why are you a good fit? (Optional)',
-            'relevant_skills': 'Your Relevant Skills (Optional)',
             'additional_info': 'Additional Information (Optional)',
         }
 
@@ -250,17 +256,8 @@ class SubmissionQuickForm(forms.ModelForm):
         
         # Make all fields optional
         self.fields['why_fit'].required = False
-        self.fields['relevant_skills'].required = False
         self.fields['additional_info'].required = False
-        
-        # Filter skills
-        try:
-            if hasattr(Skill, 'is_active'):
-                self.fields['relevant_skills'].queryset = Skill.objects.filter(is_active=True).order_by('name')
-            else:
-                self.fields['relevant_skills'].queryset = Skill.objects.order_by('name')
-        except:
-            self.fields['relevant_skills'].queryset = Skill.objects.none()
+        self.fields['skills'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
@@ -274,9 +271,6 @@ class SubmissionQuickForm(forms.ModelForm):
         submission = super().save(commit=False)
         
         print(f"DEBUG: Created submission object: {submission}")
-        print(f"DEBUG: submission.to_project = {submission.to_project}")
-        print(f"DEBUG: submission.to_task = {submission.to_task}")
-        print(f"DEBUG: submission.to_need = {submission.to_need}")
         
         if self.user:
             submission.applicant = self.user
@@ -315,32 +309,25 @@ class SubmissionQuickForm(forms.ModelForm):
                 print(f"DEBUG: Submission validation passed")
                 submission.save()
                 print(f"DEBUG: Submission saved successfully with ID: {submission.id}")
-                self.save_m2m()
-                print(f"DEBUG: Many-to-many relationships saved")
+                
+                # Handle skills similar to project creation
+                skills_json = self.cleaned_data.get('skills')
+                if skills_json:
+                    try:
+                        skill_names = json.loads(skills_json)
+                        if skill_names:
+                            skills = []
+                            for skill_name in skill_names:
+                                skill = Skill.get_or_create_skill(skill_name.strip())
+                                skills.append(skill)
+                            submission.relevant_skills.set(skills)
+                            print(f"DEBUG: Added {len(skills)} skills to submission")
+                    except (json.JSONDecodeError, Exception) as e:
+                        print(f"DEBUG: Error processing skills: {e}")
+                        
             except Exception as e:
                 print(f"DEBUG: Error during submission save: {e}")
                 raise
-        
-        return submission
-
-    def save(self, commit=True):
-        submission = super().save(commit=False)
-        
-        if self.user:
-            submission.applicant = self.user
-        
-        if self.content_object:
-            # Set the appropriate foreign key based on content type
-            if isinstance(self.content_object, Project):
-                submission.to_project = self.content_object
-            elif isinstance(self.content_object, Task):
-                submission.to_task = self.content_object
-            elif isinstance(self.content_object, Need):
-                submission.to_need = self.content_object
-        
-        if commit:
-            submission.save()
-            self.save_m2m()
         
         return submission
 

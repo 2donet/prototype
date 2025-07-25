@@ -89,9 +89,9 @@ def create_submission_for_content(request, content_type, content_id):
         # Get form data
         why_fit = request.POST.get('why_fit', '').strip()
         additional_info = request.POST.get('additional_info', '').strip()
-        relevant_skills_ids = request.POST.getlist('relevant_skills')
+        skills_json = request.POST.get('skills')  # This will be JSON from the chips input
         
-        print(f"DEBUG: Form data - why_fit: '{why_fit}', additional_info: '{additional_info}', skills: {relevant_skills_ids}")
+        print(f"DEBUG: Form data - why_fit: '{why_fit}', additional_info: '{additional_info}', skills_json: {skills_json}")
         
         try:
             # Create submission directly
@@ -117,11 +117,19 @@ def create_submission_for_content(request, content_type, content_id):
             
             print(f"DEBUG: Submission saved with ID: {submission.id}")
             
-            # Add skills if any were selected
-            if relevant_skills_ids:
-                skills = Skill.objects.filter(id__in=relevant_skills_ids)
-                submission.relevant_skills.set(skills)
-                print(f"DEBUG: Added {len(skills)} skills to submission")
+            # Handle skills similar to project creation
+            if skills_json:
+                try:
+                    skill_names = json.loads(skills_json)
+                    if skill_names:
+                        skills = []
+                        for skill_name in skill_names:
+                            skill = Skill.get_or_create_skill(skill_name.strip())
+                            skills.append(skill)
+                        submission.relevant_skills.set(skills)
+                        print(f"DEBUG: Added {len(skills)} skills to submission")
+                except (json.JSONDecodeError, Exception) as e:
+                    print(f"DEBUG: Error processing skills: {e}")
             
             messages.success(request, 'Your application has been submitted successfully!')
             return redirect('submissions:submission_detail', submission.id)
@@ -136,24 +144,14 @@ def create_submission_for_content(request, content_type, content_id):
     form_data = {
         'why_fit': '',
         'additional_info': '',
-        'relevant_skills': []
+        'skills': []
     }
-    
-    # Get available skills
-    try:
-        if hasattr(Skill, 'is_active'):
-            skills = Skill.objects.filter(is_active=True).order_by('name')
-        else:
-            skills = Skill.objects.order_by('name')
-    except:
-        skills = Skill.objects.none()
     
     return render(request, 'submissions/quick_create.html', {
         'content_object': content_object,
         'content_type': content_type,
         'title': f'Apply for {content_object.title if hasattr(content_object, "title") else content_object.name}',
         'form_data': form_data,
-        'skills': skills
     })
 
 
