@@ -379,11 +379,12 @@ def submission_detail(request, submission_id):
     user_is_participant = False
     if conversation:
         user_is_participant = conversation.participants.filter(id=request.user.id).exists()
-        if is_applicant:
-            # Submitee can access if they're a participant
-            user_can_access_conversation = user_is_participant
-        elif can_manage:
-            # Any admin with manage permissions can access, even if not a participant yet
+        if is_applicant or can_manage:
+            # Both submitees and admins can access conversations
+            user_can_access_conversation = True
+    else:
+        # If no conversation exists yet, both submitees and admins should be able to start one
+        if is_applicant or can_manage:
             user_can_access_conversation = True
     
     unread_count = 0
@@ -399,52 +400,119 @@ def submission_detail(request, submission_id):
         if message_form.is_valid():
             # Check if user has permission to participate
             if not (can_manage or is_applicant):
+                messages.error(request, "You don't have permission to send messages for this submission.")
                 return redirect('submissions:submission_detail', submission_id)
             
             # For admins, verify they still have permission to manage this submission
-            if can_manage:
-                # Re-verify admin permissions
-                if not user_can_manage_submissions(request.user, content_object):
-                    return redirect('submissions:submission_detail', submission_id)
+            if can_manage and not user_can_manage_submissions(request.user, content_object):
+                messages.error(request, "You no longer have permission to manage this submission.")
+                return redirect('submissions:submission_detail', submission_id)
             
-            # Create or get conversation
-            if not conversation:
-                if can_manage:
+            try:
+                # Create or get conversation
+                if not conversation:
                     from messaging.models import Conversation
-                    conversation = Conversation.objects.get_or_create_submission_conversation(
-                        request.user, submission.applicant, submission
-                    )
-                    user_is_participant = True
-                else:
-                    # Submitee cannot start conversation
-                    return redirect('submissions:submission_detail', submission_id)
-            else:
-                # For existing conversation, add admin as participant if they're not already
-                if can_manage and not user_is_participant:
-                    # Verify admin still has permissions
-                    if user_can_manage_submissions(request.user, content_object):
-                        conversation.participants.add(request.user)
+                    if can_manage:
+                        # Admin starting conversation
+                        conversation = Conversation.objects.get_or_create_submission_conversation(
+                            request.user, submission.applicant, submission
+                        )
+                        user_is_participant = True
+                    elif is_applicant:
+                        # Submitee starting conversation - find appropriate admin to message
+                        admin_user = None
+                        
+                        if submission.to_project:
+                            # For project submissions, find project admins/moderators
+                            from project.models import Membership
+                            project_admin = Membership.objects.filter(
+                                project=submission.to_project,
+                                is_administrator=True
+                            ).select_related('user').first()
+                            
+                            admin_user = project_admin.user if project_admin else submission.to_project.created_by
+                            
+                        elif submission.to_task and hasattr(submission.to_task, 'to_project') and submission.to_task.to_project:
+                            # For task submissions, message project admin or task creator
+                            from project.models import Membership
+                            project_admin = Membership.objects.filter(
+                                project=submission.to_task.to_project,
+                                is_administrator=True
+                            ).select_related('user').first()
+                            
+                            admin_user = project_admin.user if project_admin else submission.to_task.to_project.created_by
+                            
+                        elif submission.to_need and hasattr(submission.to_need, 'to_project') and submission.to_need.to_project:
+                            # For need submissions, message project admin or need creator
+                            from project.models import Membership
+                            project_admin = Membership.objects.filter(
+                                project=submission.to_need.to_project,
+                                is_administrator=True
+                            ).select_related('user').first()
+                            
+                            admin_user = project_admin.user if project_admin else submission.to_need.to_project.created_by
+                        else:
+                            # Fallback to content creator
+                            admin_user = (submission.to_task.created_by if submission.to_task 
+                                        else submission.to_need.created_by if submission.to_need
+                                        else submission.to_project.created_by if submission.to_project
+                                        else None)
+                        
+                        if not admin_user:
+                            messages.error(request, "Unable to find an administrator to message. Please try again later.")
+                            return redirect('submissions:submission_detail', submission_id)
+                        
+                        conversation = Conversation.objects.get_or_create_submission_conversation(
+                            admin_user, submission.applicant, submission
+                        )
                         user_is_participant = True
                     else:
+                        messages.error(request, "You don't have permission to start a conversation for this submission.")
                         return redirect('submissions:submission_detail', submission_id)
-                elif not user_is_participant:
-                    # User not participant and not admin
-                    return redirect('submissions:submission_detail', submission_id)
-            
-            # Create message
-            from messaging.models import Message
-            message = message_form.save(commit=False)
-            message.conversation = conversation
-            message.sender = request.user
-            message.save()
-            
-            # Update conversation timestamp
-            from django.utils import timezone
-            conversation.updated_at = timezone.now()
-            conversation.save(update_fields=['updated_at'])
-            
-            # Don't show success message - the message appearing in the chat is enough feedback
-            return redirect('submissions:submission_detail', submission_id)
+                else:
+                    # For existing conversation, ensure user is a participant
+                    if can_manage and not user_is_participant:
+                        # Add admin as participant if they have permissions
+                        if user_can_manage_submissions(request.user, content_object):
+                            conversation.participants.add(request.user)
+                            user_is_participant = True
+                            
+                            # Create ConversationParticipant record
+                            from messaging.models import ConversationParticipant
+                            from django.utils import timezone
+                            ConversationParticipant.objects.get_or_create(
+                                conversation=conversation,
+                                user=request.user,
+                                defaults={'joined_at': timezone.now()}
+                            )
+                        else:
+                            messages.error(request, "You don't have permission to join this conversation.")
+                            return redirect('submissions:submission_detail', submission_id)
+                    elif not user_is_participant:
+                        messages.error(request, "You're not a participant in this conversation.")
+                        return redirect('submissions:submission_detail', submission_id)
+                
+                # Create message
+                from messaging.models import Message
+                message = message_form.save(commit=False)
+                message.conversation = conversation
+                message.sender = request.user
+                message.save()
+                
+                # Update conversation timestamp
+                from django.utils import timezone
+                conversation.updated_at = timezone.now()
+                conversation.save(update_fields=['updated_at'])
+                
+                messages.success(request, "Message sent successfully!")
+                return redirect('submissions:submission_detail', submission_id)
+                
+            except Exception as e:
+                print(f"DEBUG: Error sending message: {e}")
+                import traceback
+                traceback.print_exc()
+                messages.error(request, "There was an error sending your message. Please try again.")
+                return redirect('submissions:submission_detail', submission_id)
         # Don't show error messages for form validation - just let the form show the errors
 
     # Get messages with pagination - show to all who can access

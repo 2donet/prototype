@@ -167,7 +167,7 @@ nav{
         }
         & .chips{
             grid-area: skills;
-            border-bottom: none;
+            border: none;
             & .chip{
 
                 background-color: var(--bg-color3);
@@ -3785,11 +3785,6 @@ nav ul li a {
             background-color: var(--bg-light);
             color: var(--text);
             border-bottom: 1px solid var(--bg-color3);
-        }
-
-        .chips {
-            background-color: var(--bg-color2);
-            border: 1px solid var(--bg-color3);
         }
 
         .chip {

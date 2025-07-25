@@ -22,7 +22,10 @@ class ConversationManager(models.Manager):
         return conversation
     
     def get_or_create_submission_conversation(self, admin_user, submitter, submission):
-        """Get or create a submission-related conversation - one conversation per submission"""
+        """
+        Get or create a submission-related conversation - one conversation per submission.
+        This method now handles both admin-initiated and submitter-initiated conversations.
+        """
         # Find existing conversation for this submission
         conversation = self.filter(
             conversation_type='submission',
@@ -33,14 +36,42 @@ class ConversationManager(models.Manager):
             # Create new conversation for this submission
             conversation = self.create(
                 conversation_type='submission',
-                submission=submission
+                submission=submission,
+                created_by=admin_user  # Track who created the conversation
             )
             # Add both the admin and submitter as participants
             conversation.participants.add(admin_user, submitter)
+            
+            # Create ConversationParticipant records with proper joined_at timestamps
+            ConversationParticipant.objects.get_or_create(
+                conversation=conversation,
+                user=admin_user,
+                defaults={'joined_at': timezone.now()}
+            )
+            ConversationParticipant.objects.get_or_create(
+                conversation=conversation,
+                user=submitter,
+                defaults={'joined_at': timezone.now()}
+            )
         else:
             # Add admin to existing conversation if not already a participant
             if not conversation.participants.filter(id=admin_user.id).exists():
                 conversation.participants.add(admin_user)
+                # Create ConversationParticipant record
+                ConversationParticipant.objects.get_or_create(
+                    conversation=conversation,
+                    user=admin_user,
+                    defaults={'joined_at': timezone.now()}
+                )
+            
+            # Ensure submitter is also a participant (should already be, but just in case)
+            if not conversation.participants.filter(id=submitter.id).exists():
+                conversation.participants.add(submitter)
+                ConversationParticipant.objects.get_or_create(
+                    conversation=conversation,
+                    user=submitter,
+                    defaults={'joined_at': timezone.now()}
+                )
         
         return conversation
     
@@ -59,7 +90,7 @@ class Conversation(models.Model):
     CONVERSATION_TYPES = [
         ('direct', 'Direct Message'),
         ('thread', 'Thread Discussion'),  # For future use
-        ('submission', 'Submission Discussion'),  # New type
+        ('submission', 'Submission Discussion'),
     ]
     
     conversation_type = models.CharField(
@@ -74,6 +105,16 @@ class Conversation(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Track who created the conversation (useful for submission conversations)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_conversations',
+        help_text='User who initiated this conversation'
+    )
     
     # Link to submission for submission conversations
     submission = models.ForeignKey(
@@ -91,6 +132,14 @@ class Conversation(models.Model):
         indexes = [
             models.Index(fields=['conversation_type', '-updated_at']),
             models.Index(fields=['submission', '-updated_at']),
+        ]
+        constraints = [
+            # Ensure only one conversation per submission
+            models.UniqueConstraint(
+                fields=['submission'],
+                condition=models.Q(submission__isnull=False),
+                name='unique_submission_conversation'
+            )
         ]
     
     def __str__(self):
@@ -122,6 +171,18 @@ class Conversation(models.Model):
                 return participant
         return None
     
+    def get_submission_admin(self):
+        """Get the admin/project team member for a submission conversation"""
+        if self.conversation_type != 'submission' or not self.submission:
+            return None
+        
+        # Return participant who is not the submitter
+        participants = list(self.participants.all())
+        for participant in participants:
+            if participant.id != self.submission.applicant.id:
+                return participant
+        return None
+    
     def get_last_message(self):
         """Get the most recent message in this conversation"""
         return self.messages.order_by('-timestamp').first()
@@ -138,6 +199,10 @@ class Conversation(models.Model):
                 return self.messages.exclude(sender=user).count()
         except ConversationParticipant.DoesNotExist:
             return 0
+    
+    def is_user_participant(self, user):
+        """Check if user is a participant in this conversation"""
+        return self.participants.filter(id=user.id).exists()
 
 
 class ConversationParticipant(models.Model):

@@ -68,7 +68,7 @@
 
         <div class="stats">
 
-<!-- comments -->
+            <!-- comments -->
             <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#comments-{{project.id}}">
                 Nc
                 <i class="right">
@@ -76,79 +76,79 @@
                 </i>
             </a>
             <!-- comments popup content -->
-                <div id="comments-{{project.id}}" class="modal modal-fixed-footer">
-                    <div class="modal-content">
-                        <h4>Modal Header for {{project.name}}</h4>
-                        <p>A bunch of text</p>
-                        <h4>USers in the project</h4>
-                        <p>lorem ipsum</p>
-                        <a href="/about">asd</a>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                    </div>
+            <div id="comments-{{project.id}}" class="modal modal-fixed-footer">
+                <div class="modal-content">
+                    <h4>Modal Header for {{project.name}}</h4>
+                    <p>A bunch of text</p>
+                    <h4>USers in the project</h4>
+                    <p>lorem ipsum</p>
+                    <a href="/about">asd</a>
                 </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
 
-<!-- users -->
+            <!-- users -->
             <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#users-{{project.id}}">
 
                 Nu <img src="{% static 'icons/users.svg' %}"></img>
             </a>
             <!-- users popup -->
-                <div id="users-{{project.id}}" class="modal modal-fixed-footer">
-                    <div class="modal-header">
-                        <a href="#!" class="modal-close waves-effect waves-green btn-flat right">
-                            <i>	<img class="close" src="{% static 'icons/close.svg' %}" alt=""></i>
-                        </a>
-                    </div>
-                    <div class="modal-content">
-                        <h4>Modal Header for {{project.name}}</h4>
-                        <p>A bunch of text</p>
-                        <h4>USers in the project</h4>
-                        <p>lorem ipsum</p>
-                        <a href="/about">asd</a>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                    </div>
+            <div id="users-{{project.id}}" class="modal modal-fixed-footer">
+                <div class="modal-header">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat right">
+                        <i> <img class="close" src="{% static 'icons/close.svg' %}" alt=""></i>
+                    </a>
                 </div>
-
-<!-- supporters -->
-                <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#supporters-{{project.id}}">
-                    Nu <i class="right"><img src="{% static 'icons/supporters.svg' %}" alt=""></i>
-                </a>
-                <!-- supporters popup -->
-                <div id="supporters-{{project.id}}" class="modal modal-fixed-footer">
-                    <div class="modal-content">
-                        <h4>Modal Header for {{project.name}}</h4>
-                        <p>A bunch of text</p>
-                        <h4>supporters</h4>
-                        <p>lforem ipsum</p>
-                        <a href="/about">asd</a>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                    </div>
+                <div class="modal-content">
+                    <h4>Modal Header for {{project.name}}</h4>
+                    <p>A bunch of text</p>
+                    <h4>USers in the project</h4>
+                    <p>lorem ipsum</p>
+                    <a href="/about">asd</a>
                 </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
+
+            <!-- supporters -->
+            <a class="waves-effect waves-teal btn-flat modal-trigger border" href="#supporters-{{project.id}}">
+                Nu <i class="right"><img src="{% static 'icons/supporters.svg' %}" alt=""></i>
+            </a>
+            <!-- supporters popup -->
+            <div id="supporters-{{project.id}}" class="modal modal-fixed-footer">
+                <div class="modal-content">
+                    <h4>Modal Header for {{project.name}}</h4>
+                    <p>A bunch of text</p>
+                    <h4>supporters</h4>
+                    <p>lforem ipsum</p>
+                    <a href="/about">asd</a>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                </div>
+            </div>
 
 
 
-                <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{project.id}}'>
-                    <img src="{% static 'icons/menu.svg' %}" alt="idea">
-                </a>
-        
-                <!-- Dropdown Structure -->
-                <ul id='actions-{{project.id}}' class='dropdown-content'>
-                    <li> <a href="/admin/project/project/{{ project.id }}/change/">[ ADMIN ]</a>
-                    </li>
-                    <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
-                    </li>
-                    <li class="divider" tabindex="-1"></li>
-                    <li> <a href="/{{ project.id }}/add_task/">add task</a>
-                    </li>
-                    <li><a href="#!"><i class="material-icons">view_module</i>four</a></li>
-                    <li><a href="#!"><i class="material-icons">cloud</i>five</a></li>
-                </ul>
+            <a class='dropdown-trigger btn-flat' href='#' data-target='actions-{{project.id}}'>
+                <img src="{% static 'icons/menu.svg' %}" alt="idea">
+            </a>
+
+            <!-- Dropdown Structure -->
+            <ul id='actions-{{project.id}}' class='dropdown-content'>
+                <li> <a href="/admin/project/project/{{ project.id }}/change/">[ ADMIN ]</a>
+                </li>
+                <li> <a href="/{{ project.id }}/add_subproject/">add subproject</a>
+                </li>
+                <li class="divider" tabindex="-1"></li>
+                <li> <a href="/{{ project.id }}/add_task/">add task</a>
+                </li>
+                <li><a href="#!"><i class="material-icons">view_module</i>four</a></li>
+                <li><a href="#!"><i class="material-icons">cloud</i>five</a></li>
+            </ul>
         </div>
 
         <div class="needs">
@@ -162,17 +162,22 @@
                 {% endfor %}
             </div>
         </div>
-                    <div class="chips">
-                {% for skill in project.skills.all %}
-                <div class="chip">
-                    <a href="{% url 'skill_detail' skill.name|lower %}">
-                        {{ skill.name }}
-                    </a>
-                </div>
-                {% empty %}
-                <span class="grey-text">No skills</span>
-                {% endfor %}
+        {% if project.skills.all %}
+        <div class="chips">
+            {% for skill in project.skills.all %}
+            <div class="chip">
+                <a href="{% url 'skill_detail' skill.name|lower %}">
+                    {{ skill.name }}
+                </a>
             </div>
+            {% empty %}
+            {% endfor %}
+        </div>
+{% comment %}
+        {% else %}
+        <span class="grey-text">No skills</span>
+{% endcomment %}
+        {% endif %}
     </div>
 
 
