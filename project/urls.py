@@ -23,4 +23,14 @@ urlpatterns = [
     path('<int:project_id>/localizations/<int:localization_id>/edit/', views.edit_localization, name='edit_localization'),
     path('<int:project_id>/localizations/<int:localization_id>/delete/', views.delete_localization, name='delete_localization'),
     path('<int:project_id>/localizations/', views.manage_localizations, name='manage_localizations'),
+
+
+    path('<int:project_id>/moderate/', views.project_moderation_dashboard, name='moderation_dashboard'),
+    path('<int:project_id>/moderate/comments/', views.project_comments_moderation, name='comments_moderation'),
+    path('<int:project_id>/moderate/comments/<int:comment_id>/action/', views.moderate_comment_action, name='moderate_comment_action'),
+    path('<int:project_id>/moderate/tasks/', views.project_tasks_management, name='tasks_management'),
+    path('<int:project_id>/moderate/needs/', views.project_needs_management, name='needs_management'),
+    path('<int:project_id>/moderate/members/', views.project_members_management, name='members_management'),
+    path('<int:project_id>/moderate/locations/', views.project_locations_management, name='locations_management'),
+    path('<int:project_id>/moderate/subprojects/', views.project_subprojects_management, name='subprojects_management'),
 ]

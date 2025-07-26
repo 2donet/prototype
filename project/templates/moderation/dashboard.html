@@ -1,0 +1,140 @@
+<!-- project/templates/moderation/dashboard.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project Moderation - {{ project.name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { border: 1px solid #ddd; padding: 15px; border-radius: 5px; text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #007cba; }
+        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
+        .nav-card { border: 1px solid #ddd; padding: 20px; border-radius: 5px; text-decoration: none; color: #333; }
+        .nav-card:hover { background-color: #f5f5f5; }
+        .nav-card h3 { margin: 0 0 10px 0; color: #007cba; }
+        .breadcrumb { margin-bottom: 20px; }
+        .breadcrumb a { text-decoration: none; color: #007cba; }
+        .alert { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .alert-warning { background-color: #fff3cd; border: 1px solid #ffeaa7; }
+        .alert-info { background-color: #d1ecf1; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
+        Moderation Dashboard
+    </div>
+
+    <div class="header">
+        <h1>🛡️ Project Moderation Dashboard</h1>
+        <h2>{{ project.name }}</h2>
+        <p>Manage and moderate all aspects of this project</p>
+    </div>
+
+    <!-- Statistics Overview -->
+    <h3>📊 Overview</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_comments }}</div>
+            <div>Total Comments</div>
+            {% if stats.pending_comments > 0 %}
+                <div style="color: #dc3545; font-size: 12px;">{{ stats.pending_comments }} pending</div>
+            {% endif %}
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.reported_comments }}</div>
+            <div>Reported Comments</div>
+            {% if stats.reported_comments > 0 %}
+                <div style="color: #dc3545; font-size: 12px;">Need attention</div>
+            {% endif %}
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_tasks }}</div>
+            <div>Tasks</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_needs }}</div>
+            <div>Needs</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_members }}</div>
+            <div>Members</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_locations }}</div>
+            <div>Locations</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_subprojects }}</div>
+            <div>Subprojects</div>
+        </div>
+    </div>
+
+    <!-- Quick Alerts -->
+    {% if stats.reported_comments > 0 %}
+    <div class="alert alert-warning">
+        ⚠️ There are {{ stats.reported_comments }} reported comment{{ stats.reported_comments|pluralize }} that need your attention.
+    </div>
+    {% endif %}
+
+    {% if stats.pending_comments > 0 %}
+    <div class="alert alert-info">
+        ℹ️ There are {{ stats.pending_comments }} comment{{ stats.pending_comments|pluralize }} pending approval.
+    </div>
+    {% endif %}
+
+    <!-- Navigation Cards -->
+    <h3>🔧 Management Tools</h3>
+    <div class="nav-grid">
+        <a href="{% url 'project:comments_moderation' project.id %}" class="nav-card">
+            <h3>💬 Comments Moderation</h3>
+            <p>Review, approve, and moderate all comments related to this project. Handle reports and take moderation actions.</p>
+            {% if stats.reported_comments > 0 %}
+                <strong style="color: #dc3545;">{{ stats.reported_comments }} reports pending</strong>
+            {% endif %}
+        </a>
+
+        <a href="{% url 'project:tasks_management' project.id %}" class="nav-card">
+            <h3>📋 Tasks Management</h3>
+            <p>Create, edit, and manage all project tasks. Monitor task progress and assignments.</p>
+            <strong>{{ stats.total_tasks }} tasks</strong>
+        </a>
+
+        <a href="{% url 'project:needs_management' project.id %}" class="nav-card">
+            <h3>🎯 Needs Management</h3>
+            <p>Manage project needs and requirements. Track what the project is looking for.</p>
+            <strong>{{ stats.total_needs }} needs</strong>
+        </a>
+
+        <a href="{% url 'project:members_management' project.id %}" class="nav-card">
+            <h3>👥 Members Management</h3>
+            <p>Manage project members, roles, and permissions. Add or remove team members.</p>
+            <strong>{{ stats.total_members }} members</strong>
+        </a>
+
+        <a href="{% url 'project:locations_management' project.id %}" class="nav-card">
+            <h3>📍 Locations Management</h3>
+            <p>Manage project locations and geographical information.</p>
+            <strong>{{ stats.total_locations }} locations</strong>
+        </a>
+
+        <a href="{% url 'project:subprojects_management' project.id %}" class="nav-card">
+            <h3>🔗 Subprojects Management</h3>
+            <p>Manage connected projects and project relationships.</p>
+            <strong>{{ stats.total_subprojects }} subprojects</strong>
+        </a>
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="{% url 'project:project' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Project</a>
+    </div>
+</body>
+</html>

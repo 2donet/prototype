@@ -124,6 +124,7 @@ nav{
         "needs needs"
         "skills skills";
         background-color: var(--bg-color2);
+        height: min-content;
 
         & .menu{
             position: absolute;

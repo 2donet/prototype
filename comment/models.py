@@ -8,12 +8,19 @@ from django.db.models import Sum, Count, Q
 from django.utils.translation import gettext_lazy as _
 
 
+
 class CommentStatus(models.TextChoices):
     """Status options for comments"""
     PENDING = 'PENDING', 'Pending Approval'
     APPROVED = 'APPROVED', 'Approved'
     REJECTED = 'REJECTED', 'Rejected'
     FLAGGED = 'FLAGGED', 'Flagged for Review'
+    # New moderation statuses
+    CONTENT_REMOVED = 'CONTENT_REMOVED', 'Content Removed by Moderation'
+    AUTHOR_REMOVED = 'AUTHOR_REMOVED', 'Author Hidden by Moderation'
+    AUTHOR_AND_CONTENT_REMOVED = 'AUTHOR_AND_CONTENT_REMOVED', 'Author and Content Removed'
+    THREAD_DELETED = 'THREAD_DELETED', 'Thread Deleted by Moderation'
+    REPLY_TO_DELETED = 'REPLY_TO_DELETED', 'Reply to Deleted Comment'
 
 
 class Comment(models.Model):
@@ -21,15 +28,15 @@ class Comment(models.Model):
     score = models.IntegerField(default=0)
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies"
-    )  # Self-referential ForeignKey for replies
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, db_index=True,
         related_name="comments"
-    )  # Allow null for anonymous users
+    )
     to_project = models.ForeignKey(
         "project.Project", null=True, blank=True, on_delete=models.CASCADE, related_name="comments"
     )
-    total_replies = models.PositiveIntegerField(default=0)  # Cache for replies count
+    total_replies = models.PositiveIntegerField(default=0)
 
     to_comment = models.ForeignKey("self", blank=True, null=True, on_delete=models.CASCADE,
                                    related_name="related_comments", db_index=True)
@@ -43,10 +50,9 @@ class Comment(models.Model):
                                       related_name="comments", db_index=True)
     to_decision = models.ForeignKey("decisions.Decision", blank=True, null=True, on_delete=models.CASCADE,
                                     related_name="comments", db_index=True)
-                                    
-    # New fields for moderation
+
     status = models.CharField(
-        max_length=20, 
+        max_length=26,
         choices=CommentStatus.choices,
         default=CommentStatus.APPROVED,
         db_index=True
@@ -54,127 +60,142 @@ class Comment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     moderated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        null=True, 
-        blank=True, 
-        on_delete=models.SET_NULL, 
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
         related_name="moderated_comments"
     )
     moderated_at = models.DateTimeField(null=True, blank=True)
     moderation_note = models.TextField(blank=True, null=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    
-    # For anonymous users
-    author_name = models.CharField(max_length=50, blank=True, null=True, 
+
+    author_name = models.CharField(max_length=50, blank=True, null=True,
         help_text="Optional name for anonymous users")
     author_email = models.EmailField(blank=True, null=True,
         help_text="Optional email for anonymous users")
-        
-    # Tracking edits
+
     is_edited = models.BooleanField(default=False)
     edit_history = models.JSONField(default=list, blank=True,
         help_text="History of edits to this comment")
 
     def __str__(self):
         return f"{self.content[:20]} by {self.user.username if self.user else self.author_name or 'Anonymous'}"
+
     def update_reply_count(self):
-        """
-        Recursively update the total_replies count for parent comments.
-        """
         comment = self
         while comment:
-            # Only count approved replies
             comment.total_replies = comment.replies.filter(status=CommentStatus.APPROVED).count()
             comment.save(update_fields=["total_replies"])
             comment = comment.parent
-            
+
     def approve(self, moderator=None):
-        """Approve a comment"""
         self.status = CommentStatus.APPROVED
         self.moderated_by = moderator
         self.moderated_at = timezone.now()
         self.save()
-        
+
     def reject(self, moderator=None, note=None):
-        """Reject a comment"""
         self.status = CommentStatus.REJECTED
         self.moderated_by = moderator
         self.moderated_at = timezone.now()
         if note:
             self.moderation_note = note
         self.save()
-        
+
     def flag(self, moderator=None, note=None):
-        """Flag a comment for further review"""
         self.status = CommentStatus.FLAGGED
         self.moderated_by = moderator
         self.moderated_at = timezone.now()
         if note:
             self.moderation_note = note
         self.save()
-    
+
     def edit(self, new_content, editor=None):
-        """Edit a comment, preserving history"""
-        # Store the current version in history
         history_entry = {
             'content': self.content,
             'edited_at': timezone.now().isoformat(),
             'edited_by': editor.username if editor else None
         }
-        
-        # Update history
         if not self.is_edited:
             self.is_edited = True
             self.edit_history = [history_entry]
         else:
             self.edit_history.append(history_entry)
-            
-        # Update content
         self.content = new_content
         self.save()
-        
+
     def can_moderate(self, user):
-        """Check if user can moderate this comment"""
         if not user.is_authenticated:
             return False
-            
-        # Global moderators
         if user.is_superuser or user.is_staff:
             return True
-            
-        # Project moderators
         if self.to_project:
             return self.to_project.user_can_moderate_comments(user)
-            
-        # Task moderators
         if self.to_task and self.to_task.to_project:
             return self.to_task.to_project.user_can_moderate_comments(user)
-            
-        # Need moderators
         if self.to_need and self.to_need.to_project:
             return self.to_need.to_project.user_can_moderate_comments(user)
-            
         return False
-        
+
+    def soft_delete_thread(self, moderator=None, reason=None):
+        self.status = CommentStatus.THREAD_DELETED
+        self.moderated_by = moderator
+        self.moderated_at = timezone.now()
+        if reason:
+            self.moderation_note = reason
+        self.save()
+        self.mark_replies_deleted(moderator)
+
+    def mark_replies_deleted(self, moderator=None):
+        for reply in self.replies.all():
+            if reply.status == CommentStatus.APPROVED:
+                reply.status = CommentStatus.REPLY_TO_DELETED
+                reply.moderated_by = moderator
+                reply.moderated_at = timezone.now()
+                reply.save()
+                reply.mark_replies_deleted(moderator)
+        if self.parent:
+            self.parent.update_reply_count()
+
     def can_edit(self, user):
-        """Check if user can edit this comment"""
         if not user.is_authenticated:
             return False
-            
-        # Comment owner can edit (if authenticated)
         if self.user == user:
             return True
-            
-        # Moderators can edit
         return self.can_moderate(user)
+
+    def remove_content_only(self, moderator=None, reason=None):
+        self.content = "[Content removed by moderation]"
+        self.status = CommentStatus.CONTENT_REMOVED
+        self.moderated_by = moderator
+        self.moderated_at = timezone.now()
+        if reason:
+            self.moderation_note = reason
+        self.save()
+
+    def remove_author_only(self, moderator=None, reason=None):
+        self.status = CommentStatus.AUTHOR_REMOVED
+        self.moderated_by = moderator
+        self.moderated_at = timezone.now()
+        if reason:
+            self.moderation_note = reason
+        self.save()
+
+    def remove_author_and_content(self, moderator=None, reason=None):
+        self.content = "[Content removed by moderation]"
+        self.status = CommentStatus.AUTHOR_AND_CONTENT_REMOVED
+        self.moderated_by = moderator
+        self.moderated_at = timezone.now()
+        if reason:
+            self.moderation_note = reason
+        self.save()
 
     class Meta:
         indexes = [
             models.Index(fields=['status']),
             models.Index(fields=['created_at']),
         ]
-
-
 # Signals to update `total_replies` automatically
 @receiver(post_save, sender=Comment)
 def update_replies_on_save(sender, instance, created, **kwargs):
@@ -393,7 +414,11 @@ class ModerationDecision(models.TextChoices):
     SUSPEND_USER = 'SUSPEND_USER', 'Suspend User'
     BAN_USER = 'BAN_USER', 'Ban User'
     FALSE_REPORT = 'FALSE_REPORT', 'Mark as False Report'
-
+    # New moderation decisions
+    REMOVE_CONTENT_ONLY = 'REMOVE_CONTENT_ONLY', 'Remove Content Only'
+    REMOVE_AUTHOR_ONLY = 'REMOVE_AUTHOR_ONLY', 'Remove Author Only'
+    REMOVE_AUTHOR_AND_CONTENT = 'REMOVE_AUTHOR_AND_CONTENT', 'Remove Author and Content'
+    DELETE_THREAD = 'DELETE_THREAD', 'Delete Entire Thread'
 
 class DecisionScope(models.TextChoices):
     """Scope of moderation decision application"""
@@ -419,11 +444,11 @@ class ModerationAction(models.Model):
     
     # Decision details
     decision = models.CharField(
-        max_length=20,
+        max_length=25,
         choices=ModerationDecision.choices
     )
     decision_scope = models.CharField(
-        max_length=20,
+        max_length=25,
         choices=DecisionScope.choices,
         default=DecisionScope.ALL_REPORTS
     )
@@ -487,6 +512,7 @@ class ModerationAction(models.Model):
     def __str__(self):
         return f"{self.get_decision_display()} by {self.moderator.username} on comment {self.comment.id}"
     
+
     def apply_decision(self):
         """Apply the moderation decision to the comment and related objects"""
         
@@ -512,7 +538,22 @@ class ModerationAction(models.Model):
                 self.comment.content = self.new_content
                 self.comment.is_edited = True
                 
-        self.comment.save()
+        # New moderation decisions
+        elif self.decision == ModerationDecision.REMOVE_CONTENT_ONLY:
+            self.comment.remove_content_only(moderator=self.moderator, reason=self.reason)
+            
+        elif self.decision == ModerationDecision.REMOVE_AUTHOR_ONLY:
+            self.comment.remove_author_only(moderator=self.moderator, reason=self.reason)
+            
+        elif self.decision == ModerationDecision.REMOVE_AUTHOR_AND_CONTENT:
+            self.comment.remove_author_and_content(moderator=self.moderator, reason=self.reason)
+            
+        elif self.decision == ModerationDecision.DELETE_THREAD:
+            self.comment.soft_delete_thread(moderator=self.moderator, reason=self.reason)
+            
+        # Only save if it's not a thread deletion (that method handles its own saving)
+        if self.decision != ModerationDecision.DELETE_THREAD:
+            self.comment.save()
         
         # Apply to reports based on scope
         reports_to_resolve = []
@@ -548,7 +589,6 @@ class ModerationAction(models.Model):
         # Notify reporters if requested
         if self.notify_reporters:
             self.notify_reporters_func()
-    
     def notify_reporters_func(self):
         """Notify reporters about the moderation decision"""
         # Get relevant reports based on scope

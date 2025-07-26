@@ -1,14 +1,33 @@
 {% load humanize %}
 {% load static %}
 {% load comment_tags %}
+
 {% for comment in comments %}
-<div class="comment" data-comment-id="{{ comment.id }}" {% if comment.user_vote%}data-user-vote="{{ comment.user_vote }}" {% endif %} >
+<!-- Only show approved comments to regular users, all comments to moderators -->
+{% if comment.status == 'APPROVED' or user.is_staff or comment|can_moderate_comment:user %}
+<div class="comment" data-comment-id="{{ comment.id }}" {% if comment.user_vote%}data-user-vote="{{ comment.user_vote }}" {% endif %}>
     {% comment_avatar comment.user %}
 
     <span>
         <i title="{{ comment.pub_date }}" style="float: right;">{{ comment.pub_date|naturaltime }}</i>
 
-        <a href="/u/{{comment.user.id}}"> {{ comment.user }} </a>
+        <!-- Handle different author display statuses -->
+        {% if comment.status == 'AUTHOR_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
+            <span style="color: #666; font-style: italic;">[Hidden]</span>
+        {% elif comment.user %}
+            <a href="/u/{{comment.user.id}}"> {{ comment.user }} </a>
+        {% else %}
+            <span>Anonymous</span>
+        {% endif %}
+
+        <!-- Show moderation status to moderators -->
+        {% if user.is_staff or comment|can_moderate_comment:user %}
+            {% if comment.status != 'APPROVED' %}
+                <span class="moderation-status" style="background: #ff6b6b; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
+                    {{ comment.get_status_display }}
+                </span>
+            {% endif %}
+        {% endif %}
 
         <div class="comment-actions">
             <!-- Vote buttons with improved UI -->
@@ -38,50 +57,66 @@
                 <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
                 {% endif %}
                 <li>
-                        <a href="/messages/{{ comment.user.username }}/">✉️ Message</a>
+                    <a href="/messages/{{ comment.user.username }}/">✉️ Message</a>
                 </li>
-        <li>
-            <a href="{% url 'comments:report_comment' comment.id %}" 
-               onclick="console.log('Report link clicked for comment {{ comment.id }}')">
-                🚩 Report
-            </a>
-        </li>            </ul>
+                <li>
+                    <a href="{% url 'comments:report_comment' comment.id %}" 
+                       onclick="console.log('Report link clicked for comment {{ comment.id }}')">
+                        🚩 Report
+                    </a>
+                </li>
+            </ul>
         </div>
     </span>
 
     <p>
-        {{ comment.content | linebreaks }}
+        <!-- Handle different content display statuses -->
+        {% if comment.status == 'CONTENT_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
+            <em style="color: #666;">[Content removed by moderation]</em>
+        {% elif comment.status == 'THREAD_DELETED' or comment.status == 'REPLY_TO_DELETED' %}
+            <em style="color: #666;">[Comment deleted]</em>
+        {% else %}
+            {{ comment.content | linebreaks }}
+        {% endif %}
     </p>
 
-    <!-- Link to single comment view -->
-    <a href="{% url 'comments:single_comment' comment.id %}">Permalink</a>
+    <!-- Only show interactive elements for non-deleted comments -->
+    {% if comment.status not in 'THREAD_DELETED,REPLY_TO_DELETED' %}
+        <!-- Link to single comment view -->
+        <a href="{% url 'comments:single_comment' comment.id %}">Permalink</a>
 
-    <span></span> {{ comment.total_replies }} replies
+        <span></span> {{ comment.total_replies }} replies
 
-    <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
+        {% if comment.total_replies > 0 %}
+            <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>
+        {% endif %}
 
-    <button class="reply-btn" data-comment-id="{{ comment.id }}"
-        data-controls="reply-form-{{comment.id}}">Reply</button>
-    <div class="reply-form-container" data-comment-id="{{ comment.id }}" style="display: none;">
-        <form class="reply-form">
-            {% csrf_token %}
-            <div class="input-field">
-                <textarea name="content" class="materialize-textarea" required></textarea>
-                <label>Your reply</label>
-            </div>
-            <input type="hidden" name="parent_id" value="{{ comment.id }}">
-            <input type="hidden" name="to_task_id" value="{{ task.id }}">
-            <button type="submit" class="btn waves-effect waves-light blue">
-                <i class="material-icons left">send</i>Post Reply
-            </button>
-            <button type="button" class="btn waves-effect waves-light grey cancel-reply">
-                Cancel
-            </button>
-        </form>
-    </div>
-    <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
-        {% include "comments.html" with comments=comment.replies.all %}
-    </div>
+        <button class="reply-btn" data-comment-id="{{ comment.id }}"
+            data-controls="reply-form-{{comment.id}}">Reply</button>
+            
+        <div class="reply-form-container" data-comment-id="{{ comment.id }}" style="display: none;">
+            <form class="reply-form">
+                {% csrf_token %}
+                <div class="input-field">
+                    <textarea name="content" class="materialize-textarea" required></textarea>
+                    <label>Your reply</label>
+                </div>
+                <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                <input type="hidden" name="to_task_id" value="{{ task.id }}">
+                <button type="submit" class="btn waves-effect waves-light blue">
+                    <i class="material-icons left">send</i>Post Reply
+                </button>
+                <button type="button" class="btn waves-effect waves-light grey cancel-reply">
+                    Cancel
+                </button>
+            </form>
+        </div>
+        
+        <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
+            {% include "comments.html" with comments=comment.replies.all %}
+        </div>
+    {% endif %}
 
 </div>
+{% endif %}
 {% endfor %}

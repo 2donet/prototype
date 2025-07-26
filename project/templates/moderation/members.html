@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Members Management - {{ project.name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
+        .breadcrumb { margin-bottom: 20px; }
+        .breadcrumb a { text-decoration: none; color: #007cba; }
+        .member-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .member-info { display: flex; align-items: center; gap: 15px; }
+        .member-avatar { width: 40px; height: 40px; border-radius: 50%; }
+        .btn { padding: 8px 12px; margin: 2px; border: none; border-radius: 3px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-primary { background-color: #007cba; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .role-badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; color: white; }
+        .role-admin { background-color: #dc3545; }
+        .role-moderator { background-color: #fd7e14; }
+        .role-contributor { background-color: #28a745; }
+        .role-viewer { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
+        <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> > 
+        Members
+    </div>
+
+    <div class="header">
+        <h1>👥 Members Management</h1>
+        <h2>{{ project.name }}</h2>
+        <a href="{% url 'project:add_member' project.id %}" class="btn btn-primary">+ Add Member</a>
+    </div>
+
+    {% for membership in memberships %}
+        <div class="member-item">
+            <div class="member-info">
+                {% if membership.user.profile.avatar %}
+                    <img src="{{ membership.user.profile.avatar_small.url }}" alt="{{ membership.user.username }}" class="member-avatar">
+                {% else %}
+                    <img src="/static/icons/default-avatar.svg" alt="{{ membership.user.username }}" class="member-avatar">
+                {% endif %}
+                
+                <div>
+                    <h4 style="margin: 0;">
+                        <a href="{% url 'user:userprofile' membership.user.id %}" style="text-decoration: none; color: #333;">
+                            {{ membership.user.get_full_name|default:membership.user.username }}
+                        </a>
+                    </h4>
+                    <span class="role-badge role-{{ membership.role|lower }}">{{ membership.get_role_display }}</span>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Joined: {{ membership.date_joined|date:"M d, Y" }}
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <a href="{% url 'project:member_detail' project.id membership.user.id %}" class="btn btn-secondary">Manage</a>
+                {% if not membership.is_owner %}
+                    <a href="{% url 'project:remove_member' project.id membership.user.id %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to remove this member?')">Remove</a>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <h3>No members found</h3>
+            <p>This project doesn't have any members yet.</p>
+            <a href="{% url 'project:add_member' project.id %}" class="btn btn-primary">Add First Member</a>
+        </div>
+    {% endfor %}
+
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
+    </div>
+</body>
+</html>

@@ -3,24 +3,31 @@ from django.shortcuts import render
 # Functions used to generate project related pages (remember to declare them in urls.py)
 
 from django.shortcuts import get_object_or_404, render, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required,  user_passes_test
 from django.db import models
 from project.models import Project, Connection, Membership, ProjectPermissionGroup, Localization
-from comment.models import Comment
+from comment.models import (
+    Comment, CommentReport, CommentStatus, ModerationAction, 
+    ModerationDecision, DecisionScope, ReportType, ReportStatus
+)
+from comment.utils import is_moderator, get_moderator_level
+
 from task.models import Task
 from need.models import Need
 from django.urls import path, reverse
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q, Count
 from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.urls import reverse
-
+from django.core.paginator import Paginator
 import json
 
 from skills.models import Skill
 
 from django.contrib.auth import get_user_model
 User = get_user_model()
+import logging
+logger = logging.getLogger(__name__)
 
 
 def index(request):
@@ -33,11 +40,11 @@ def index(request):
         latest_projects_list = Project.objects.exclude(
             incoming_connections__type='child'
         ).filter(
-            models.Q(visibility='public') | 
-            models.Q(visibility='logged_in') |
-            models.Q(membership__user=request.user) |
-            models.Q(created_by=request.user)
-        ).distinct().order_by('-id')
+                    models.Q(visibility='public') | 
+                    models.Q(visibility='logged_in') |
+                    models.Q(membership__user=request.user) |
+                    models.Q(created_by=request.user)
+                ).distinct().order_by('-id')
     else:
         # For anonymous users, only show public projects
         latest_projects_list = Project.objects.exclude(
@@ -191,6 +198,7 @@ def project_members(request, project_id):
     return render(request, 'members.html', context)
 
 
+
 def project(request, project_id):
     # Efficiently load project with creator profile
     content = get_object_or_404(
@@ -231,17 +239,27 @@ def project(request, project_id):
     tasks = Task.objects.filter(to_project=project_id)
     needs = Need.objects.filter(to_project=project_id).order_by('-priority', 'id')
     
-    # Load comments with user profiles for avatars
-    comments = Comment.objects.filter(
-        to_project=content.id,
-        parent__isnull=True
-    ).select_related(
+    # Load comments with filtering based on user permissions
+    comment_filter = Q(to_project=content.id, parent__isnull=True)
+    
+    # Filter comments based on user role
+    if can_moderate_project(request.user, content):
+        # Moderators see all comments
+        comment_filter = comment_filter
+    else:
+        # Regular users only see approved comments
+        comment_filter = comment_filter & Q(status=CommentStatus.APPROVED)
+    
+    comments = Comment.objects.filter(comment_filter).select_related(
         'user', 
         'user__profile'  # Load comment author profiles
     ).prefetch_related(
         Prefetch(
             'replies', 
-            queryset=Comment.objects.select_related('user', 'user__profile')  # Load reply author profiles
+            queryset=Comment.objects.filter(
+                # Also filter replies based on user permissions
+                Q(status=CommentStatus.APPROVED) if not can_moderate_project(request.user, content) else Q()
+            ).select_related('user', 'user__profile')
         ),
         'votes'
     )
@@ -318,9 +336,9 @@ def project(request, project_id):
         "member_users": member_users,
         "is_member": is_member,
         "can_manage_members": can_manage_members,
+        "can_moderate": can_moderate_project(request.user, content),  # Add this for template use
     }
     return render(request, "details.html", context=context)
-
 
 @login_required
 def member_detail(request, project_id, user_id):
@@ -717,3 +735,263 @@ def edit_localization(request, project_id, localization_id):
         'project': project,
         'localization': localization
     })
+
+
+def can_moderate_project(user, project):
+    """Check if user can moderate this project"""
+    if not user.is_authenticated:
+        return False
+    
+    # Global moderators
+    if user.is_superuser or user.is_staff or is_moderator(user):
+        return True
+    
+    # Project-level moderators/admins
+    if user == project.created_by:
+        return True
+    
+    membership = Membership.objects.filter(project=project, user=user).first()
+    if membership and (membership.is_administrator or membership.is_moderator):
+        return True
+    
+    return False
+
+@user_passes_test(lambda u: u.is_authenticated)
+def project_moderation_dashboard(request, project_id):
+    """Main project moderation dashboard"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to moderate this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    # Get statistics
+    stats = {
+        'total_comments': Comment.objects.filter(to_project=project).count(),
+        'pending_comments': Comment.objects.filter(to_project=project, status=CommentStatus.PENDING).count(),
+        'reported_comments': CommentReport.objects.filter(
+            comment__to_project=project, 
+            status__in=[ReportStatus.PENDING, ReportStatus.REVIEWED]
+        ).count(),
+        'total_tasks': Task.objects.filter(to_project=project).count(),
+        'total_needs': Need.objects.filter(to_project=project).count(),
+        'total_members': Membership.objects.filter(project=project).count(),
+        'total_locations': project.localizations.count(),
+        'total_subprojects': Connection.objects.filter(
+            from_project=project, type='child', status='approved'
+        ).count(),
+    }
+    
+    context = {
+        'project': project,
+        'stats': stats,
+    }
+    
+    return render(request, 'moderation/dashboard.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def project_comments_moderation(request, project_id):
+    """Project comments moderation page"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to moderate this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    # Get all comments related to this project (including tasks and needs)
+    comments = Comment.objects.filter(
+        Q(to_project=project) |
+        Q(to_task__to_project=project) |
+        Q(to_need__to_project=project)
+    ).select_related('user', 'user__profile').prefetch_related('reports').order_by('-created_at')
+    
+    # Filter by status
+    status_filter = request.GET.get('status')
+    if status_filter:
+        comments = comments.filter(status=status_filter)
+    
+    # Pagination
+    paginator = Paginator(comments, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'project': project,
+        'comments': page_obj,
+        'comment_statuses': CommentStatus.choices,
+        'current_status_filter': status_filter,
+    }
+    
+    return render(request, 'moderation/comments.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def moderate_comment_action(request, project_id, comment_id):
+    """Handle comment moderation actions"""
+    project = get_object_or_404(Project, id=project_id)
+    comment = get_object_or_404(Comment, id=comment_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to moderate this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        reason = request.POST.get('reason', 'No reason provided')
+        
+        try:
+            # Create moderation action for audit trail
+            moderation_action = ModerationAction.objects.create(
+                moderator=request.user,
+                comment=comment,
+                decision=action,
+                decision_scope=DecisionScope.ALL_REPORTS,
+                reason=reason,
+                project=project
+            )
+            
+            # Apply the moderation action
+            if action == ModerationDecision.REMOVE_CONTENT_ONLY:
+                comment.remove_content_only(moderator=request.user, reason=reason)
+                success_msg = "Comment content removed successfully."
+                
+            elif action == ModerationDecision.REMOVE_AUTHOR_ONLY:
+                comment.remove_author_only(moderator=request.user, reason=reason)
+                success_msg = "Comment author hidden successfully."
+                
+            elif action == ModerationDecision.REMOVE_AUTHOR_AND_CONTENT:
+                comment.remove_author_and_content(moderator=request.user, reason=reason)
+                success_msg = "Comment author and content removed successfully."
+                
+            elif action == ModerationDecision.DELETE_THREAD:
+                comment.soft_delete_thread(moderator=request.user, reason=reason)
+                success_msg = "Comment thread deleted successfully."
+                
+            elif action == ModerationDecision.APPROVE:
+                comment.approve(moderator=request.user)
+                success_msg = "Comment approved successfully."
+                
+            elif action == ModerationDecision.REJECT:
+                comment.reject(moderator=request.user, note=reason)
+                success_msg = "Comment rejected successfully."
+                
+            else:
+                messages.error(request, "Invalid moderation action.")
+                return redirect('project:comments_moderation', project_id=project.id)
+            
+            # Resolve related reports
+            comment.reports.filter(
+                status__in=[ReportStatus.PENDING, ReportStatus.REVIEWED]
+            ).update(
+                status=ReportStatus.RESOLVED,
+                reviewed_by=request.user,
+                moderator_notes=f"Resolved via project moderation: {reason}"
+            )
+            
+            messages.success(request, success_msg)
+            
+        except Exception as e:
+            logger.error(f"Error in comment moderation: {str(e)}")
+            messages.error(request, "An error occurred while processing the moderation action.")
+    
+    return redirect('project:comments_moderation', project_id=project.id)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def project_tasks_management(request, project_id):
+    """Project tasks management page"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to manage this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    tasks = Task.objects.filter(to_project=project).select_related('created_by').order_by('-created_at')
+    
+    context = {
+        'project': project,
+        'tasks': tasks,
+    }
+    
+    return render(request, 'moderation/tasks.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def project_needs_management(request, project_id):
+    """Project needs management page"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to manage this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    needs = Need.objects.filter(to_project=project).select_related('created_by').order_by('-created_at')
+    
+    context = {
+        'project': project,
+        'needs': needs,
+    }
+    
+    return render(request, 'moderation/needs.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def project_members_management(request, project_id):
+    """Project members management page"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to manage this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    memberships = Membership.objects.filter(project=project).select_related(
+        'user', 'user__profile'
+    ).order_by('-date_joined')
+    
+    context = {
+        'project': project,
+        'memberships': memberships,
+    }
+    
+    return render(request, 'moderation/members.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def project_locations_management(request, project_id):
+    """Project locations management page"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to manage this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    locations = project.localizations.all().order_by('name')
+    
+    context = {
+        'project': project,
+        'locations': locations,
+    }
+    
+    return render(request, 'moderation/locations.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def project_subprojects_management(request, project_id):
+    """Project subprojects management page"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to manage this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    # Get child projects (subprojects)
+    child_connections = Connection.objects.filter(
+        from_project=project, type='child'
+    ).select_related('to_project', 'to_project__created_by').order_by('-created_at')
+    
+    # Get parent projects
+    parent_connections = Connection.objects.filter(
+        to_project=project, type='child'
+    ).select_related('from_project', 'from_project__created_by').order_by('-created_at')
+    
+    context = {
+        'project': project,
+        'child_connections': child_connections,
+        'parent_connections': parent_connections,
+    }
+    
+    return render(request, 'moderation/subprojects.html', context)

@@ -26,6 +26,18 @@
         </div>
 
             <div class="section">
+                {% if can_moderate %}
+<div class="card">
+    <div class="card-content">
+        <span class="card-title">🛡️ Project Moderation</span>
+        <p>Manage and moderate all aspects of this project.</p>
+        <a href="{% url 'project:moderation_dashboard' content.id %}" class="btn waves-effect waves-light red">
+            <i class="material-icons left">security</i>
+            Moderation Dashboard
+        </a>
+    </div>
+</div>
+{% endif %}
   <h5>Locations</h5>
 
 

@@ -1,10 +1,8 @@
 from django.db import models
-from django.conf import settings
-# Create your models here.
+
+# Users (including moderation and administration) can report other users' actions and content (e.g., comment)
 class Report(models.Model):
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, db_index=True
-    )
+    created_by = models.ForeignKey("user.User", on_delete=models.CASCADE)
     comment = models.ForeignKey("comment.Comment", blank=True, null=True, on_delete=models.CASCADE)
 
 

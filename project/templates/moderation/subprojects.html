@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subprojects Management - {{ project.name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
+        .breadcrumb { margin-bottom: 20px; }
+        .breadcrumb a { text-decoration: none; color: #007cba; }
+        .section { margin-bottom: 30px; }
+        .project-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 5px; }
+        .project-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .btn { padding: 8px 12px; margin: 2px; border: none; border-radius: 3px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-primary { background-color: #007cba; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; color: white; }
+        .status-approved { background-color: #28a745; }
+        .status-pending { background-color: #ffc107; color: #333; }
+        .status-rejected { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
+        <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> > 
+        Subprojects
+    </div>
+
+    <div class="header">
+        <h1>🔗 Subprojects Management</h1>
+        <h2>{{ project.name }}</h2>
+    </div>
+
+    <div class="section">
+        <h3>📤 Child Projects (Subprojects)</h3>
+        {% for connection in child_connections %}
+            <div class="project-item">
+                <div class="project-header">
+                    <div>
+                        <h4>
+                            <a href="{% url 'project:project' connection.to_project.id %}" style="text-decoration: none; color: #333;">
+                                {{ connection.to_project.name }}
+                            </a>
+                        </h4>
+                        <span class="status-badge status-{{ connection.status }}">{{ connection.get_status_display }}</span>
+                    </div>
+                    <div>
+                        <a href="{% url 'project:project' connection.to_project.id %}" class="btn btn-secondary">View Project</a>
+                        <!-- Add disconnect functionality if needed -->
+                    </div>
+                </div>
+                
+                {% if connection.to_project.summary %}
+                    <p>{{ connection.to_project.summary }}</p>
+                {% endif %}
+                
+                <div style="font-size: 12px; color: #666; margin-top: 10px;">
+                    Created by: {{ connection.to_project.created_by.username }} | 
+                    Connected: {{ connection.created_at|date:"M d, Y" }}
+                </div>
+            </div>
+        {% empty %}
+            <div style="text-align: center; padding: 20px; color: #666;">
+                <p>This project doesn't have any subprojects.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="section">
+        <h3>📥 Parent Projects</h3>
+        {% for connection in parent_connections %}
+            <div class="project-item">
+                <div class="project-header">
+                    <div>
+                        <h4>
+                            <a href="{% url 'project:project' connection.from_project.id %}" style="text-decoration: none; color: #333;">
+                                {{ connection.from_project.name }}
+                            </a>
+                        </h4>
+                        <span class="status-badge status-{{ connection.status }}">{{ connection.get_status_display }}</span>
+                    </div>
+                    <div>
+                        <a href="{% url 'project:project' connection.from_project.id %}" class="btn btn-secondary">View Project</a>
+                    </div>
+                </div>
+                
+                {% if connection.from_project.summary %}
+                    <p>{{ connection.from_project.summary }}</p>
+                {% endif %}
+                
+                <div style="font-size: 12px; color: #666; margin-top: 10px;">
+                    Created by: {{ connection.from_project.created_by.username }} | 
+                    Connected: {{ connection.created_at|date:"M d, Y" }}
+                </div>
+            </div>
+        {% empty %}
+            <div style="text-align: center; padding: 20px; color: #666;">
+                <p>This project is not connected to any parent projects.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
+    </div>
+</body>
+</html>
