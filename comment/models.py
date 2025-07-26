@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from django.utils.translation import gettext_lazy as _
 
+import uuid
 
 
 class CommentStatus(models.TextChoices):
@@ -78,6 +79,7 @@ class Comment(models.Model):
     is_edited = models.BooleanField(default=False)
     edit_history = models.JSONField(default=list, blank=True,
         help_text="History of edits to this comment")
+
 
     def __str__(self):
         return f"{self.content[:20]} by {self.user.username if self.user else self.author_name or 'Anonymous'}"
@@ -191,11 +193,85 @@ class Comment(models.Model):
             self.moderation_note = reason
         self.save()
 
+    def log_change(self, change_type, changed_by, previous_content=None, new_content=None, 
+                   previous_status=None, new_status=None, reason='', moderation_action=None,
+                   ip_address=None, user_agent='', affected_children_count=0, bulk_operation_id=None):
+        """Create a changelog entry for this comment"""
+        project = None
+        if self.to_project:
+            project = self.to_project
+        elif self.to_task and self.to_task.to_project:
+            project = self.to_task.to_project
+        elif self.to_need and self.to_need.to_project:
+            project = self.to_need.to_project
+
+        return CommentChangeLog.objects.create(
+            comment=self,
+            changed_by=changed_by,
+            change_type=change_type,
+            previous_content=previous_content or '',
+            new_content=new_content,
+            previous_status=previous_status,
+            new_status=new_status,
+            reason=reason,
+            moderation_action=moderation_action,
+            project=project,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            affected_children_count=affected_children_count,
+            bulk_operation_id=bulk_operation_id,
+        )
+
+    def get_change_history(self, include_user_edits=True):
+        """Get all changes for this comment"""
+        queryset = self.change_log.select_related('changed_by', 'moderation_action')
+        if not include_user_edits:
+            queryset = queryset.filter(
+                change_type__in=[
+                    ChangeType.MODERATOR_EDIT,
+                    ChangeType.STATUS_CHANGE,
+                    ChangeType.CONTENT_REMOVAL,
+                    ChangeType.AUTHOR_REMOVAL,
+                    ChangeType.AUTHOR_AND_CONTENT_REMOVAL,
+                    ChangeType.THREAD_DELETION,
+                    ChangeType.BULK_THREAD_DELETION,
+                    ChangeType.APPROVAL,
+                    ChangeType.REJECTION,
+                    ChangeType.FLAGGED,
+                ]
+            )
+        return queryset
+
+    def has_moderation_history(self):
+        """Check if this comment has any moderation changes"""
+        return self.change_log.filter(
+            change_type__in=[
+                ChangeType.MODERATOR_EDIT,
+                ChangeType.STATUS_CHANGE,
+                ChangeType.CONTENT_REMOVAL,
+                ChangeType.AUTHOR_REMOVAL,
+                ChangeType.AUTHOR_AND_CONTENT_REMOVAL,
+                ChangeType.THREAD_DELETION,
+                ChangeType.BULK_THREAD_DELETION,
+                ChangeType.APPROVAL,
+                ChangeType.REJECTION,
+                ChangeType.FLAGGED,
+            ]
+        ).exists()
+
+    def get_original_content(self):
+        """Get the original content before any changes"""
+        first_change = self.change_log.order_by('timestamp').first()
+        if first_change and first_change.previous_content:
+            return first_change.previous_content
+        return self.content
+
     class Meta:
         indexes = [
             models.Index(fields=['status']),
             models.Index(fields=['created_at']),
         ]
+
 # Signals to update `total_replies` automatically
 @receiver(post_save, sender=Comment)
 def update_replies_on_save(sender, instance, created, **kwargs):
@@ -516,21 +592,55 @@ class ModerationAction(models.Model):
     def apply_decision(self):
         """Apply the moderation decision to the comment and related objects"""
         
+        # Store original data for changelog
+        original_content = self.comment.content
+        original_status = self.comment.status
+        
         # Apply comment-level changes
         if self.decision == ModerationDecision.APPROVE:
             self.comment.status = CommentStatus.APPROVED
             self.comment.moderated_by = self.moderator
             self.comment.moderated_at = timezone.now()
             
+            # Create changelog entry
+            self.comment.log_change(
+                change_type=ChangeType.APPROVAL,
+                changed_by=self.moderator,
+                previous_status=original_status,
+                new_status=CommentStatus.APPROVED,
+                reason=self.reason,
+                moderation_action=self
+            )
+            
         elif self.decision == ModerationDecision.HIDE:
             self.comment.status = CommentStatus.FLAGGED
             self.comment.moderated_by = self.moderator
             self.comment.moderated_at = timezone.now()
             
+            # Create changelog entry
+            self.comment.log_change(
+                change_type=ChangeType.FLAGGED,
+                changed_by=self.moderator,
+                previous_status=original_status,
+                new_status=CommentStatus.FLAGGED,
+                reason=self.reason,
+                moderation_action=self
+            )
+            
         elif self.decision == ModerationDecision.REMOVE:
             self.comment.status = CommentStatus.REJECTED
             self.comment.moderated_by = self.moderator
             self.comment.moderated_at = timezone.now()
+            
+            # Create changelog entry
+            self.comment.log_change(
+                change_type=ChangeType.REJECTION,
+                changed_by=self.moderator,
+                previous_status=original_status,
+                new_status=CommentStatus.REJECTED,
+                reason=self.reason,
+                moderation_action=self
+            )
             
         elif self.decision == ModerationDecision.EDIT:
             if self.new_content:
@@ -538,17 +648,100 @@ class ModerationAction(models.Model):
                 self.comment.content = self.new_content
                 self.comment.is_edited = True
                 
+                # Create changelog entry
+                self.comment.log_change(
+                    change_type=ChangeType.MODERATOR_EDIT,
+                    changed_by=self.moderator,
+                    previous_content=original_content,
+                    new_content=self.new_content,
+                    reason=self.reason,
+                    moderation_action=self
+                )
+                
         # New moderation decisions
         elif self.decision == ModerationDecision.REMOVE_CONTENT_ONLY:
+            # Create changelog entry before applying change
+            self.comment.log_change(
+                change_type=ChangeType.CONTENT_REMOVAL,
+                changed_by=self.moderator,
+                previous_content=original_content,
+                new_content="[Content removed by moderation]",
+                previous_status=original_status,
+                new_status=CommentStatus.CONTENT_REMOVED,
+                reason=self.reason,
+                moderation_action=self
+            )
             self.comment.remove_content_only(moderator=self.moderator, reason=self.reason)
             
         elif self.decision == ModerationDecision.REMOVE_AUTHOR_ONLY:
+            # Create changelog entry
+            self.comment.log_change(
+                change_type=ChangeType.AUTHOR_REMOVAL,
+                changed_by=self.moderator,
+                previous_status=original_status,
+                new_status=CommentStatus.AUTHOR_REMOVED,
+                reason=self.reason,
+                moderation_action=self
+            )
             self.comment.remove_author_only(moderator=self.moderator, reason=self.reason)
             
         elif self.decision == ModerationDecision.REMOVE_AUTHOR_AND_CONTENT:
+            # Create changelog entry
+            self.comment.log_change(
+                change_type=ChangeType.AUTHOR_AND_CONTENT_REMOVAL,
+                changed_by=self.moderator,
+                previous_content=original_content,
+                new_content="[Content removed by moderation]",
+                previous_status=original_status,
+                new_status=CommentStatus.AUTHOR_AND_CONTENT_REMOVED,
+                reason=self.reason,
+                moderation_action=self
+            )
             self.comment.remove_author_and_content(moderator=self.moderator, reason=self.reason)
             
         elif self.decision == ModerationDecision.DELETE_THREAD:
+            # Count affected children
+            affected_children = self.comment.replies.all()
+            children_count = affected_children.count()
+            bulk_operation_id = uuid.uuid4() if children_count > 0 else None
+            
+            if children_count > 0:
+                # Bulk deletion changelog
+                self.comment.log_change(
+                    change_type=ChangeType.BULK_THREAD_DELETION,
+                    changed_by=self.moderator,
+                    previous_content=original_content,
+                    previous_status=original_status,
+                    new_status=CommentStatus.THREAD_DELETED,
+                    reason=self.reason,
+                    moderation_action=self,
+                    affected_children_count=children_count,
+                    bulk_operation_id=bulk_operation_id
+                )
+                
+                # Individual entries for children
+                for child_comment in affected_children:
+                    child_comment.log_change(
+                        change_type=ChangeType.STATUS_CHANGE,
+                        changed_by=self.moderator,
+                        previous_status=child_comment.status,
+                        new_status=CommentStatus.REPLY_TO_DELETED,
+                        reason=f"Parent comment deleted in bulk operation",
+                        moderation_action=self,
+                        bulk_operation_id=bulk_operation_id
+                    )
+            else:
+                # Single deletion
+                self.comment.log_change(
+                    change_type=ChangeType.THREAD_DELETION,
+                    changed_by=self.moderator,
+                    previous_content=original_content,
+                    previous_status=original_status,
+                    new_status=CommentStatus.THREAD_DELETED,
+                    reason=self.reason,
+                    moderation_action=self
+                )
+            
             self.comment.soft_delete_thread(moderator=self.moderator, reason=self.reason)
             
         # Only save if it's not a thread deletion (that method handles its own saving)
@@ -686,3 +879,179 @@ def update_report_group_on_save(sender, instance, **kwargs):
 @receiver(post_delete, sender=CommentReport)
 def update_report_group_on_delete(sender, instance, **kwargs):
     CommentReportGroup.update_for_comment(instance.comment)
+
+class ChangeType(models.TextChoices):
+    """Types of changes that can be logged for comments"""
+    USER_EDIT = 'USER_EDIT', 'User Edit'
+    MODERATOR_EDIT = 'MODERATOR_EDIT', 'Moderator Edit'
+    STATUS_CHANGE = 'STATUS_CHANGE', 'Status Change'
+    CONTENT_REMOVAL = 'CONTENT_REMOVAL', 'Content Removed'
+    AUTHOR_REMOVAL = 'AUTHOR_REMOVAL', 'Author Removed'
+    AUTHOR_AND_CONTENT_REMOVAL = 'AUTHOR_AND_CONTENT_REMOVAL', 'Author and Content Removed'
+    THREAD_DELETION = 'THREAD_DELETION', 'Thread Deleted'
+    BULK_THREAD_DELETION = 'BULK_THREAD_DELETION', 'Bulk Thread Deletion'
+    APPROVAL = 'APPROVAL', 'Comment Approved'
+    REJECTION = 'REJECTION', 'Comment Rejected'
+    FLAGGED = 'FLAGGED', 'Comment Flagged'
+
+
+class CommentChangeLog(models.Model):
+    """Model to track all changes made to comments for audit purposes"""
+    
+    # Core relationships
+    comment = models.ForeignKey(
+        Comment, 
+        on_delete=models.CASCADE, 
+        related_name='change_log',
+        help_text='The comment that was changed'
+    )
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        related_name='comment_changes_made',
+        help_text='User who made the change'
+    )
+    
+    # Change metadata
+    change_type = models.CharField(
+        max_length=30, 
+        choices=ChangeType.choices,
+        help_text='Type of change made'
+    )
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, help_text='Browser user agent string')
+    
+    # Content tracking
+    previous_content = models.TextField(
+        blank=True,
+        help_text='Content before the change'
+    )
+    new_content = models.TextField(
+        blank=True, 
+        null=True,
+        help_text='Content after the change'
+    )
+    previous_status = models.CharField(
+        max_length=26, 
+        choices=CommentStatus.choices, 
+        null=True, 
+        blank=True,
+        help_text='Status before the change'
+    )
+    new_status = models.CharField(
+        max_length=26, 
+        choices=CommentStatus.choices, 
+        null=True, 
+        blank=True,
+        help_text='Status after the change'
+    )
+    
+    # Moderation context
+    reason = models.TextField(
+        blank=True,
+        help_text='Reason provided for the change'
+    )
+    moderation_action = models.ForeignKey(
+        'ModerationAction', 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL,
+        related_name='changelog_entries',
+        help_text='Associated moderation action if applicable'
+    )
+    
+    # Project context for permissions
+    project = models.ForeignKey(
+        "project.Project", 
+        null=True, 
+        blank=True, 
+        on_delete=models.CASCADE,
+        related_name='comment_change_logs',
+        help_text='Project context for permission checks'
+    )
+    
+    # Bulk operation tracking
+    affected_children_count = models.PositiveIntegerField(
+        default=0,
+        help_text='Number of child comments affected in bulk operations'
+    )
+    bulk_operation_id = models.UUIDField(
+        null=True, 
+        blank=True,
+        help_text='UUID to group related bulk operations'
+    )
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'Comment Change Log'
+        verbose_name_plural = 'Comment Change Logs'
+        indexes = [
+            models.Index(fields=['comment', '-timestamp']),
+            models.Index(fields=['change_type', '-timestamp']),
+            models.Index(fields=['changed_by', '-timestamp']),
+            models.Index(fields=['project', '-timestamp']),
+            models.Index(fields=['bulk_operation_id']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_change_type_display()} by {self.changed_by} on comment {self.comment.id}"
+    
+    def get_change_summary(self):
+        """Get a human-readable summary of the change"""
+        if self.change_type == ChangeType.USER_EDIT:
+            return f"User edited their comment"
+        elif self.change_type == ChangeType.MODERATOR_EDIT:
+            return f"Moderator {self.changed_by} edited comment content"
+        elif self.change_type == ChangeType.STATUS_CHANGE:
+            return f"Status changed from {self.get_previous_status_display()} to {self.get_new_status_display()}"
+        elif self.change_type == ChangeType.CONTENT_REMOVAL:
+            return f"Content removed by {self.changed_by}"
+        elif self.change_type == ChangeType.AUTHOR_REMOVAL:
+            return f"Author hidden by {self.changed_by}"
+        elif self.change_type == ChangeType.AUTHOR_AND_CONTENT_REMOVAL:
+            return f"Author and content removed by {self.changed_by}"
+        elif self.change_type == ChangeType.THREAD_DELETION:
+            return f"Comment deleted by {self.changed_by}"
+        elif self.change_type == ChangeType.BULK_THREAD_DELETION:
+            return f"Thread deleted by {self.changed_by} (affected {self.affected_children_count} replies)"
+        elif self.change_type == ChangeType.APPROVAL:
+            return f"Comment approved by {self.changed_by}"
+        elif self.change_type == ChangeType.REJECTION:
+            return f"Comment rejected by {self.changed_by}"
+        elif self.change_type == ChangeType.FLAGGED:
+            return f"Comment flagged by {self.changed_by}"
+        else:
+            return f"{self.get_change_type_display()} by {self.changed_by}"
+    
+    def is_moderation_change(self):
+        """Check if this change was made by a moderator"""
+        return self.change_type in [
+            ChangeType.MODERATOR_EDIT,
+            ChangeType.STATUS_CHANGE,
+            ChangeType.CONTENT_REMOVAL,
+            ChangeType.AUTHOR_REMOVAL,
+            ChangeType.AUTHOR_AND_CONTENT_REMOVAL,
+            ChangeType.THREAD_DELETION,
+            ChangeType.BULK_THREAD_DELETION,
+            ChangeType.APPROVAL,
+            ChangeType.REJECTION,
+            ChangeType.FLAGGED,
+        ]
+    
+    def get_content_diff_preview(self, max_length=200):
+        """Get a preview of content changes"""
+        if not self.previous_content or not self.new_content:
+            return None
+        
+        if len(self.previous_content) <= max_length and len(self.new_content) <= max_length:
+            return {
+                'before': self.previous_content,
+                'after': self.new_content
+            }
+        
+        return {
+            'before': self.previous_content[:max_length] + ('...' if len(self.previous_content) > max_length else ''),
+            'after': self.new_content[:max_length] + ('...' if len(self.new_content) > max_length else '')
+        }

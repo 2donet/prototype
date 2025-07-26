@@ -11,12 +11,15 @@ from .views import (
     vote_comment,
     remove_vote,
     delete_comment,
-    enhanced_delete_comment,  # New enhanced delete function
+    enhanced_delete_comment,
     ban_user,
     edit_comment,
-    # New enhanced views
+    # Enhanced views
     enhanced_report_list_view,
     enhanced_report_detail_view,
+    # New history views
+    comment_history_view,
+    comment_moderated_history,
 )
 
 app_name = "comments"
@@ -44,4 +47,8 @@ urlpatterns = [
     path("<int:comment_id>/delete/", delete_comment, name="delete_comment"),  # Legacy delete
     path("user/<int:user_id>/ban/", ban_user, name="ban_user"),
     path("<int:comment_id>/edit/", edit_comment, name="edit_comment"),
+    
+    # New History URLs
+    path("<int:comment_id>/history/", comment_history_view, name="comment_history"),
+    path("<int:comment_id>/history/moderated/", comment_moderated_history, name="comment_moderated_history"),
 ]

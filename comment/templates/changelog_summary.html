@@ -1,0 +1,29 @@
+{% load comment_tags %}
+{% load humanize %}
+
+{% if changes %}
+<div class="changelog-summary" style="font-size: 12px; color: #666; margin-top: 5px;">
+    <strong>Recent changes:</strong>
+    <ul style="margin: 5px 0; padding-left: 15px;">
+        {% for change in changes %}
+        <li>
+            {{ change.change_type|change_type_icon }}
+            <strong>{{ change.get_change_type_display }}</strong>
+            by {{ change.changed_by.username }}
+            <em>{{ change.timestamp|naturaltime }}</em>
+            {% if change.reason %}
+                - {{ change.reason|format_change_reason }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    
+    {% if total_changes > max_entries %}
+        <p style="margin: 0;">
+            <a href="{% url 'comments:comment_history' comment.id %}" style="color: #2196f3;">
+                View all {{ total_changes }} changes →
+            </a>
+        </p>
+    {% endif %}
+</div>
+{% endif %}

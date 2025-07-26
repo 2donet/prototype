@@ -8,7 +8,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.utils import timezone
-
+import uuid
+from .models import CommentChangeLog, ChangeType, CommentStatus
 User = get_user_model()
 
 from .models import (
@@ -23,6 +24,99 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
+
+def ensure_comment_methods():
+    """Ensure Comment model has all necessary changelog methods"""
+    from .models import Comment
+    
+    def log_change(self, change_type, changed_by, previous_content=None, new_content=None, 
+                   previous_status=None, new_status=None, reason='', moderation_action=None,
+                   ip_address=None, user_agent='', affected_children_count=0, bulk_operation_id=None):
+        """Create a changelog entry for this comment"""
+        
+        # Determine project context
+        project = None
+        if self.to_project:
+            project = self.to_project
+        elif self.to_task and self.to_task.to_project:
+            project = self.to_task.to_project
+        elif self.to_need and self.to_need.to_project:
+            project = self.to_need.to_project
+        
+        return CommentChangeLog.objects.create(
+            comment=self,
+            changed_by=changed_by,
+            change_type=change_type,
+            previous_content=previous_content or '',
+            new_content=new_content,
+            previous_status=previous_status,
+            new_status=new_status,
+            reason=reason,
+            moderation_action=moderation_action,
+            project=project,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            affected_children_count=affected_children_count,
+            bulk_operation_id=bulk_operation_id,
+        )
+    
+    def get_change_history(self, include_user_edits=True):
+        """Get all changes for this comment"""
+        queryset = self.change_log.select_related('changed_by', 'moderation_action')
+        
+        if not include_user_edits:
+            # Only show moderation changes
+            queryset = queryset.filter(
+                change_type__in=[
+                    ChangeType.MODERATOR_EDIT,
+                    ChangeType.STATUS_CHANGE,
+                    ChangeType.CONTENT_REMOVAL,
+                    ChangeType.AUTHOR_REMOVAL,
+                    ChangeType.AUTHOR_AND_CONTENT_REMOVAL,
+                    ChangeType.THREAD_DELETION,
+                    ChangeType.BULK_THREAD_DELETION,
+                    ChangeType.APPROVAL,
+                    ChangeType.REJECTION,
+                    ChangeType.FLAGGED,
+                ]
+            )
+        
+        return queryset
+    
+    def has_moderation_history(self):
+        """Check if this comment has any moderation changes"""
+        return self.change_log.filter(
+            change_type__in=[
+                ChangeType.MODERATOR_EDIT,
+                ChangeType.STATUS_CHANGE,
+                ChangeType.CONTENT_REMOVAL,
+                ChangeType.AUTHOR_REMOVAL,
+                ChangeType.AUTHOR_AND_CONTENT_REMOVAL,
+                ChangeType.THREAD_DELETION,
+                ChangeType.BULK_THREAD_DELETION,
+                ChangeType.APPROVAL,
+                ChangeType.REJECTION,
+                ChangeType.FLAGGED,
+            ]
+        ).exists()
+    
+    def get_original_content(self):
+        """Get the original content before any changes"""
+        first_change = self.change_log.order_by('timestamp').first()
+        if first_change and first_change.previous_content:
+            return first_change.previous_content
+        return self.content
+    
+    # Add these methods to Comment model if they don't exist
+    if not hasattr(Comment, 'log_change'):
+        Comment.log_change = log_change
+    if not hasattr(Comment, 'get_change_history'):
+        Comment.get_change_history = get_change_history
+    if not hasattr(Comment, 'has_moderation_history'):
+        Comment.has_moderation_history = has_moderation_history
+    if not hasattr(Comment, 'get_original_content'):
+        Comment.get_original_content = get_original_content
+ensure_comment_methods()
 
 
 def comment_list_view(request, object_type, object_id):
@@ -351,6 +445,15 @@ def enhanced_delete_comment(request, comment_id):
         apply_to_all = request.POST.get('apply_to_all', False)
         
         try:
+            # Count affected children for bulk operations
+            affected_children = comment.replies.all()
+            children_count = affected_children.count()
+            bulk_operation_id = uuid.uuid4() if children_count > 0 else None
+            
+            # Store original data for changelog
+            original_content = comment.content
+            original_status = comment.status
+            
             # Create moderation action for audit trail
             moderation_action = ModerationAction.objects.create(
                 moderator=request.user,
@@ -361,6 +464,50 @@ def enhanced_delete_comment(request, comment_id):
                 notify_reporters=True,
                 project=comment.to_project or (comment.to_task.to_project if comment.to_task else None) or (comment.to_need.to_project if comment.to_need else None)
             )
+            
+            # Create changelog entry for the main comment deletion
+            if children_count > 0:
+                # Bulk deletion
+                comment.log_change(
+                    change_type=ChangeType.BULK_THREAD_DELETION,
+                    changed_by=request.user,
+                    previous_content=original_content,
+                    previous_status=original_status,
+                    new_status=CommentStatus.THREAD_DELETED,
+                    reason=reason,
+                    moderation_action=moderation_action,
+                    ip_address=get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                    affected_children_count=children_count,
+                    bulk_operation_id=bulk_operation_id
+                )
+                
+                # Create individual changelog entries for affected children
+                for child_comment in affected_children:
+                    child_comment.log_change(
+                        change_type=ChangeType.STATUS_CHANGE,
+                        changed_by=request.user,
+                        previous_status=child_comment.status,
+                        new_status=CommentStatus.REPLY_TO_DELETED,
+                        reason=f"Parent comment deleted in bulk operation",
+                        moderation_action=moderation_action,
+                        ip_address=get_client_ip(request),
+                        user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                        bulk_operation_id=bulk_operation_id
+                    )
+            else:
+                # Single comment deletion
+                comment.log_change(
+                    change_type=ChangeType.THREAD_DELETION,
+                    changed_by=request.user,
+                    previous_content=original_content,
+                    previous_status=original_status,
+                    new_status=CommentStatus.THREAD_DELETED,
+                    reason=reason,
+                    moderation_action=moderation_action,
+                    ip_address=get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                )
             
             # Apply the decision (this will update comment status and resolve reports)
             moderation_action.apply_decision()
@@ -390,7 +537,6 @@ def enhanced_delete_comment(request, comment_id):
     }
     return render(request, 'confirm_delete_comment.html', context)
 
-
 @user_passes_test(is_moderator)
 def ban_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
@@ -407,16 +553,34 @@ def edit_comment(request, comment_id):
     if not comment.can_edit(request.user):
         messages.error(request, "You don't have permission to edit this comment.")
         return redirect('comments:single_comment', comment_id=comment.id)
+    
     if request.method == 'POST':
         new_content = request.POST.get('content', '').strip()
         if not new_content:
             messages.error(request, "Comment content cannot be empty.")
             return redirect('comments:edit_comment', comment_id=comment.id)
+        
+        # Store original content for changelog
+        original_content = comment.content
+        
+        # Update comment using existing edit method
         comment.edit(new_content, editor=request.user)
+        
+        # Create changelog entry for user edit
+        comment.log_change(
+            change_type=ChangeType.USER_EDIT,
+            changed_by=request.user,
+            previous_content=original_content,
+            new_content=new_content,
+            reason=f"User edited their own comment",
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+        
         messages.success(request, "Comment updated successfully.")
         return redirect('comments:single_comment', comment_id=comment.id)
+    
     return render(request, 'edit_comment.html', {'comment': comment})
-
 
 @user_passes_test(is_moderator)
 def enhanced_report_list_view(request):
@@ -530,3 +694,54 @@ def enhanced_report_detail_view(request, comment_id):
     }
     
     return render(request, 'enhanced_report_detail.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def comment_history_view(request, comment_id):
+    """View comment change history - accessible to moderators and admins"""
+    comment = get_object_or_404(Comment, id=comment_id)
+    
+    # Check permissions
+    can_view_history = False
+    can_view_all_changes = False
+    
+    # Global admins can see everything
+    if request.user.is_superuser or request.user.is_staff:
+        can_view_history = True
+        can_view_all_changes = True
+    # Project moderators can see moderation history
+    elif comment.can_moderate(request.user):
+        can_view_history = True
+        can_view_all_changes = False
+    
+    if not can_view_history:
+        messages.error(request, "You don't have permission to view this comment's history.")
+        return redirect('comments:single_comment', comment_id=comment.id)
+    
+    # Get history based on permissions and URL parameter
+    show_all = request.GET.get('all', 'false').lower() == 'true'
+    if can_view_all_changes and show_all:
+        change_history = comment.get_change_history(include_user_edits=True)
+        history_type = "all"
+    else:
+        change_history = comment.get_change_history(include_user_edits=False)
+        history_type = "moderated"
+    
+    # Pagination
+    paginator = Paginator(change_history, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'comment': comment,
+        'change_history': page_obj,
+        'can_view_all_changes': can_view_all_changes,
+        'history_type': history_type,
+        'show_all': show_all,
+    }
+    
+    return render(request, 'comment_history.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def comment_moderated_history(request, comment_id):
+    """View only moderated changes for a comment"""
+    return comment_history_view(request, comment_id)

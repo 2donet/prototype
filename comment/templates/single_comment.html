@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load humanize %}
 {% load static %}
+{% load comment_tags %}
 
 {% block title %}Comment - {{ comment.content|truncatechars:50 }}{% endblock %}
-{% load comment_tags %}
 
 {% block content %}
 <div class="container">
@@ -39,28 +39,33 @@
         <div class="comment main-comment" data-comment-id="{{ comment.id }}">
             <!-- User information -->
             <div class="comment-header">
-                {% if comment.user %}
-      {% comment_avatar comment.user %}
-                <div class="comment-meta">
-                    <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
-                    <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
-                </div>
+                {% if comment.status == 'AUTHOR_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
+                    <div class="comment-meta">
+                        <span style="color: #666; font-style: italic;">[Hidden]</span>
+                        <span class="time" title="{{ comment.created_at }}">{{ comment.created_at|naturaltime }}</span>
+                    </div>
+                {% elif comment.user %}
+                    {% comment_avatar comment.user %}
+                    <div class="comment-meta">
+                        <a href="/u/{{ comment.user.id }}">{{ comment.user.username }}</a>
+                        <span class="time" title="{{ comment.created_at }}">{{ comment.created_at|naturaltime }}</span>
+                    </div>
                 {% else %}
-                <div class="comment-meta">
-                    <span>Anonymous</span>
-                    <span class="time" title="{{ comment.pub_date }}">{{ comment.pub_date|naturaltime }}</span>
-                </div>
+                    <div class="comment-meta">
+                        <span>Anonymous</span>
+                        <span class="time" title="{{ comment.created_at }}">{{ comment.created_at|naturaltime }}</span>
+                    </div>
                 {% endif %}
         
                 <!-- Comment actions -->
                 <div class="comment-actions">
-                <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
-                    <i>👍</i>
-                </a>
-                <span class="score">{{ comment.score }}</span>
-                <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
-                    <i>👎</i>
-                </a>
+                    <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
+                        <i>👍</i>
+                    </a>
+                    <span class="score">{{ comment.score }}</span>
+                    <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
+                        <i>👎</i>
+                    </a>
                     <a href="#" title="reward" class="reward">🎁</a>
         
                     <div class="dropdown">
@@ -71,12 +76,21 @@
                             {% if request.user.is_staff %}
                             <li><a href="/admin/comment/comment/{{ comment.id }}/change/">[ ADMIN ]</a></li>
                             {% endif %}
+                            
+                            <!-- History link for moderators/admins -->
+                            {% if user.is_staff or user.is_superuser or comment|can_moderate_comment:user %}
+                                <li>
+                                    <a href="{% url 'comments:comment_history' comment.id %}">
+                                        📜 View History
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
                             {% if request.user == comment.user or request.user.is_staff %}
                             <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
                             {% endif %}
-                <li><a href="{% url 'comments:report_comment' comment.id %}">Report</a></li>
-                                        <li><a href="/messages/{{ user.username }}/">✉️ Message</a></li>
-
+                            <li><a href="{% url 'comments:report_comment' comment.id %}">Report</a></li>
+                            <li><a href="/messages/{{ comment.user.username }}/">✉️ Message</a></li>
                         </ul>
                     </div>
                 </div>
@@ -84,27 +98,71 @@
         
             <!-- Comment content -->
             <div class="comment-content">
-                <p>{{ comment.content | linebreaks  }}</p>
+                {% if comment.status == 'CONTENT_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
+                    <p><em style="color: #666;">[Content removed by moderation]</em></p>
+                    
+                    <!-- Show original content to admins -->
+                    {% if user.is_superuser or user.is_staff %}
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: #2196f3;">Show Original Content (Admin Only)</summary>
+                            <div style=" padding: 10px; margin-top: 5px; border-radius: 4px;">
+                                {{ comment.content|linebreaks }}
+                            </div>
+                        </details>
+                    {% endif %}
+                {% elif comment.status == 'THREAD_DELETED' or comment.status == 'REPLY_TO_DELETED' %}
+                    <p><em style="color: #666;">[Comment deleted]</em></p>
+                    
+                    <!-- Show original content to admins -->
+                    {% if user.is_superuser or user.is_staff %}
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: #2196f3;">Show Original Content (Admin Only)</summary>
+                            <div style="padding: 10px; margin-top: 5px; border-radius: 4px;">
+                                {{ comment.content|linebreaks }}
+                            </div>
+                        </details>
+                    {% endif %}
+                {% else %}
+                    <p>{{ comment.content | linebreaks }}</p>
+                {% endif %}
+                
+                <!-- Show edit indicator -->
+                {% if comment.is_edited %}
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                        <small style="color: #666; font-style: italic;">
+                            (edited)
+                            {% if user.is_staff or user.is_superuser or comment|can_moderate_comment:user %}
+                                - <a href="{% url 'comments:comment_history' comment.id %}" style="color: #2196f3;">view history</a>
+                            {% endif %}
+                        </small>
+                    </div>
+                {% endif %}
             </div>
         
             <!-- Reply button -->
             <div class="comment-footer">
-                <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
-                <span class="reply-count">{{ comment.total_replies }} replies</span>
+                {% if comment.status not in 'THREAD_DELETED,REPLY_TO_DELETED' %}
+                    <button class="reply-btn" data-comment-id="{{ comment.id }}">Reply</button>
+                    <span class="reply-count">{{ comment.total_replies }} replies</span>
+                {% else %}
+                    <span style="color: #666; font-style: italic;">Replies disabled for deleted comments</span>
+                {% endif %}
             </div>
         
             <!-- Reply form (initially hidden) -->
-            <div class="reply-form-container" style="display: none;">
-                <form class="reply-form" data-parent-id="{{ comment.id }}">
-                    {% csrf_token %}
-                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                    <textarea name="content" rows="4" placeholder="Write your reply..." required></textarea>
-                    <div class="form-actions">
-                        <button type="submit" class="submit-reply">Submit Reply</button>
-                        <button type="button" class="cancel-reply">Cancel</button>
-                    </div>
-                </form>
-            </div>
+            {% if comment.status not in 'THREAD_DELETED,REPLY_TO_DELETED' %}
+                <div class="reply-form-container" style="display: none;">
+                    <form class="reply-form" data-parent-id="{{ comment.id }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                        <textarea name="content" rows="4" placeholder="Write your reply..." required></textarea>
+                        <div class="form-actions">
+                            <button type="submit" class="submit-reply">Submit Reply</button>
+                            <button type="button" class="cancel-reply">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
         </div>
     </div>
     
@@ -118,27 +176,27 @@
                     <!-- User information -->
                     <div class="comment-header">
                         {% if reply.user %}
-                            <img class="miniavatar" src="{{ reply.user.avatar |default:'/static/icons/default-avatar.svg' }}" alt="{{ reply.user.username }}">
+                            {% comment_avatar reply.user %}
                             <div class="comment-meta">
                                 <a href="/u/{{ reply.user.id }}">{{ reply.user.username }}</a>
-                                <span class="time" title="{{ reply.pub_date }}">{{ reply.pub_date|naturaltime }}</span>
+                                <span class="time" title="{{ reply.created_at }}">{{ reply.created_at|naturaltime }}</span>
                             </div>
                         {% else %}
                             <div class="comment-meta">
                                 <span>Anonymous</span>
-                                <span class="time" title="{{ reply.pub_date }}">{{ reply.pub_date|naturaltime }}</span>
+                                <span class="time" title="{{ reply.created_at }}">{{ reply.created_at|naturaltime }}</span>
                             </div>
                         {% endif %}
                         
                         <!-- Reply actions -->
                         <div class="comment-actions">
-                        <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
-                            <i>👍</i>
-                        </a>
-                        <span class="score">{{ reply.score }}</span>
-                        <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
-                            <i>👎</i>
-                        </a>
+                            <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
+                                <i>👍</i>
+                            </a>
+                            <span class="score">{{ reply.score }}</span>
+                            <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
+                                <i>👎</i>
+                            </a>
                             <a href="#" title="reward" class="reward">🎁</a>
                             
                             <div class="dropdown">
@@ -149,9 +207,21 @@
                                     {% if request.user.is_staff %}
                                         <li><a href="/admin/comment/comment/{{ reply.id }}/change/">[ ADMIN ]</a></li>
                                     {% endif %}
-                                    <li><a href="#" class="report-link">Report</a></li>
+                                    
+                                    <!-- History link for moderators -->
+                                    {% if user.is_staff or user.is_superuser or reply|can_moderate_comment:user %}
+                                        <li>
+                                            <a href="{% url 'comments:comment_history' reply.id %}">
+                                                📜 View History
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% if request.user == reply.user or request.user.is_staff %}
+                                        <li><a href="{% url 'comments:edit_comment' reply.id %}">Edit</a></li>
+                                    {% endif %}
+                                    <li><a href="{% url 'comments:report_comment' reply.id %}">Report</a></li>
                                     <li><a href="/messages/{{ reply.user.username }}/">✉️ Message</a></li>
-
                                 </ul>
                             </div>
                         </div>
@@ -159,7 +229,17 @@
                     
                     <!-- Reply content -->
                     <div class="comment-content">
-                        <p>{{ reply.content }}</p>
+                        <p>{{ reply.content|linebreaks }}</p>
+                        
+                        <!-- Show edit indicator for replies -->
+                        {% if reply.is_edited %}
+                            <small style="color: #666; font-style: italic;">
+                                (edited)
+                                {% if user.is_staff or user.is_superuser or reply|can_moderate_comment:user %}
+                                    - <a href="{% url 'comments:comment_history' reply.id %}" style="color: #2196f3;">view history</a>
+                                {% endif %}
+                            </small>
+                        {% endif %}
                     </div>
                     
                     <!-- Reply to reply button -->
@@ -220,9 +300,9 @@
                 const replyForm = this.closest('.comment').querySelector('.reply-form-container');
                 
                 // Toggle form visibility
-                if (replyForm.style.display === 'none' || !replyForm.style.display) {
+                if (replyForm && (replyForm.style.display === 'none' || !replyForm.style.display)) {
                     replyForm.style.display = 'block';
-                } else {
+                } else if (replyForm) {
                     replyForm.style.display = 'none';
                 }
             });
@@ -232,7 +312,9 @@
         document.querySelectorAll('.cancel-reply').forEach(button => {
             button.addEventListener('click', function() {
                 const replyForm = this.closest('.reply-form-container');
-                replyForm.style.display = 'none';
+                if (replyForm) {
+                    replyForm.style.display = 'none';
+                }
             });
         });
         

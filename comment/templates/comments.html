@@ -27,6 +27,13 @@
                     {{ comment.get_status_display }}
                 </span>
             {% endif %}
+            
+            <!-- Show history indicator if comment has moderation history -->
+            {% if comment.has_moderation_history %}
+                <span class="history-indicator" style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px; margin-left: 5px;">
+                    {{ comment.change_log.count }} change{{ comment.change_log.count|pluralize }}
+                </span>
+            {% endif %}
         {% endif %}
 
         <div class="comment-actions">
@@ -53,6 +60,19 @@
                     <a href="/admin/portal/project/{{ project.id }}/change/">[ ADMIN ]</a>
                 </li>
                 {% endif %}
+                
+                <!-- History link for moderators -->
+                {% if user|can_view_comment_history:comment %}
+                    <li>
+                        <a href="{% url 'comments:comment_history' comment.id %}">
+                            📜 View History
+                            {% if comment|change_count > 0 %}
+                                ({{ comment|change_count }})
+                            {% endif %}
+                        </a>
+                    </li>
+                {% endif %}
+                
                 {% if request.user == comment.user or request.user.is_staff %}
                 <li><a href="{% url 'comments:edit_comment' comment.id %}">Edit</a></li>
                 {% endif %}
@@ -73,10 +93,40 @@
         <!-- Handle different content display statuses -->
         {% if comment.status == 'CONTENT_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
             <em style="color: #666;">[Content removed by moderation]</em>
+            
+            <!-- Show original content to admins -->
+            {% if user.is_superuser or user.is_staff %}
+                <details style="margin-top: 5px;">
+                    <summary style="cursor: pointer; color: #2196f3; font-size: 12px;">Show Original (Admin Only)</summary>
+                    <div style="padding: 8px; margin-top: 3px; border-radius: 3px; font-size: 14px;">
+                        {{ comment.get_original_content|linebreaks }}
+                    </div>
+                </details>
+            {% endif %}
         {% elif comment.status == 'THREAD_DELETED' or comment.status == 'REPLY_TO_DELETED' %}
             <em style="color: #666;">[Comment deleted]</em>
+            
+            <!-- Show original content to admins -->
+            {% if user.is_superuser or user.is_staff %}
+                <details style="margin-top: 5px;">
+                    <summary style="cursor: pointer; color: #2196f3; font-size: 12px;">Show Original (Admin Only)</summary>
+                    <div style="padding: 8px; margin-top: 3px; border-radius: 3px; font-size: 14px;">
+                        {{ comment.get_original_content|linebreaks }}
+                    </div>
+                </details>
+            {% endif %}
         {% else %}
             {{ comment.content | linebreaks }}
+        {% endif %}
+        
+        <!-- Show edit indicator -->
+        {% if comment.is_edited %}
+            <small style="color: #666; font-style: italic;">
+                (edited)
+                {% if user.is_staff or comment|can_moderate_comment:user %}
+                    - <a href="{% url 'comments:comment_history' comment.id %}" style="color: #2196f3;">view history</a>
+                {% endif %}
+            </small>
         {% endif %}
     </p>
 

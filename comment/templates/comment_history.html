@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+{% load comment_tags %}
+
+{% block title %}Comment History - {{ comment.content|truncatechars:50 }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <style>
+        .history-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 20px;
+            color: var(--text2ndary);
+        }
+        
+        .breadcrumb a {
+            text-decoration: none;
+            color: var(--information);
+        }
+        
+        .comment-original {
+            background: var(--bg-color2);
+            border: 1px solid var(--highlightdark);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .comment-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: var(--text2ndary);
+        }
+        
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--highlightdark);
+        }
+        
+        .history-tabs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .history-tab {
+            padding: 8px 16px;
+            background: var(--bg-color2);
+            border: 1px solid var(--highlightdark);
+            border-radius: 5px;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.3s ease;
+        }
+        
+        .history-tab.active {
+            background: var(--information);
+            color: white;
+            border-color: var(--information);
+        }
+        
+        .history-tab:hover {
+            background: var(--highlightdark);
+            color: var(--text);
+        }
+        
+        .change-entry {
+            background: var(--bg-color2);
+            border: 1px solid var(--highlightdark);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        
+        .change-header {
+            background: var(--bg-color3);
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--highlightdark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .change-type {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .change-type-user_edit { background-color: var(--information); }
+        .change-type-moderator_edit { background-color: var(--warning); }
+        .change-type-status_change { background-color: var(--status-purple); }
+        .change-type-content_removal { background-color: var(--danger); }
+        .change-type-author_removal { background-color: var(--risk); }
+        .change-type-author_and_content_removal { background-color: var(--status-pink); }
+        .change-type-thread_deletion { background-color: var(--bg-color); }
+        .change-type-bulk_thread_deletion { background-color: var(--status-dark); }
+        .change-type-approval { background-color: var(--confirm); }
+        .change-type-rejection { background-color: var(--danger); }
+        .change-type-flagged { background-color: var(--warning); }
+        
+        .change-content {
+            padding: 15px;
+        }
+        
+        .content-diff {
+            background: var(--bgpopup);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .diff-before {
+            background: var(--bg-color2);
+            border-left: 4px solid #f44336;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        
+        .diff-after {
+            background: var(--bg-color3);
+            border-left: 4px solid #4caf50;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .status-change {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: white;
+        }
+        
+        .bulk-info {
+            background: var(--bg-color3);
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .pagination {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .pagination a {
+            padding: 8px 12px;
+            margin: 0 2px;
+            text-decoration: none;
+            border: 1px solid var(--highlightdark);
+            color: var(--information);
+            background-color: var(--bg-color2);
+            border-radius: 4px;
+        }
+        
+        .pagination .current {
+            padding: 8px 12px;
+            margin: 0 2px;
+            background-color: var(--information);
+            color: white;
+            border-radius: 4px;
+        }
+        
+        .no-history {
+            text-align: center;
+            padding: 40px;
+            color: var(--text2ndary);
+            background: var(--bg-color2);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+    
+    <div class="history-container">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+            <a href="/">Home</a> &gt;
+            {% if comment.to_project %}
+                <a href="{% url 'project:project' comment.to_project.id %}">{{ comment.to_project.name }}</a> &gt;
+            {% elif comment.to_task %}
+                <a href="/t/{{ comment.to_task.id }}/">{{ comment.to_task.name }}</a> &gt;
+            {% elif comment.to_need %}
+                <a href="/n/{{ comment.to_need.id }}/">{{ comment.to_need.name }}</a> &gt;
+            {% endif %}
+            <a href="{% url 'comments:single_comment' comment.id %}">Comment</a> &gt;
+            History
+        </div>
+        
+        <!-- Original Comment -->
+        <div class="comment-original">
+            <h3>Original Comment</h3>
+            <div class="comment-meta">
+                {% comment_avatar comment.user %}
+                {% if comment.status == 'AUTHOR_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
+                    <span style="color: #666; font-style: italic;">[Hidden]</span>
+                {% elif comment.user %}
+                    <strong>{{ comment.user.username }}</strong>
+                {% else %}
+                    <strong>Anonymous</strong>
+                {% endif %}
+                <span>•</span>
+                <span title="{{ comment.created_at }}">{{ comment.created_at|naturaltime }}</span>
+                <span>•</span>
+                <span class="status-badge status-{{ comment.status|lower }}">{{ comment.get_status_display }}</span>
+            </div>
+            
+            <div class="comment-content">
+                {% if comment.status == 'CONTENT_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
+                    <em style="color: #666;">[Content removed by moderation]</em>
+                    {% if user.is_superuser or user.is_staff %}
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: var(--information);">Show Original Content (Admin Only)</summary>
+                            <div style="background: var(--bgpopup); padding: 10px; margin-top: 5px; border-radius: 4px;">
+                                {{ comment.get_original_content|linebreaks }}
+                            </div>
+                        </details>
+                    {% endif %}
+                {% elif comment.status == 'THREAD_DELETED' or comment.status == 'REPLY_TO_DELETED' %}
+                    <em style="color: #666;">[Comment deleted]</em>
+                    {% if user.is_superuser or user.is_staff %}
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: var(--information);">Show Original Content (Admin Only)</summary>
+                            <div style="background: var(--bgpopup); padding: 10px; margin-top: 5px; border-radius: 4px;">
+                                {{ comment.get_original_content|linebreaks }}
+                            </div>
+                        </details>
+                    {% endif %}
+                {% else %}
+                    {{ comment.content|linebreaks }}
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- History Header -->
+        <div class="history-header">
+            <h2>Change History</h2>
+            {% if can_view_all_changes %}
+                <div class="history-tabs">
+                    <a href="?all=false" class="history-tab {% if not show_all %}active{% endif %}">
+                        Moderation Only
+                    </a>
+                    <a href="?all=true" class="history-tab {% if show_all %}active{% endif %}">
+                        All Changes
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Change History -->
+        {% if change_history %}
+            {% for change in change_history %}
+                <div class="change-entry">
+                    <div class="change-header">
+                        <div>
+                            <span class="change-type change-type-{{ change.change_type|lower }}">
+                                {{ change.get_change_type_display }}
+                            </span>
+                            <strong>{{ change.changed_by.username }}</strong>
+                            <span>{{ change.timestamp|naturaltime }}</span>
+                        </div>
+                        <div>
+                            {% if change.bulk_operation_id %}
+                                <span style="font-size: 12px; color: var(--text2ndary);">
+                                    Bulk Operation
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="change-content">
+                        <p><strong>{{ change.get_change_summary }}</strong></p>
+                        
+                        {% if change.reason %}
+                            <p><em>Reason: {{ change.reason }}</em></p>
+                        {% endif %}
+                        
+                        <!-- Content Changes -->
+                        {% if change.previous_content and change.new_content %}
+                            <div class="content-diff">
+                                <strong>Content Changes:</strong>
+                                <div class="diff-before">
+                                    <strong>Before:</strong><br>
+                                    {{ change.previous_content|linebreaks }}
+                                </div>
+                                <div class="diff-after">
+                                    <strong>After:</strong><br>
+                                    {{ change.new_content|linebreaks }}
+                                </div>
+                            </div>
+                        {% elif change.previous_content and not change.new_content %}
+                            <div class="content-diff">
+                                <strong>Original Content:</strong>
+                                <div class="diff-before">
+                                    {{ change.previous_content|linebreaks }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Status Changes -->
+                        {% if change.previous_status and change.new_status %}
+                            <div class="status-change">
+                                <strong>Status changed from:</strong>
+                                <span class="status-badge status-{{ change.previous_status|lower }}">
+                                    {{ change.get_previous_status_display }}
+                                </span>
+                                <span>→</span>
+                                <span class="status-badge status-{{ change.new_status|lower }}">
+                                    {{ change.get_new_status_display }}
+                                </span>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Bulk Operation Info -->
+                        {% if change.affected_children_count > 0 %}
+                            <div class="bulk-info">
+                                <strong>Bulk Operation:</strong> This action affected {{ change.affected_children_count }} child comment{{ change.affected_children_count|pluralize }}.
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Technical Details for Admins -->
+                        {% if user.is_superuser and change.ip_address %}
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--text2ndary); font-size: 12px;">
+                                    Technical Details (Admin Only)
+                                </summary>
+                                <div style="font-size: 12px; color: var(--text2ndary); margin-top: 5px;">
+                                    <p>IP Address: {{ change.ip_address }}</p>
+                                    {% if change.user_agent %}
+                                        <p>User Agent: {{ change.user_agent|truncatechars:100 }}</p>
+                                    {% endif %}
+                                    {% if change.moderation_action %}
+                                        <p>Moderation Action ID: {{ change.moderation_action.id }}</p>
+                                    {% endif %}
+                                    {% if change.bulk_operation_id %}
+                                        <p>Bulk Operation ID: {{ change.bulk_operation_id }}</p>
+                                    {% endif %}
+                                </div>
+                            </details>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if change_history.has_other_pages %}
+                <div class="pagination">
+                    {% if change_history.has_previous %}
+                        <a href="?page={{ change_history.previous_page_number }}{% if show_all %}&all=true{% endif %}">&laquo; Previous</a>
+                    {% endif %}
+                    
+                    <span class="current">Page {{ change_history.number }} of {{ change_history.paginator.num_pages }}</span>
+                    
+                    {% if change_history.has_next %}
+                        <a href="?page={{ change_history.next_page_number }}{% if show_all %}&all=true{% endif %}">Next &raquo;</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="no-history">
+                <h3>No Changes Found</h3>
+                <p>
+                    {% if history_type == "all" %}
+                        This comment has no recorded changes.
+                    {% else %}
+                        This comment has no moderation history.
+                        {% if can_view_all_changes %}
+                            <a href="?all=true">View all changes</a> to see user edits.
+                        {% endif %}
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+        
+        <!-- Back Link -->
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{% url 'comments:single_comment' comment.id %}" style="text-decoration: none; color: var(--information);">
+                ← Back to Comment
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
