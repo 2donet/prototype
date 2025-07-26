@@ -16,16 +16,17 @@
         <div style="margin-top: 15px;">
             <a href="{% url 'project:create_subproject' project.id %}" class="btn btn-primary">+ Create Subproject</a>
             <a href="{% url 'project:connect_existing_project' project.id %}" class="btn btn-secondary">🔗 Connect Existing Project</a>
+            <a href="{% url 'project:request_parent_connection' project.id %}" class="btn btn-tertiary">🔼 Request Parent Connection</a>
         </div>
     </div>
 
-    <!-- NEW: Pending Incoming Connection Requests Section -->
+    <!-- FIXED: Pending Incoming Connection Requests Section -->
     {% if pending_incoming_connections %}
     <div class="section priority-section">
         <h3>📥 Pending Connection Requests 
             <span class="notification-badge">{{ pending_incoming_connections|length }}</span>
         </h3>
-        <p class="section-description">Other projects want to connect to your project as a subproject. Review and approve/reject these requests.</p>
+        <p class="section-description">Other projects want to make your project their subproject. Review and approve/reject these requests.</p>
         
         {% for connection in pending_incoming_connections %}
         <div class="project-item pending-request">
@@ -35,7 +36,7 @@
                         <a href="{% url 'project:project' connection.from_project.id %}" style="text-decoration: none;">
                             {{ connection.from_project.name }}
                         </a>
-                        <span class="wants-to-connect">wants to connect this project as a subproject</span>
+                        <span class="wants-to-connect">wants to make this project their subproject</span>
                     </h4>
                     <div class="request-meta">
                         <strong>Requested by:</strong> {{ connection.added_by.username }} on {{ connection.added_date|date:"M d, Y" }}
@@ -165,6 +166,7 @@
         {% empty %}
             <div class="empty-state">
                 <p>This project is not connected to any parent projects.</p>
+                <a href="{% url 'project:request_parent_connection' project.id %}" class="btn btn-tertiary">🔼 Request Parent Connection</a>
             </div>
         {% endfor %}
     </div>
@@ -213,7 +215,9 @@
         <ul>
             <li><strong>Create Subproject:</strong> Creates a new project automatically connected to this one</li>
             <li><strong>Connect Existing:</strong> Sends a request to an existing project to become a subproject</li>
+            <li><strong>Request Parent:</strong> Sends a request to join another project as their subproject</li>
             <li><strong>Approval Required:</strong> Target project administrators must approve connection requests</li>
+            <li><strong>Single Parent:</strong> Each project can only have one parent project at a time</li>
             <li><strong>Mutual Agreement:</strong> Both projects must agree to maintain the connection</li>
         </ul>
     </div>
@@ -262,6 +266,15 @@
 }
 .btn-secondary:hover {
     background-color: var(--bg-color3);
+    transform: translateY(-1px);
+}
+
+.btn-tertiary { 
+    background-color: #17a2b8; 
+    color: white; 
+}
+.btn-tertiary:hover {
+    background-color: #138496;
     transform: translateY(-1px);
 }
 

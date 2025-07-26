@@ -39,6 +39,7 @@ urlpatterns = [
     path('<int:project_id>/subprojects/', views.project_subprojects_management, name='subprojects_management'),
     path('<int:project_id>/subprojects/create/', views.create_subproject, name='create_subproject'),
     path('<int:project_id>/subprojects/connect/', views.connect_existing_project, name='connect_existing_project'),
+    path('<int:project_id>/subprojects/request-parent/', views.request_parent_connection, name='request_parent_connection'),  # NEW LINE
     path('<int:project_id>/subprojects/disconnect/<int:connection_id>/', views.disconnect_subproject, name='disconnect_subproject'),
     
     # Connection approval/rejection

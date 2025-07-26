@@ -38,8 +38,10 @@ def index(request):
     # Filter projects based on visibility
     if request.user.is_authenticated:
         # For logged-in users, show public projects and projects visible to logged-in users
+        # FIXED: Only exclude projects that are APPROVED children (not pending/rejected)
         latest_projects_list = Project.objects.exclude(
-            incoming_connections__type='child'
+            incoming_connections__type='child',
+            incoming_connections__status='approved'  # Only exclude approved child connections
         ).filter(
                     models.Q(visibility='public') | 
                     models.Q(visibility='logged_in') |
@@ -48,13 +50,14 @@ def index(request):
                 ).distinct().order_by('-id')
     else:
         # For anonymous users, only show public projects
+        # FIXED: Only exclude projects that are APPROVED children (not pending/rejected)
         latest_projects_list = Project.objects.exclude(
-            incoming_connections__type='child'
+            incoming_connections__type='child',
+            incoming_connections__status='approved'  # Only exclude approved child connections
         ).filter(visibility='public').order_by('-id')
 
     context = {"latest_projects_list": latest_projects_list,}
     return render(request, "index.html", context=context)
-
 @login_required
 def create_project(request):
     if request.user.is_authenticated and request.method == 'POST':
@@ -981,6 +984,7 @@ def project_locations_management(request, project_id):
     return render(request, 'moderation/locations.html', context)
 
 @user_passes_test(lambda u: u.is_authenticated)
+@user_passes_test(lambda u: u.is_authenticated)
 def project_subprojects_management(request, project_id):
     """Project subprojects management page"""
     project = get_object_or_404(Project, id=project_id)
@@ -990,20 +994,24 @@ def project_subprojects_management(request, project_id):
         return redirect('project:project', project_id=project.id)
     
     # Get child projects (subprojects that this project manages)
+    # These are projects where this project is the FROM_PROJECT (parent)
     child_connections = Connection.objects.filter(
         from_project=project, type='child'
     ).select_related('to_project', 'to_project__created_by').prefetch_related(
         'to_project__membership_set'  # Prefetch memberships for member count
     ).order_by('-added_date')
 
-    # Get parent projects (projects that this project is a subproject of)
+    # Get parent projects (projects that this project is a subproject of)  
+    # These are projects where this project is the TO_PROJECT (child)
     parent_connections = Connection.objects.filter(
         to_project=project, type='child'
     ).select_related('from_project', 'from_project__created_by').prefetch_related(
         'from_project__membership_set'  # Prefetch memberships for member count
     ).order_by('-added_date')
     
-    # Get pending INCOMING connection requests (other projects wanting to connect TO this project)
+    # FIXED: Get pending INCOMING connection requests 
+    # These are requests where OTHER projects want THIS project to become their subproject
+    # So this project is the TO_PROJECT (child) in pending requests
     pending_incoming_connections = Connection.objects.filter(
         to_project=project, 
         type='child', 
@@ -1014,19 +1022,34 @@ def project_subprojects_management(request, project_id):
         'from_project__membership_set'  # Prefetch memberships for member count
     ).order_by('-added_date')
     
-    # Get pending OUTGOING connection requests (this project wanting to connect to others)
+    # Get pending OUTGOING connection requests 
+    # These are requests where THIS project wants to become someone else's subproject
+    # So this project is the TO_PROJECT (child) in these pending requests
+    # OR requests where this project wants to add another project as their subproject
+    # So this project is the FROM_PROJECT (parent) in these pending requests
     pending_outgoing_connections = Connection.objects.filter(
-        from_project=project, 
-        type='child', 
-        status='pending'
+        Q(from_project=project, type='child', status='pending') |  # This project requesting to add subprojects
+        Q(to_project=project, type='child', status='pending', from_project__isnull=False)  # This project requesting to join as subproject
+    ).select_related('to_project', 'to_project__created_by', 'from_project', 'from_project__created_by').order_by('-added_date')
+    
+    # Actually, let's separate these more clearly:
+    # Outgoing requests where THIS project wants to add subprojects
+    outgoing_subproject_requests = Connection.objects.filter(
+        from_project=project, type='child', status='pending'
     ).select_related('to_project', 'to_project__created_by').order_by('-added_date')
+    
+    # Outgoing requests where THIS project wants to join as a subproject  
+    outgoing_parent_requests = Connection.objects.filter(
+        to_project=project, type='child', status='pending'
+    ).select_related('from_project', 'from_project__created_by').order_by('-added_date')
     
     context = {
         'project': project,
         'child_connections': child_connections,
         'parent_connections': parent_connections,
         'pending_incoming_connections': pending_incoming_connections,
-        'pending_outgoing_connections': pending_outgoing_connections,
+        'pending_outgoing_connections': outgoing_subproject_requests,  # Only subproject requests
+        'pending_parent_requests': outgoing_parent_requests,  # Separate parent requests
     }
     
     return render(request, 'moderation/subprojects.html', context)
@@ -1265,3 +1288,89 @@ def api_search_projects(request):
         })
     
     return JsonResponse({'results': results})
+
+@login_required
+def request_parent_connection(request, project_id):
+    """Request connection to a parent project"""
+    project = get_object_or_404(Project, pk=project_id)
+    
+    # Check if user has permission to manage connections for this project
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to manage connections for this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    # Check if project already has a parent
+    current_parent_connection = Connection.objects.filter(
+        to_project=project, 
+        type='child', 
+        status='approved'
+    ).select_related('from_project').first()
+    
+    # Check if there's already a pending parent request
+    pending_parent_request = Connection.objects.filter(
+        to_project=project, 
+        type='child', 
+        status='pending'
+    ).select_related('from_project').first()
+    
+    if request.method == 'POST':
+        # Only allow POST if no current parent and no pending request
+        if current_parent_connection:
+            messages.error(request, "This project already has a parent project. Disconnect first to request a new parent.")
+            return redirect('request_parent_connection', project_id=project.id)
+            
+        if pending_parent_request:
+            messages.error(request, "You already have a pending parent connection request. Wait for approval or cancel it first.")
+            return redirect('request_parent_connection', project_id=project.id)
+        
+        parent_project_id = request.POST.get('parent_id')
+        note = request.POST.get('note', '')
+        
+        try:
+            parent_project = Project.objects.get(pk=parent_project_id)
+            
+            # Check if user can view the parent project
+            if not parent_project.user_can_view(request.user):
+                messages.error(request, "You don't have permission to connect to that project.")
+                return redirect('project:request_parent_connection', project_id=project.id)
+            
+            # Prevent connecting to self
+            if parent_project.id == project.id:
+                messages.error(request, "A project cannot be its own parent.")
+                return redirect('project:request_parent_connection', project_id=project.id)
+            
+            # Check if connection already exists (any status)
+            if Connection.objects.filter(
+                from_project=parent_project,
+                to_project=project,
+                type='child'
+            ).exists():
+                messages.error(request, "A connection to this project already exists.")
+                return redirect('project:request_parent_connection', project_id=project.id)
+            
+            # Create connection request (parent -> child relationship)
+            connection = Connection.objects.create(
+                from_project=parent_project,  # Parent project
+                to_project=project,           # This project (child)
+                type='child',
+                status='pending',
+                added_by=request.user,
+                note=note
+            )
+            
+            messages.success(request, f"Parent connection request sent to '{parent_project.name}'. Waiting for approval from their administrators.")
+            return redirect('project:subprojects_management', project_id=project.id)
+            
+        except Project.DoesNotExist:
+            messages.error(request, "Selected project not found.")
+        except Exception as e:
+            logger.error(f"Error creating parent connection request: {str(e)}")
+            messages.error(request, "An error occurred while creating the connection request.")
+    
+    # GET request - show the form
+    context = {
+        'project': project,
+        'current_parent': current_parent_connection.from_project if current_parent_connection else None,
+        'pending_parent_request': pending_parent_request,
+    }
+    return render(request, 'subprojects/request_parent.html', context)

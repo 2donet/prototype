@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Request Parent Connection - {{ project.name }}{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="breadcrumb">
+        <a href="/">Home</a> >
+        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> >
+        <a href="{% url 'project:subprojects_management' project.id %}">Subprojects</a> >
+        Request Parent Connection
+    </div>
+
+    <div class="header">
+        <h1>🔼 Request Parent Connection</h1>
+        <h2>Project: {{ project.name }}</h2>
+        <p>Search for a project that you'd like this project to become a subproject of.</p>
+    </div>
+
+    <!-- Current Parent Status -->
+    {% if current_parent %}
+    <div class="info-card warning">
+        <h3>⚠️ Current Parent Project</h3>
+        <p>This project is already connected to a parent project:</p>
+        <div class="parent-info">
+            <strong><a href="{% url 'project:project' current_parent.id %}">{{ current_parent.name }}</a></strong>
+            <span class="status-badge status-approved">Active</span>
+        </div>
+        <p><em>Note: You can only have one parent project at a time. To request a new parent, you would need to disconnect from the current one first.</em></p>
+    </div>
+    {% elif pending_parent_request %}
+    <div class="info-card warning">
+        <h3>⏳ Pending Parent Request</h3>
+        <p>You already have a pending request to connect to:</p>
+        <div class="parent-info">
+            <strong><a href="{% url 'project:project' pending_parent_request.from_project.id %}">{{ pending_parent_request.from_project.name }}</a></strong>
+            <span class="status-badge status-pending">Pending Approval</span>
+        </div>
+        <p><em>Wait for approval or cancel this request before sending a new one.</em></p>
+    </div>
+    {% else %}
+    <!-- Search Section -->
+    <div class="search-section">
+        <div class="search-box">
+            <input type="text" id="parent-search" placeholder="Search for parent projects by name..." 
+                   autocomplete="off">
+            <div id="search-results" class="search-results"></div>
+        </div>
+    </div>
+
+    <form method="post" id="request-form" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" id="selected-parent-id" name="parent_id">
+        
+        <div class="selected-project" id="selected-parent-info">
+            <!-- Selected parent info will be populated here -->
+        </div>
+
+        <div class="form-group">
+            <label for="request-note">Request Message (Optional)</label>
+            <textarea id="request-note" name="note" rows="4" 
+                      placeholder="Explain why your project would be a good fit as a subproject. What value will this connection bring?"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Send Parent Request</button>
+            <button type="button" onclick="clearSelection()" class="btn btn-secondary">Clear Selection</button>
+            <a href="{% url 'project:subprojects_management' project.id %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+    {% endif %}
+
+    <div class="info-box">
+        <h3>How Parent Connections Work</h3>
+        <ul>
+            <li><strong>Single Parent:</strong> Each project can only have one parent project at a time</li>
+            <li><strong>Permission Required:</strong> Only project administrators can request parent connections</li>
+            <li><strong>Approval Process:</strong> The target parent project's administrators must approve your request</li>
+            <li><strong>Mutual Benefit:</strong> Explain how the connection will benefit both projects</li>
+            <li><strong>Searchable Projects:</strong> You can only request connections to public projects and those you can view</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+    .container { 
+        max-width: 800px; 
+        margin: 0 auto; 
+        padding: 20px; 
+        background-color: var(--bg-color);
+    }
+
+    .header {
+        border-bottom: 2px solid var(--bg-color3);
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+        color: var(--text);
+    }
+
+    .info-card {
+        background: var(--bg-color2);
+        border: 1px solid var(--highlightdark);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .info-card.warning {
+        border-left: 4px solid #ffc107;
+        background: linear-gradient(90deg, rgba(255,193,7,0.1) 0%, var(--bg-color2) 20%);
+    }
+
+    .parent-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin: 15px 0;
+        padding: 15px;
+        background: var(--bg-color3);
+        border-radius: 6px;
+    }
+
+    .parent-info strong a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 1.1em;
+    }
+
+    .parent-info strong a:hover {
+        color: var(--information);
+    }
+
+    .search-section {
+        margin-bottom: 30px;
+    }
+
+    .search-box {
+        position: relative;
+        width: 100%;
+    }
+
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-color2);
+        border: 1px solid var(--highlightdark);
+        border-radius: 4px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+
+    .search-result-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--highlightdark);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        color: var(--text);
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-item:hover,
+    .search-result-item.highlighted {
+        background-color: var(--bg-color3);
+    }
+
+    .search-result-item strong {
+        color: var(--text);
+        font-weight: 600;
+    }
+
+    .search-result-item small {
+        color: var(--text2ndary);
+        font-size: 12px;
+    }
+
+    .no-results {
+        padding: 16px;
+        text-align: center;
+        color: var(--text2ndary);
+        font-style: italic;
+    }
+
+    .selected-project {
+        background: var(--bg-color3);
+        padding: 20px;
+        border-radius: 6px;
+        border: 1px solid var(--highlightdark);
+        margin-bottom: 20px;
+    }
+
+    .selected-project h3 {
+        margin-top: 0;
+        color: var(--text);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--text2ndary);
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--highlightdark);
+        border-radius: 4px;
+        font-size: 14px;
+        background-color: var(--bg-color3);
+        color: var(--text);
+        transition: border-color 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: var(--highlight);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(229, 193, 41, 0.2);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 12px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-primary { 
+        background-color: var(--information); 
+        color: white; 
+    }
+    .btn-primary:hover {
+        background-color: var(--bg-color3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .btn-secondary { 
+        background-color: var(--highlightdark); 
+        color: white; 
+    }
+    .btn-secondary:hover {
+        background-color: var(--bg-color3);
+        transform: translateY(-2px);
+    }
+
+    .form-actions {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--highlightdark);
+        display: flex;
+        gap: 12px;
+    }
+
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.status-approved { 
+        background-color: var(--confirm); 
+        color: white;
+    }
+
+    .status-badge.status-pending { 
+        background-color: var(--warning); 
+        color: var(--text);
+    }
+
+    .breadcrumb {
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: var(--text2ndary);
+    }
+
+    .breadcrumb a {
+        text-decoration: none;
+        color: var(--information);
+        transition: color 0.2s ease;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .breadcrumb a:hover {
+        background-color: var(--bg-color3);
+        color: var(--highlight-dark);
+    }
+
+    .info-box {
+        background: var(--bg-color2);
+        padding: 20px;
+        border-radius: 6px;
+        border: 1px solid var(--highlightdark);
+        margin-top: 30px;
+    }
+
+    .info-box h3 {
+        margin-top: 0;
+        color: var(--text);
+    }
+
+    .info-box ul {
+        color: var(--text2ndary);
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .info-box li {
+        margin-bottom: 8px;
+    }
+</style>
+
+<script>
+let searchTimeout;
+let selectedParent = null;
+let currentHighlightIndex = -1;
+let searchResults = [];
+
+// Initialize event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('parent-search');
+    
+    if (!searchInput) return; // Exit if search input doesn't exist (when parent already exists)
+    
+    const resultsDiv = document.getElementById('search-results');
+    
+    // Search input event listener
+    searchInput.addEventListener('input', function() {
+        searchParents();
+    });
+    
+    // Keyboard navigation
+    searchInput.addEventListener('keydown', function(e) {
+        const resultsDiv = document.getElementById('search-results');
+        const items = resultsDiv.querySelectorAll('.search-result-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentHighlightIndex = Math.min(currentHighlightIndex + 1, items.length - 1);
+            updateHighlight(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentHighlightIndex = Math.max(currentHighlightIndex - 1, -1);
+            updateHighlight(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentHighlightIndex >= 0 && items[currentHighlightIndex]) {
+                items[currentHighlightIndex].click();
+            }
+        } else if (e.key === 'Escape') {
+            hideSearchResults();
+        }
+    });
+    
+    // Hide search results when clicking outside
+    document.addEventListener('click', function(event) {
+        const searchBox = document.querySelector('.search-box');
+        if (!searchBox.contains(event.target)) {
+            hideSearchResults();
+        }
+    });
+});
+
+function searchParents() {
+    const query = document.getElementById('parent-search').value.trim();
+    const resultsDiv = document.getElementById('search-results');
+    
+    if (query.length < 2) {
+        hideSearchResults();
+        return;
+    }
+    
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/search-projects/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                searchResults = data.results || [];
+                displaySearchResults(searchResults);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                displaySearchResults([]);
+            });
+    }, 300);
+}
+
+function displaySearchResults(projects) {
+    const resultsDiv = document.getElementById('search-results');
+    currentHighlightIndex = -1; // Reset highlight index
+    
+    if (projects.length === 0) {
+        resultsDiv.innerHTML = '<div class="no-results">No projects found</div>';
+        resultsDiv.style.display = 'block';
+        return;
+    }
+    
+    resultsDiv.innerHTML = projects.map((project, index) => `
+        <div class="search-result-item" data-index="${index}" data-project-id="${project.id}">
+            <strong>${escapeHtml(project.name)}</strong>
+            <br>
+            <small>Created by: ${escapeHtml(project.created_by)}</small>
+            ${project.summary ? `<br><small>${escapeHtml(project.summary)}</small>` : ''}
+        </div>
+    `).join('');
+    
+    // Add click event listeners to all result items
+    const items = resultsDiv.querySelectorAll('.search-result-item');
+    items.forEach((item, index) => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const project = projects[index];
+            selectParent(project.id, project.name, project.summary || '', project.created_by);
+        });
+        
+        // Add mouse enter/leave for hover highlighting
+        item.addEventListener('mouseenter', function() {
+            currentHighlightIndex = index;
+            updateHighlight(items);
+        });
+    });
+    
+    resultsDiv.style.display = 'block';
+}
+
+function updateHighlight(items) {
+    items.forEach((item, index) => {
+        if (index === currentHighlightIndex) {
+            item.classList.add('highlighted');
+        } else {
+            item.classList.remove('highlighted');
+        }
+    });
+}
+
+function selectParent(id, name, summary, createdBy) {
+    selectedParent = { id, name, summary, createdBy };
+    
+    document.getElementById('selected-parent-id').value = id;
+    document.getElementById('selected-parent-info').innerHTML = `
+        <h3>Selected Parent Project: ${escapeHtml(name)}</h3>
+        <p><strong>Created by:</strong> ${escapeHtml(createdBy)}</p>
+        ${summary ? `<p><strong>Summary:</strong> ${escapeHtml(summary)}</p>` : ''}
+        <p><em>Your project will request to become a subproject of this project.</em></p>
+    `;
+    
+    document.getElementById('request-form').style.display = 'block';
+    document.getElementById('parent-search').value = name;
+    hideSearchResults();
+}
+
+function clearSelection() {
+    selectedParent = null;
+    document.getElementById('request-form').style.display = 'none';
+    document.getElementById('parent-search').value = '';
+    hideSearchResults();
+}
+
+function hideSearchResults() {
+    const resultsDiv = document.getElementById('search-results');
+    resultsDiv.style.display = 'none';
+    currentHighlightIndex = -1;
+}
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
