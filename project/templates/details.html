@@ -8,6 +8,7 @@
 {% load static %}
 {% load humanize %}
 {% load project_filters %}
+
 <div class="grid2">
     <div class="pcard">
         <div class="box">
@@ -158,9 +159,7 @@
 
 </div>
 
-        {% if parent_projects %}
-        {% include "components/parentcard.html" %}
-        {% endif %}
+{% include "components/enhanced_subprojects.html" %}
 
 
 

@@ -1,0 +1,673 @@
+{% load static %}
+
+<!-- Simple Working Subprojects Component -->
+<div class="subprojects-hierarchy">
+    <!-- Subprojects Stats Header -->
+    <div class="subprojects-stats">
+        <div class="stat-widget">
+            <div class="stat-number">{{ child_projects|length }}</div>
+            <div class="stat-label">Subprojects</div>
+            <i class="material-icons stat-icon">account_tree</i>
+        </div>
+        <div class="stat-widget">
+            <div class="stat-number">{{ parent_projects|length }}</div>
+            <div class="stat-label">Parent Projects</div>
+            <i class="material-icons stat-icon">keyboard_arrow_up</i>
+        </div>
+        {% if can_moderate %}
+        <div class="stat-widget">
+            <div class="stat-number">{{ admin_users|length|add:moderator_users|length|add:contributor_users|length|add:member_users|length }}</div>
+            <div class="stat-label">Total Members</div>
+            <i class="material-icons stat-icon">group</i>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Management Actions -->
+    {% if can_moderate %}
+    <div class="subproject-actions">
+        <a href="{% url 'project:subprojects_management' content.id %}" 
+           class="btn waves-effect waves-light action-btn primary">
+            <i class="material-icons left">settings</i>Manage All
+        </a>
+        <a href="{% url 'project:create_subproject' content.id %}" 
+           class="btn waves-effect waves-light action-btn success">
+            <i class="material-icons left">add</i>Create Subproject
+        </a>
+        <a href="{% url 'project:connect_existing_project' content.id %}" 
+           class="btn waves-effect waves-light action-btn info">
+            <i class="material-icons left">link</i>Connect Project
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Main Project Card (Central Hub) -->
+    <div class="main-project-hub">
+        <div class="project-card main-card">
+            <div class="card-header">
+                <div class="project-type-badge main">
+                    <i class="material-icons">hub</i>
+                    <span>Main Project</span>
+                </div>
+            </div>
+            
+            <div class="project-content">
+                <h4 class="project-title">{{ content.name }}</h4>
+                <p class="project-summary">{{ content.summary|default:"No summary available"|truncatechars:120 }}</p>
+                
+                <div class="project-meta">
+                    <div class="meta-item">
+                        <i class="material-icons tiny">group</i>
+                        <span>{{ admin_users|length|add:moderator_users|length|add:contributor_users|length|add:member_users|length }} members</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="material-icons tiny">assignment</i>
+                        <span>{{ tasks|length }} tasks</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="material-icons tiny">help_outline</i>
+                        <span>{{ needs|length }} needs</span>
+                    </div>
+                </div>
+
+                <!-- Connection Indicators -->
+                <div class="connection-indicators">
+                    {% if parent_projects %}
+                    <div class="connection-line parent-line"></div>
+                    {% endif %}
+                    {% if child_projects %}
+                    <div class="connection-line child-line"></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Projects Section -->
+    {% if parent_projects %}
+    <div class="parents-section">
+        <div class="section-header">
+            <h5 class="section-title">
+                <i class="material-icons">keyboard_arrow_up</i>
+                Parent Projects
+            </h5>
+            <span class="section-count">{{ parent_projects|length }}</span>
+        </div>
+        
+        <div class="projects-grid parent-grid">
+            {% for project in parent_projects %}
+            <div class="project-card parent-card">
+                <div class="card-header">
+                    <div class="project-type-badge parent">
+                        <i class="material-icons">keyboard_arrow_up</i>
+                        <span>Parent</span>
+                    </div>
+                </div>
+                
+                <div class="project-content">
+                    <h5 class="project-title">
+                        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a>
+                    </h5>
+                    <p class="project-summary">{{ project.summary|default:"No summary available"|truncatechars:80 }}</p>
+                    
+                    <div class="project-meta mini">
+                        <div class="meta-item">
+                            <i class="material-icons tiny">person</i>
+                            <span>{{ project.created_by.username }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Skills chips -->
+                    {% if project.skills.all %}
+                    <div class="project-skills">
+                        {% for skill in project.skills.all|slice:":3" %}
+                        <span class="skill-chip">{{ skill.name }}</span>
+                        {% endfor %}
+                        {% if project.skills.count > 3 %}
+                        <span class="skill-chip more">+{{ project.skills.count|add:"-3" }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Connection line to main project -->
+                <div class="connection-line-to-main parent-connection"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Subprojects Section -->
+    {% if child_projects %}
+    <div class="children-section">
+        <div class="section-header">
+            <h5 class="section-title">
+                <i class="material-icons">account_tree</i>
+                Subprojects
+            </h5>
+            <span class="section-count">{{ child_projects|length }}</span>
+        </div>
+        
+        <div class="projects-grid children-grid">
+            {% for project in child_projects %}
+            <div class="project-card child-card">
+                <div class="card-header">
+                    <div class="project-type-badge child">
+                        <i class="material-icons">keyboard_arrow_down</i>
+                        <span>Subproject</span>
+                    </div>
+                </div>
+                
+                <div class="project-content">
+                    <h5 class="project-title">
+                        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a>
+                    </h5>
+                    <p class="project-summary">{{ project.summary|default:"No summary available"|truncatechars:80 }}</p>
+                    
+                    <div class="project-meta mini">
+                        <div class="meta-item">
+                            <i class="material-icons tiny">person</i>
+                            <span>{{ project.created_by.username }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Skills chips -->
+                    {% if project.skills.all %}
+                    <div class="project-skills">
+                        {% for skill in project.skills.all|slice:":3" %}
+                        <span class="skill-chip">{{ skill.name }}</span>
+                        {% endfor %}
+                        {% if project.skills.count > 3 %}
+                        <span class="skill-chip more">+{{ project.skills.count|add:"-3" }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Connection line to main project -->
+                <div class="connection-line-to-main child-connection"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Empty States -->
+    {% if not child_projects and not parent_projects %}
+    <div class="empty-hierarchy">
+        <i class="material-icons large">account_tree</i>
+        <h5>No Project Connections Yet</h5>
+        <p>This project doesn't have any parent projects or subprojects.</p>
+        {% if can_moderate %}
+        <div class="empty-actions">
+            <a href="{% url 'project:create_subproject' content.id %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">add</i>Create First Subproject
+            </a>
+            <a href="{% url 'project:connect_existing_project' content.id %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">link</i>Connect Existing Project
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Enhanced Subprojects Hierarchy Styles */
+.subprojects-hierarchy {
+    margin: 30px 0;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--bg-color2) 0%, var(--bg-light) 100%);
+    border-radius: 12px;
+    border: 1px solid var(--highlightdark);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Stats Header */
+.subprojects-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.stat-widget {
+    background: var(--bg-color3);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid var(--highlightdark);
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.stat-widget:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border-color: var(--highlight);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--highlight);
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.stat-icon {
+    color: var(--text2ndary);
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.2rem;
+}
+
+/* Action Buttons */
+.subproject-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    border-radius: 20px;
+    text-transform: none;
+    font-weight: 500;
+}
+
+.action-btn.primary {
+    background: var(--information) !important;
+}
+
+.action-btn.success {
+    background: var(--confirm) !important;
+}
+
+.action-btn.info {
+    background: var(--highlight) !important;
+    color: var(--highlightdark) !important;
+}
+
+/* Main Project Hub */
+.main-project-hub {
+    display: flex;
+    justify-content: center;
+    margin: 30px 0;
+    position: relative;
+}
+
+.project-card {
+    background: var(--bg-light);
+    border-radius: 20px 20px 60px 20px;
+    border: 2px solid transparent;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.project-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(229,193,41,0.05) 50%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.project-card:hover::before {
+    opacity: 1;
+}
+
+.project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    border-color: var(--highlight);
+}
+
+.main-card {
+    min-width: 350px;
+    max-width: 450px;
+    border-color: var(--highlight);
+    box-shadow: 0 4px 15px rgba(229,193,41,0.2);
+}
+
+.main-card .project-title {
+    color: var(--highlight);
+    font-size: 1.4rem;
+}
+
+/* Project Card Elements */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.project-type-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.project-type-badge.main {
+    background: var(--highlight);
+    color: var(--highlightdark);
+}
+
+.project-type-badge.parent {
+    background: var(--information);
+    color: white;
+}
+
+.project-type-badge.child {
+    background: var(--confirm);
+    color: var(--highlightdark);
+}
+
+.project-title {
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+    color: var(--text);
+}
+
+.project-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.project-title a:hover {
+    color: var(--highlight);
+}
+
+.project-summary {
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 15px;
+}
+
+.project-meta {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.project-meta.mini {
+    gap: 10px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text2ndary);
+    font-size: 0.8rem;
+}
+
+.project-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.skill-chip {
+    background: var(--bg-color3);
+    color: var(--text2ndary);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    border: 1px solid var(--highlightdark);
+}
+
+.skill-chip.more {
+    background: var(--highlightdark);
+    color: var(--text);
+}
+
+/* Section Headers */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 30px 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--highlightdark);
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    margin: 0;
+}
+
+.section-count {
+    background: var(--highlight);
+    color: var(--highlightdark);
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Project Grids */
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.parent-card {
+    border-color: var(--information);
+}
+
+.child-card {
+    border-color: var(--confirm);
+}
+
+/* Connection Lines */
+.connection-line-to-main {
+    position: absolute;
+    width: 3px;
+    height: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.6;
+}
+
+.parent-connection {
+    bottom: -20px;
+    background: linear-gradient(to bottom, var(--information), transparent);
+}
+
+.child-connection {
+    top: -20px;
+    background: linear-gradient(to top, var(--confirm), transparent);
+}
+
+.connection-indicators {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.connection-line {
+    position: absolute;
+    width: 3px;
+    height: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.4;
+}
+
+.parent-line {
+    top: -15px;
+    background: linear-gradient(to bottom, var(--information), transparent);
+}
+
+.child-line {
+    bottom: -15px;
+    background: linear-gradient(to top, var(--confirm), transparent);
+}
+
+/* Empty State */
+.empty-hierarchy {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text2ndary);
+}
+
+.empty-hierarchy i.large {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-hierarchy h5 {
+    color: var(--text);
+    margin-bottom: 15px;
+}
+
+.empty-actions {
+    margin-top: 25px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .subprojects-hierarchy {
+        padding: 15px;
+    }
+    
+    .subproject-actions {
+        justify-content: center;
+    }
+    
+    .action-btn {
+        flex: 1;
+        min-width: 140px;
+    }
+    
+    .main-card {
+        min-width: 100%;
+        max-width: 100%;
+    }
+    
+    .projects-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .subprojects-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-widget {
+        padding: 12px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .project-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .empty-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Animation for project cards */
+.project-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.parent-card {
+    animation-delay: 0.1s;
+}
+
+.child-card {
+    animation-delay: 0.2s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to project cards
+    document.querySelectorAll('.project-card').forEach(function(card) {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+    
+    // Animate stats on scroll
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = 'fadeInUp 0.6s ease-out';
+            }
+        });
+    });
+    
+    document.querySelectorAll('.stat-widget').forEach(function(widget) {
+        observer.observe(widget);
+    });
+});
+</script>
