@@ -19,7 +19,7 @@
     <div class="search-section">
         <div class="search-box">
             <input type="text" id="project-search" placeholder="Search for projects by name..." 
-                   onkeyup="searchProjects()" autocomplete="off">
+                   autocomplete="off">
             <div id="search-results" class="search-results"></div>
         </div>
     </div>
@@ -58,184 +58,275 @@
 
 <style>
     .container { 
-    max-width: 800px; 
-    margin: 0 auto; 
-    padding: 20px; 
-    background-color: var(--bg-color);
-}
+        max-width: 800px; 
+        margin: 0 auto; 
+        padding: 20px; 
+        background-color: var(--bg-color);
+    }
 
-.header {
-    border-bottom: 2px solid var(--bg-color3);
-    padding-bottom: 15px;
-    margin-bottom: 25px;
-    color: var(--text);
-}
+    .header {
+        border-bottom: 2px solid var(--bg-color3);
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+        color: var(--text);
+    }
 
-.project-form {
-    background: var(--bg-color2);
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    border: 1px solid var(--highlightdark);
-}
+    .search-section {
+        margin-bottom: 30px;
+    }
 
-.form-section {
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--highlightdark);
-}
+    .search-box {
+        position: relative;
+        width: 100%;
+    }
 
-.form-section:last-of-type {
-    border-bottom: none;
-}
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-color2);
+        border: 1px solid var(--highlightdark);
+        border-radius: 4px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
 
-.form-section h3 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: var(--text);
-}
+    .search-result-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--highlightdark);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        color: var(--text);
+    }
 
-.form-group {
-    margin-bottom: 20px;
-}
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
 
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
+    .search-result-item:hover,
+    .search-result-item.highlighted {
+        background-color: var(--bg-color3);
+    }
 
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: var(--text2ndary);
-}
+    .search-result-item strong {
+        color: var(--text);
+        font-weight: 600;
+    }
 
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--highlightdark);
-    border-radius: 4px;
-    font-size: 14px;
-    background-color: var(--bg-color3);
-    color: var(--text);
-    transition: border-color 0.3s ease;
-}
+    .search-result-item small {
+        color: var(--text2ndary);
+        font-size: 12px;
+    }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-    border-color: var(--highlight);
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(229, 193, 41, 0.2);
-}
+    .no-results {
+        padding: 16px;
+        text-align: center;
+        color: var(--text2ndary);
+        font-style: italic;
+    }
 
-.form-group textarea {
-    resize: vertical;
-    min-height: 100px;
-}
+    .selected-project {
+        background: var(--bg-color3);
+        padding: 20px;
+        border-radius: 6px;
+        border: 1px solid var(--highlightdark);
+        margin-bottom: 20px;
+    }
 
-.form-group small {
-    display: block;
-    margin-top: 8px;
-    color: var(--text2ndary);
-    font-size: 12px;
-}
+    .selected-project h3 {
+        margin-top: 0;
+        color: var(--text);
+    }
 
-.need-form {
-    border: 1px solid var(--highlightdark);
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 6px;
-    background-color: var(--bg-color3);
-}
+    .form-group {
+        margin-bottom: 20px;
+    }
 
-.btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 4px;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    margin-right: 12px;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--text2ndary);
+    }
 
-.btn-primary { 
-    background-color: var(--information); 
-    color: white; 
-}
-.btn-primary:hover {
-    background-color: var(--bg-color3);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--highlightdark);
+        border-radius: 4px;
+        font-size: 14px;
+        background-color: var(--bg-color3);
+        color: var(--text);
+        transition: border-color 0.3s ease;
+    }
 
-.btn-secondary { 
-    background-color: var(--highlightdark); 
-    color: white; 
-}
-.btn-secondary:hover {
-    background-color: var(--bg-color3);
-    transform: translateY(-2px);
-}
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: var(--highlight);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(229, 193, 41, 0.2);
+    }
 
-.form-actions {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid var(--highlightdark);
-    display: flex;
-    gap: 12px;
-}
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
 
-.breadcrumb {
-    margin-bottom: 20px;
-    font-size: 14px;
-    color: var(--text2ndary);
-}
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 12px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 
-.breadcrumb a {
-    text-decoration: none;
-    color: var(--information);
-    transition: color 0.2s ease;
-    padding: 4px 8px;
-    border-radius: 4px;
-}
+    .btn-primary { 
+        background-color: var(--information); 
+        color: white; 
+    }
+    .btn-primary:hover {
+        background-color: var(--bg-color3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
 
-.breadcrumb a:hover {
-    background-color: var(--bg-color3);
-    color: var(--highlight-dark);
-}
+    .btn-secondary { 
+        background-color: var(--highlightdark); 
+        color: white; 
+    }
+    .btn-secondary:hover {
+        background-color: var(--bg-color3);
+        transform: translateY(-2px);
+    }
+
+    .form-actions {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--highlightdark);
+        display: flex;
+        gap: 12px;
+    }
+
+    .breadcrumb {
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: var(--text2ndary);
+    }
+
+    .breadcrumb a {
+        text-decoration: none;
+        color: var(--information);
+        transition: color 0.2s ease;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .breadcrumb a:hover {
+        background-color: var(--bg-color3);
+        color: var(--highlight-dark);
+    }
+
+    .info-box {
+        background: var(--bg-color2);
+        padding: 20px;
+        border-radius: 6px;
+        border: 1px solid var(--highlightdark);
+        margin-top: 30px;
+    }
+
+    .info-box h3 {
+        margin-top: 0;
+        color: var(--text);
+    }
+
+    .info-box ul {
+        color: var(--text2ndary);
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .info-box li {
+        margin-bottom: 8px;
+    }
 </style>
 
 <script>
 let searchTimeout;
 let selectedProject = null;
+let currentHighlightIndex = -1;
+let searchResults = [];
+
+// Initialize event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('project-search');
+    const resultsDiv = document.getElementById('search-results');
+    
+    // Search input event listener
+    searchInput.addEventListener('input', function() {
+        searchProjects();
+    });
+    
+    // Keyboard navigation
+    searchInput.addEventListener('keydown', function(e) {
+        const resultsDiv = document.getElementById('search-results');
+        const items = resultsDiv.querySelectorAll('.search-result-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentHighlightIndex = Math.min(currentHighlightIndex + 1, items.length - 1);
+            updateHighlight(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentHighlightIndex = Math.max(currentHighlightIndex - 1, -1);
+            updateHighlight(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentHighlightIndex >= 0 && items[currentHighlightIndex]) {
+                items[currentHighlightIndex].click();
+            }
+        } else if (e.key === 'Escape') {
+            hideSearchResults();
+        }
+    });
+    
+    // Hide search results when clicking outside
+    document.addEventListener('click', function(event) {
+        const searchBox = document.querySelector('.search-box');
+        if (!searchBox.contains(event.target)) {
+            hideSearchResults();
+        }
+    });
+});
 
 function searchProjects() {
     const query = document.getElementById('project-search').value.trim();
     const resultsDiv = document.getElementById('search-results');
     
     if (query.length < 2) {
-        resultsDiv.style.display = 'none';
+        hideSearchResults();
         return;
     }
     
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        // Simulate API call - replace with actual AJAX call
         fetch(`/api/search-projects/?q=${encodeURIComponent(query)}`)
             .then(response => response.json())
             .then(data => {
-                displaySearchResults(data.results || []);
+                searchResults = data.results || [];
+                displaySearchResults(searchResults);
             })
             .catch(error => {
                 console.error('Search error:', error);
@@ -246,6 +337,7 @@ function searchProjects() {
 
 function displaySearchResults(projects) {
     const resultsDiv = document.getElementById('search-results');
+    currentHighlightIndex = -1; // Reset highlight index
     
     if (projects.length === 0) {
         resultsDiv.innerHTML = '<div class="no-results">No projects found</div>';
@@ -253,16 +345,43 @@ function displaySearchResults(projects) {
         return;
     }
     
-    resultsDiv.innerHTML = projects.map(project => `
-        <div class="search-result-item" onclick="selectProject(${project.id}, '${project.name}', '${project.summary || ''}', '${project.created_by}')">
-            <strong>${project.name}</strong>
+    resultsDiv.innerHTML = projects.map((project, index) => `
+        <div class="search-result-item" data-index="${index}" data-project-id="${project.id}">
+            <strong>${escapeHtml(project.name)}</strong>
             <br>
-            <small>Created by: ${project.created_by}</small>
-            ${project.summary ? `<br><small>${project.summary}</small>` : ''}
+            <small>Created by: ${escapeHtml(project.created_by)}</small>
+            ${project.summary ? `<br><small>${escapeHtml(project.summary)}</small>` : ''}
         </div>
     `).join('');
     
+    // Add click event listeners to all result items
+    const items = resultsDiv.querySelectorAll('.search-result-item');
+    items.forEach((item, index) => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const project = projects[index];
+            selectProject(project.id, project.name, project.summary || '', project.created_by);
+        });
+        
+        // Add mouse enter/leave for hover highlighting
+        item.addEventListener('mouseenter', function() {
+            currentHighlightIndex = index;
+            updateHighlight(items);
+        });
+    });
+    
     resultsDiv.style.display = 'block';
+}
+
+function updateHighlight(items) {
+    items.forEach((item, index) => {
+        if (index === currentHighlightIndex) {
+            item.classList.add('highlighted');
+        } else {
+            item.classList.remove('highlighted');
+        }
+    });
 }
 
 function selectProject(id, name, summary, createdBy) {
@@ -270,29 +389,34 @@ function selectProject(id, name, summary, createdBy) {
     
     document.getElementById('selected-project-id').value = id;
     document.getElementById('selected-project-info').innerHTML = `
-        <h3>Selected Project: ${name}</h3>
-        <p><strong>Created by:</strong> ${createdBy}</p>
-        ${summary ? `<p><strong>Summary:</strong> ${summary}</p>` : ''}
+        <h3>Selected Project: ${escapeHtml(name)}</h3>
+        <p><strong>Created by:</strong> ${escapeHtml(createdBy)}</p>
+        ${summary ? `<p><strong>Summary:</strong> ${escapeHtml(summary)}</p>` : ''}
     `;
     
     document.getElementById('connect-form').style.display = 'block';
-    document.getElementById('search-results').style.display = 'none';
     document.getElementById('project-search').value = name;
+    hideSearchResults();
 }
 
 function clearSelection() {
     selectedProject = null;
     document.getElementById('connect-form').style.display = 'none';
     document.getElementById('project-search').value = '';
-    document.getElementById('search-results').style.display = 'none';
+    hideSearchResults();
 }
 
-// Hide search results when clicking outside
-document.addEventListener('click', function(event) {
-    const searchBox = document.querySelector('.search-box');
-    if (!searchBox.contains(event.target)) {
-        document.getElementById('search-results').style.display = 'none';
-    }
-});
+function hideSearchResults() {
+    const resultsDiv = document.getElementById('search-results');
+    resultsDiv.style.display = 'none';
+    currentHighlightIndex = -1;
+}
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 </script>
 {% endblock %}

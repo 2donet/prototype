@@ -199,7 +199,6 @@ def project_members(request, project_id):
     return render(request, 'members.html', context)
 
 
-
 def project(request, project_id):
     # Efficiently load project with creator profile
     content = get_object_or_404(
@@ -312,6 +311,8 @@ def project(request, project_id):
     # Check if current user is a member of this project
     is_member = False
     can_manage_members = False
+    can_moderate = can_moderate_project(request.user, content)
+    
     if request.user.is_authenticated:
         is_member = Membership.objects.filter(project=content, user=request.user).exists()
         
@@ -322,6 +323,15 @@ def project(request, project_id):
             user_membership = Membership.objects.filter(project=content, user=request.user).first()
             if user_membership and (user_membership.is_administrator or user_membership.is_moderator):
                 can_manage_members = True
+
+    # NEW: Get count of pending connection requests for notification
+    pending_connection_requests_count = 0
+    if can_moderate:
+        pending_connection_requests_count = Connection.objects.filter(
+            to_project=content,
+            type='child',
+            status='pending'
+        ).count()
 
     context = {
         "content": content,
@@ -337,7 +347,8 @@ def project(request, project_id):
         "member_users": member_users,
         "is_member": is_member,
         "can_manage_members": can_manage_members,
-        "can_moderate": can_moderate_project(request.user, content),  # Add this for template use
+        "can_moderate": can_moderate,
+        "pending_connection_requests_count": pending_connection_requests_count,  # NEW
     }
     return render(request, "details.html", context=context)
 
@@ -978,23 +989,47 @@ def project_subprojects_management(request, project_id):
         messages.error(request, "You don't have permission to manage this project.")
         return redirect('project:project', project_id=project.id)
     
-    # Get child projects (subprojects)
+    # Get child projects (subprojects that this project manages)
     child_connections = Connection.objects.filter(
         from_project=project, type='child'
-    ).select_related('to_project', 'to_project__created_by').order_by('-added_date')
+    ).select_related('to_project', 'to_project__created_by').prefetch_related(
+        'to_project__membership_set'  # Prefetch memberships for member count
+    ).order_by('-added_date')
 
+    # Get parent projects (projects that this project is a subproject of)
     parent_connections = Connection.objects.filter(
         to_project=project, type='child'
-    ).select_related('from_project', 'from_project__created_by').order_by('-added_date')
+    ).select_related('from_project', 'from_project__created_by').prefetch_related(
+        'from_project__membership_set'  # Prefetch memberships for member count
+    ).order_by('-added_date')
+    
+    # Get pending INCOMING connection requests (other projects wanting to connect TO this project)
+    pending_incoming_connections = Connection.objects.filter(
+        to_project=project, 
+        type='child', 
+        status='pending'
+    ).select_related(
+        'from_project', 'from_project__created_by', 'added_by'
+    ).prefetch_related(
+        'from_project__membership_set'  # Prefetch memberships for member count
+    ).order_by('-added_date')
+    
+    # Get pending OUTGOING connection requests (this project wanting to connect to others)
+    pending_outgoing_connections = Connection.objects.filter(
+        from_project=project, 
+        type='child', 
+        status='pending'
+    ).select_related('to_project', 'to_project__created_by').order_by('-added_date')
     
     context = {
         'project': project,
         'child_connections': child_connections,
         'parent_connections': parent_connections,
+        'pending_incoming_connections': pending_incoming_connections,
+        'pending_outgoing_connections': pending_outgoing_connections,
     }
     
     return render(request, 'moderation/subprojects.html', context)
-
 @login_required
 def create_subproject(request, project_id):
     """Create a new subproject linked to parent project"""

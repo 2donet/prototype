@@ -7,7 +7,7 @@
 {% block content %}
 {% load static %}
 {% load humanize %}
-
+{% load project_filters %}
 <div class="grid2">
     <div class="pcard">
         <div class="box">
@@ -38,6 +38,27 @@
     </div>
 </div>
 {% endif %}
+{% if can_moderate and content|has_pending_connection_requests %}
+<div class="card amber lighten-4" style="margin-bottom: 20px;">
+    <div class="card-content">
+        <span class="card-title amber-text text-darken-2">
+            <i class="material-icons left">notification_important</i>
+            Connection Requests Pending
+            <span class="new badge amber" data-badge-caption="">{{ content|pending_connection_requests_count }}</span>
+        </span>
+        <p>
+            You have {{ content|pending_connection_requests_count }} project{{ content|pending_connection_requests_count|pluralize }} 
+            requesting to connect as subproject{{ content|pending_connection_requests_count|pluralize }}.
+        </p>
+        <a href="{% url 'project:subprojects_management' content.id %}" 
+           class="btn amber darken-2 white-text waves-effect waves-light">
+            <i class="material-icons left">settings</i>
+            Review Requests
+        </a>
+    </div>
+</div>
+{% endif %}
+
   <h5>Locations</h5>
 
 

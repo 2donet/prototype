@@ -19,8 +19,64 @@
         </div>
     </div>
 
+    <!-- NEW: Pending Incoming Connection Requests Section -->
+    {% if pending_incoming_connections %}
+    <div class="section priority-section">
+        <h3>📥 Pending Connection Requests 
+            <span class="notification-badge">{{ pending_incoming_connections|length }}</span>
+        </h3>
+        <p class="section-description">Other projects want to connect to your project as a subproject. Review and approve/reject these requests.</p>
+        
+        {% for connection in pending_incoming_connections %}
+        <div class="project-item pending-request">
+            <div class="project-header">
+                <div>
+                    <h4>
+                        <a href="{% url 'project:project' connection.from_project.id %}" style="text-decoration: none;">
+                            {{ connection.from_project.name }}
+                        </a>
+                        <span class="wants-to-connect">wants to connect this project as a subproject</span>
+                    </h4>
+                    <div class="request-meta">
+                        <strong>Requested by:</strong> {{ connection.added_by.username }} on {{ connection.added_date|date:"M d, Y" }}
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a href="{% url 'project:project' connection.from_project.id %}" class="btn btn-secondary btn-sm">👁️ View Project</a>
+                    <form method="post" action="{% url 'project:approve_connection' connection.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm">✅ Approve</button>
+                    </form>
+                    <form method="post" action="{% url 'project:reject_connection' connection.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">❌ Reject</button>
+                    </form>
+                </div>
+            </div>
+            {% if connection.from_project.summary %}
+                <p class="project-summary">{{ connection.from_project.summary }}</p>
+            {% endif %}
+            {% if connection.note %}
+                <div class="connection-note">
+                    <strong>Connection Note:</strong> "{{ connection.note }}"
+                </div>
+            {% endif %}
+            <div class="project-details">
+                Created by: {{ connection.from_project.created_by.username }} | 
+                Project Members: {{ connection.from_project.membership_set.count }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Child Projects (Subprojects) Section -->
     <div class="section">
-        <h3>📤 Child Projects (Subprojects)</h3>
+        <h3>📤 Child Projects (Subprojects) 
+            <span class="count-badge">{{ child_connections|length }}</span>
+        </h3>
+        <p class="section-description">Projects that are part of this project.</p>
+        
         {% for connection in child_connections %}
             <div class="project-item">
                 <div class="project-header">
@@ -31,35 +87,52 @@
                             </a>
                         </h4>
                         <span class="status-badge status-{{ connection.status }}">{{ connection.get_status_display }}</span>
+                        {% if connection.status == 'pending' %}
+                            <span class="pending-note">Waiting for approval from {{ connection.to_project.created_by.username }}</span>
+                        {% endif %}
                     </div>
-                    <div>
-                        <a href="{% url 'project:project' connection.to_project.id %}" class="btn btn-secondary">View Project</a>
-                        <a href="{% url 'project:disconnect_subproject' project.id connection.id %}" 
-                           class="btn btn-danger btn-sm" 
-                           onclick="return confirm('Are you sure you want to disconnect this subproject?')">Disconnect</a>
+                    <div class="action-buttons">
+                        <a href="{% url 'project:project' connection.to_project.id %}" class="btn btn-secondary btn-sm">👁️ View Project</a>
+                        {% if connection.status == 'approved' %}
+                        <form method="post" action="{% url 'project:disconnect_subproject' project.id connection.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" 
+                                    onclick="return confirm('Are you sure you want to disconnect this subproject?')">
+                                🔗❌ Disconnect
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
                 {% if connection.to_project.summary %}
-                    <p>{{ connection.to_project.summary }}</p>
+                    <p class="project-summary">{{ connection.to_project.summary }}</p>
                 {% endif %}
-                <div style="font-size: 12px; margin-top: 10px;">
+                {% if connection.note %}
+                    <div class="connection-note">
+                        <strong>Connection Note:</strong> "{{ connection.note }}"
+                    </div>
+                {% endif %}
+                <div class="project-details">
                     Created by: {{ connection.to_project.created_by.username }} |
-                    Connected: {{ connection.added_date|date:"M d, Y" }}
-                    {% if connection.status == 'pending' %}
-                        | <span style="color: #ffc107;">Pending Approval</span>
-                    {% endif %}
+                    Connected: {{ connection.added_date|date:"M d, Y" }} |
+                    Members: {{ connection.to_project.membership_set.count }}
                 </div>
             </div>
         {% empty %}
-            <div style="text-align: center; padding: 20px;">
+            <div class="empty-state">
                 <p>This project doesn't have any subprojects.</p>
                 <a href="{% url 'project:create_subproject' project.id %}" class="btn btn-primary">Create First Subproject</a>
             </div>
         {% endfor %}
     </div>
 
+    <!-- Parent Projects Section -->
     <div class="section">
-        <h3>📥 Parent Projects</h3>
+        <h3>📥 Parent Projects 
+            <span class="count-badge">{{ parent_connections|length }}</span>
+        </h3>
+        <p class="section-description">Projects that this project is part of.</p>
+        
         {% for connection in parent_connections %}
             <div class="project-item">
                 <div class="project-header">
@@ -71,27 +144,78 @@
                         </h4>
                         <span class="status-badge status-{{ connection.status }}">{{ connection.get_status_display }}</span>
                     </div>
-                    <div>
-                        <a href="{% url 'project:project' connection.from_project.id %}" class="btn btn-secondary">View Project</a>
-                        {% if connection.status == 'pending' %}
-                            <a href="{% url 'project:approve_connection' connection.id %}" class="btn btn-success btn-sm">Approve</a>
-                            <a href="{% url 'project:reject_connection' connection.id %}" class="btn btn-danger btn-sm">Reject</a>
-                        {% endif %}
+                    <div class="action-buttons">
+                        <a href="{% url 'project:project' connection.from_project.id %}" class="btn btn-secondary btn-sm">👁️ View Parent</a>
                     </div>
                 </div>
                 {% if connection.from_project.summary %}
-                    <p>{{ connection.from_project.summary }}</p>
+                    <p class="project-summary">{{ connection.from_project.summary }}</p>
                 {% endif %}
-                <div style="font-size: 12px; margin-top: 10px;">
+                {% if connection.note %}
+                    <div class="connection-note">
+                        <strong>Connection Note:</strong> "{{ connection.note }}"
+                    </div>
+                {% endif %}
+                <div class="project-details">
                     Created by: {{ connection.from_project.created_by.username }} |
-                    Connected: {{ connection.added_date|date:"M d, Y" }}
+                    Connected: {{ connection.added_date|date:"M d, Y" }} |
+                    Members: {{ connection.from_project.membership_set.count }}
                 </div>
             </div>
         {% empty %}
-            <div style="text-align: center; padding: 20px;">
+            <div class="empty-state">
                 <p>This project is not connected to any parent projects.</p>
             </div>
         {% endfor %}
+    </div>
+
+    <!-- NEW: Pending Outgoing Requests Section -->
+    {% if pending_outgoing_connections %}
+    <div class="section">
+        <h3>📤 Pending Outgoing Requests 
+            <span class="count-badge">{{ pending_outgoing_connections|length }}</span>
+        </h3>
+        <p class="section-description">Connection requests you've sent that are waiting for approval.</p>
+        
+        {% for connection in pending_outgoing_connections %}
+        <div class="project-item outgoing-request">
+            <div class="project-header">
+                <div>
+                    <h4>
+                        Request to connect 
+                        <a href="{% url 'project:project' connection.to_project.id %}" style="text-decoration: none;">
+                            {{ connection.to_project.name }}
+                        </a>
+                        as subproject
+                    </h4>
+                    <div class="request-meta">
+                        <strong>Sent on:</strong> {{ connection.added_date|date:"M d, Y" }} | 
+                        <strong>Waiting for:</strong> {{ connection.to_project.created_by.username }}
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a href="{% url 'project:project' connection.to_project.id %}" class="btn btn-secondary btn-sm">👁️ View Project</a>
+                </div>
+            </div>
+            {% if connection.note %}
+                <div class="connection-note">
+                    <strong>Your Note:</strong> "{{ connection.note }}"
+                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Info Section -->
+    <div class="info-section">
+        <h4>How Subproject Connections Work</h4>
+        <ul>
+            <li><strong>Create Subproject:</strong> Creates a new project automatically connected to this one</li>
+            <li><strong>Connect Existing:</strong> Sends a request to an existing project to become a subproject</li>
+            <li><strong>Approval Required:</strong> Target project administrators must approve connection requests</li>
+            <li><strong>Mutual Agreement:</strong> Both projects must agree to maintain the connection</li>
+        </ul>
     </div>
 
     <div style="margin-top: 40px; text-align: center;">
@@ -100,6 +224,12 @@
 </div>
 
 <style>
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
 .btn {
     padding: 8px 16px;
     margin: 4px;
@@ -154,37 +284,104 @@
 }
 
 .btn-sm { 
-    padding: 4px 8px; 
+    padding: 6px 12px; 
     font-size: 12px; 
 }
 
 .project-item {
     border: 1px solid var(--highlightdark);
     margin-bottom: 15px;
-    padding: 15px;
-    border-radius: 5px;
+    padding: 20px;
+    border-radius: 8px;
     background-color: var(--bg-color2);
     transition: all 0.2s ease;
 }
 
 .project-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     border-color: var(--highlight);
+}
+
+/* Special styling for pending requests */
+.pending-request {
+    border-left: 4px solid #ffc107;
+    background: linear-gradient(90deg, rgba(255,193,7,0.1) 0%, var(--bg-color2) 10%);
+}
+
+.outgoing-request {
+    border-left: 4px solid #17a2b8;
+    background: linear-gradient(90deg, rgba(23,162,184,0.1) 0%, var(--bg-color2) 10%);
 }
 
 .project-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
+    align-items: flex-start;
+    margin-bottom: 15px;
     color: var(--text);
+}
+
+.project-header h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.2em;
+}
+
+.project-header h4 a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.project-header h4 a:hover {
+    color: var(--information);
+}
+
+.wants-to-connect {
+    font-size: 0.9em;
+    color: var(--text2ndary);
+    font-weight: normal;
+    margin-left: 10px;
+}
+
+.request-meta, .project-details {
+    font-size: 0.85em;
+    color: var(--text2ndary);
+    margin-top: 5px;
+}
+
+.pending-note {
+    font-size: 0.8em;
+    color: #ffc107;
+    font-weight: normal;
+    margin-left: 10px;
+}
+
+.project-summary {
+    color: var(--text2ndary);
+    margin: 10px 0;
+    font-style: italic;
+}
+
+.connection-note {
+    background: var(--bg-color3);
+    border-left: 3px solid var(--information);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.9em;
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: flex-start;
 }
 
 .status-badge {
     padding: 4px 10px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
     margin-left: 10px;
     text-transform: uppercase;
@@ -212,10 +409,61 @@
 
 .section {
     margin: 30px 0;
-    padding: 20px;
+    padding: 25px;
     border: 1px solid var(--highlightdark);
-    border-radius: 5px;
+    border-radius: 8px;
     background-color: var(--bg-color2);
+}
+
+.priority-section {
+    border-left: 4px solid #ffc107;
+    background: linear-gradient(90deg, rgba(255,193,7,0.05) 0%, var(--bg-color2) 20%);
+}
+
+.section h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-description {
+    color: var(--text2ndary);
+    margin-bottom: 20px;
+    font-size: 0.95em;
+}
+
+.notification-badge {
+    background: #ffc107;
+    color: #000;
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 0.7em;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+}
+
+.count-badge {
+    background: var(--information);
+    color: white;
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 0.7em;
+    font-weight: bold;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text2ndary);
 }
 
 .header {
@@ -223,7 +471,64 @@
     padding-bottom: 15px;
     margin-bottom: 25px;
     color: var(--text);
+}
 
+.info-section {
+    background: var(--bg-color3);
+    border: 1px solid var(--highlightdark);
+    border-radius: 6px;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.info-section h4 {
+    margin-top: 0;
+    color: var(--text);
+}
+
+.info-section ul {
+    color: var(--text2ndary);
+    margin: 0;
+    padding-left: 20px;
+}
+
+.info-section li {
+    margin-bottom: 8px;
+}
+
+.breadcrumb {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--text2ndary);
+}
+
+.breadcrumb a {
+    text-decoration: none;
+    color: var(--information);
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.breadcrumb a:hover {
+    background-color: var(--bg-color3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .project-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .container {
+        padding: 10px;
+    }
 }
 </style>
 {% endblock %}
