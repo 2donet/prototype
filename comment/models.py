@@ -589,7 +589,7 @@ class ModerationAction(models.Model):
         return f"{self.get_decision_display()} by {self.moderator.username} on comment {self.comment.id}"
     
 
-    def apply_decision(self):
+    def updated_apply_decision(self):
         """Apply the moderation decision to the comment and related objects"""
         
         # Store original data for changelog
@@ -608,8 +608,10 @@ class ModerationAction(models.Model):
                 changed_by=self.moderator,
                 previous_status=original_status,
                 new_status=CommentStatus.APPROVED,
-                reason=self.reason,
-                moderation_action=self
+                reason=self.reason or "Comment approved by moderator",
+                moderation_action=self,
+                ip_address=None,  # Moderation actions don't track IP
+                user_agent=''
             )
             
         elif self.decision == ModerationDecision.HIDE:
@@ -623,7 +625,7 @@ class ModerationAction(models.Model):
                 changed_by=self.moderator,
                 previous_status=original_status,
                 new_status=CommentStatus.FLAGGED,
-                reason=self.reason,
+                reason=self.reason or "Comment flagged by moderator",
                 moderation_action=self
             )
             
@@ -638,25 +640,38 @@ class ModerationAction(models.Model):
                 changed_by=self.moderator,
                 previous_status=original_status,
                 new_status=CommentStatus.REJECTED,
-                reason=self.reason,
+                reason=self.reason or "Comment rejected by moderator",
                 moderation_action=self
             )
             
         elif self.decision == ModerationDecision.EDIT:
             if self.new_content:
                 self.original_content = self.comment.content
-                self.comment.content = self.new_content
-                self.comment.is_edited = True
                 
-                # Create changelog entry
+                # Create changelog entry BEFORE changing content
                 self.comment.log_change(
                     change_type=ChangeType.MODERATOR_EDIT,
                     changed_by=self.moderator,
                     previous_content=original_content,
                     new_content=self.new_content,
-                    reason=self.reason,
+                    reason=self.reason or f"Content edited by moderator {self.moderator.username}",
                     moderation_action=self
                 )
+                
+                # Update content and mark as edited
+                self.comment.content = self.new_content
+                self.comment.is_edited = True
+                
+                # Also update edit_history for backward compatibility
+                history_entry = {
+                    'content': original_content,
+                    'edited_at': timezone.now().isoformat(),
+                    'edited_by': self.moderator.username
+                }
+                if not self.comment.edit_history:
+                    self.comment.edit_history = [history_entry]
+                else:
+                    self.comment.edit_history.append(history_entry)
                 
         # New moderation decisions
         elif self.decision == ModerationDecision.REMOVE_CONTENT_ONLY:
@@ -668,7 +683,7 @@ class ModerationAction(models.Model):
                 new_content="[Content removed by moderation]",
                 previous_status=original_status,
                 new_status=CommentStatus.CONTENT_REMOVED,
-                reason=self.reason,
+                reason=self.reason or f"Content removed by moderator {self.moderator.username}",
                 moderation_action=self
             )
             self.comment.remove_content_only(moderator=self.moderator, reason=self.reason)
@@ -680,7 +695,7 @@ class ModerationAction(models.Model):
                 changed_by=self.moderator,
                 previous_status=original_status,
                 new_status=CommentStatus.AUTHOR_REMOVED,
-                reason=self.reason,
+                reason=self.reason or f"Author hidden by moderator {self.moderator.username}",
                 moderation_action=self
             )
             self.comment.remove_author_only(moderator=self.moderator, reason=self.reason)
@@ -694,7 +709,7 @@ class ModerationAction(models.Model):
                 new_content="[Content removed by moderation]",
                 previous_status=original_status,
                 new_status=CommentStatus.AUTHOR_AND_CONTENT_REMOVED,
-                reason=self.reason,
+                reason=self.reason or f"Author and content removed by moderator {self.moderator.username}",
                 moderation_action=self
             )
             self.comment.remove_author_and_content(moderator=self.moderator, reason=self.reason)
@@ -713,7 +728,7 @@ class ModerationAction(models.Model):
                     previous_content=original_content,
                     previous_status=original_status,
                     new_status=CommentStatus.THREAD_DELETED,
-                    reason=self.reason,
+                    reason=self.reason or f"Thread deleted by moderator {self.moderator.username}",
                     moderation_action=self,
                     affected_children_count=children_count,
                     bulk_operation_id=bulk_operation_id
@@ -726,7 +741,7 @@ class ModerationAction(models.Model):
                         changed_by=self.moderator,
                         previous_status=child_comment.status,
                         new_status=CommentStatus.REPLY_TO_DELETED,
-                        reason=f"Parent comment deleted in bulk operation",
+                        reason=f"Parent comment deleted in bulk operation by moderator {self.moderator.username}",
                         moderation_action=self,
                         bulk_operation_id=bulk_operation_id
                     )
@@ -738,7 +753,7 @@ class ModerationAction(models.Model):
                     previous_content=original_content,
                     previous_status=original_status,
                     new_status=CommentStatus.THREAD_DELETED,
-                    reason=self.reason,
+                    reason=self.reason or f"Comment deleted by moderator {self.moderator.username}",
                     moderation_action=self
                 )
             
@@ -782,6 +797,9 @@ class ModerationAction(models.Model):
         # Notify reporters if requested
         if self.notify_reporters:
             self.notify_reporters_func()
+
+    # Replace the apply_decision method in ModerationAction model
+    # ModerationAction.apply_decision = updated_apply_decision
     def notify_reporters_func(self):
         """Notify reporters about the moderation decision"""
         # Get relevant reports based on scope

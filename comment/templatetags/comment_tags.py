@@ -1,5 +1,3 @@
-# comment/templatetags/comment_tags.py - Updated with changelog support
-
 from django import template
 from django.templatetags.static import static
 from django.utils.safestring import mark_safe
@@ -207,6 +205,68 @@ def change_type_color(change_type):
         'FLAGGED': 'warning',
     }
     return colors.get(change_type, 'information')
+
+
+@register.inclusion_tag('changelog_summary.html')
+def changelog_summary(comment, max_entries=3):
+    """Display a summary of recent changes for a comment"""
+    if not hasattr(comment, 'change_log'):
+        return {'changes': [], 'comment': comment}
+    
+    recent_changes = comment.change_log.select_related('changed_by')[:max_entries]
+    return {
+        'changes': recent_changes,
+        'comment': comment,
+        'total_changes': comment.change_log.count(),
+        'max_entries': max_entries
+    }
+
+
+@register.filter
+def is_user_edit(changelog_entry):
+    """Check if this is a user edit (not moderator action)"""
+    return changelog_entry.change_type == 'USER_EDIT'
+
+
+@register.filter
+def is_moderator_action(changelog_entry):
+    """Check if this is a moderator action"""
+    moderator_actions = [
+        'MODERATOR_EDIT', 'STATUS_CHANGE', 'CONTENT_REMOVAL',
+        'AUTHOR_REMOVAL', 'AUTHOR_AND_CONTENT_REMOVAL',
+        'THREAD_DELETION', 'BULK_THREAD_DELETION',
+        'APPROVAL', 'REJECTION', 'FLAGGED'
+    ]
+    return changelog_entry.change_type in moderator_actions
+
+
+@register.filter
+def get_edit_type_display(changelog_entry):
+    """Get a user-friendly display for edit types"""
+    if changelog_entry.change_type == 'USER_EDIT':
+        return "User Edit"
+    elif changelog_entry.change_type == 'MODERATOR_EDIT':
+        return "Moderator Edit"
+    else:
+        return changelog_entry.get_change_type_display()
+
+
+@register.filter
+def was_edited_by_moderator(comment):
+    """Check if comment was ever edited by a moderator"""
+    try:
+        return comment.change_log.filter(change_type='MODERATOR_EDIT').exists()
+    except:
+        return False
+
+
+@register.filter
+def was_edited_by_user(comment):
+    """Check if comment was ever edited by the user themselves"""
+    try:
+        return comment.change_log.filter(change_type='USER_EDIT').exists()
+    except:
+        return False
 
 
 @register.inclusion_tag('changelog_summary.html')

@@ -422,7 +422,6 @@ def report_detail_view(request, report_id):
         'form': form,
     })
 
-
 @user_passes_test(is_moderator)
 def enhanced_delete_comment(request, comment_id):
     """Enhanced delete comment function that works with the new moderation system"""
@@ -563,21 +562,52 @@ def edit_comment(request, comment_id):
         # Store original content for changelog
         original_content = comment.content
         
+        # Determine if this is a user self-edit or moderator edit
+        is_self_edit = request.user == comment.user
+        is_moderator_edit = not is_self_edit and (request.user.is_staff or request.user.is_superuser or comment.can_moderate(request.user))
+        
         # Update comment using existing edit method
         comment.edit(new_content, editor=request.user)
         
-        # Create changelog entry for user edit
-        comment.log_change(
-            change_type=ChangeType.USER_EDIT,
-            changed_by=request.user,
-            previous_content=original_content,
-            new_content=new_content,
-            reason=f"User edited their own comment",
-            ip_address=get_client_ip(request),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
+        # Create appropriate changelog entry
+        if is_self_edit:
+            # User editing their own comment
+            comment.log_change(
+                change_type=ChangeType.USER_EDIT,
+                changed_by=request.user,
+                previous_content=original_content,
+                new_content=new_content,
+                reason="User edited their own comment",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            success_message = "Comment updated successfully."
+        elif is_moderator_edit:
+            # Moderator editing someone else's comment
+            comment.log_change(
+                change_type=ChangeType.MODERATOR_EDIT,
+                changed_by=request.user,
+                previous_content=original_content,
+                new_content=new_content,
+                reason=f"Moderator {request.user.username} edited comment content",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            success_message = f"Comment edited by moderator {request.user.username}."
+        else:
+            # This shouldn't happen due to permission check, but fallback
+            comment.log_change(
+                change_type=ChangeType.USER_EDIT,
+                changed_by=request.user,
+                previous_content=original_content,
+                new_content=new_content,
+                reason=f"Comment edited by {request.user.username}",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            success_message = "Comment updated."
         
-        messages.success(request, "Comment updated successfully.")
+        messages.success(request, success_message)
         return redirect('comments:single_comment', comment_id=comment.id)
     
     return render(request, 'edit_comment.html', {'comment': comment})
