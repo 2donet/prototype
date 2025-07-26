@@ -1,68 +1,147 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Needs Management - {{ project.name }}</title>
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Project Needs Management - {{ project.name }}{% endblock %}
+
+{% block content %}
+
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-        .breadcrumb { margin-bottom: 20px; }
-        .breadcrumb a { text-decoration: none; color: #007cba; }
-        .need-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 5px; }
-        .need-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .btn { padding: 8px 12px; margin: 2px; border: none; border-radius: 3px; cursor: pointer; text-decoration: none; display: inline-block; }
-        .btn-primary { background-color: #007cba; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-danger { background-color: #dc3545; color: white; }
-        .priority-high { color: #dc3545; font-weight: bold; }
-        .priority-medium { color: #ffc107; font-weight: bold; }
-        .priority-low { color: #28a745; font-weight: bold; }
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: var(--bg-color);
+    color: var(--text);
+}
+
+.header {
+    border-bottom: 2px solid var(--bg-color3);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.breadcrumb {
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.breadcrumb a {
+    text-decoration: none;
+    color: var(--information);
+}
+
+.need-item {
+    border: 1px solid var(--highlightdark);
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: var(--bg-color2);
+}
+
+.need-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    color: var(--text);
+}
+
+.btn {
+    padding: 8px 12px;
+    margin: 2px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--information);
+    color: white;
+}
+.btn-primary:hover {
+    background-color: var(--bg-color3);
+}
+
+.btn-secondary {
+    background-color: var(--highlightdark);
+    color: white;
+}
+.btn-secondary:hover {
+    background-color: var(--bg-color3);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+}
+.btn-danger:hover {
+    background-color: var(--risk);
+}
+
+.priority-high {
+    color: var(--danger);
+    font-weight: bold;
+}
+.priority-medium {
+    color: var(--warning);
+    font-weight: bold;
+}
+.priority-low {
+    color: var(--confirm);
+    font-weight: bold;
+}
     </style>
-</head>
-<body>
-    <div class="breadcrumb">
-        <a href="/">Home</a> > 
-        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
-        <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> > 
-        Needs
-    </div>
 
-    <div class="header">
-        <h1>🎯 Needs Management</h1>
-        <h2>{{ project.name }}</h2>
-        <a href="/n/create/?project={{ project.id }}" class="btn btn-primary">+ Create New Need</a>
-    </div>
 
-    {% for need in needs %}
-        <div class="need-item">
-            <div class="need-header">
-                <div>
-                    <h3><a href="/n/{{ need.id }}/" style="text-decoration: none; color: #333;">{{ need.name }}</a></h3>
-                    <span class="priority-{{ need.priority|lower }}">Priority: {{ need.get_priority_display }}</span>
+<div class="container">
+        <div class="breadcrumb">
+            <a href="/">Home</a> > 
+            <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
+            <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> > 
+            Needs
+        </div>
+    
+        <div class="header">
+            <h1>🎯 Needs Management</h1>
+            <h2>{{ project.name }}</h2>
+            <a href="/n/create/?project={{ project.id }}" class="btn btn-primary">+ Create New Need</a>
+        </div>
+    
+        {% for need in needs %}
+            <div class="need-item">
+                <div class="need-header">
+                    <div>
+                        <h3><a href="/n/{{ need.id }}/" style="text-decoration: none; color: #e5c129;">{{ need.name }}</a></h3>
+                        <span class="priority-{{ need.priority|lower }}">Priority: {{ need.get_priority_display }}</span>
+                    </div>
+                    <div>
+                        <a href="/n/{{ need.id }}/edit/" class="btn btn-secondary">Edit</a>
+                        <a href="/n/{{ need.id }}/delete/" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this need?')">Delete</a>
+                    </div>
                 </div>
-                <div>
-                    <a href="/n/{{ need.id }}/edit/" class="btn btn-secondary">Edit</a>
-                    <a href="/n/{{ need.id }}/delete/" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this need?')">Delete</a>
+                
+                <p>{{ need.desc|linebreaks }}</p>
+                
+                <div style="font-size: 12px; color: #d1d1d5; margin-top: 10px;">
+                    Created by: {{ need.created_by.username }} | 
+                    Created: {{ need.created_at|date:"M d, Y H:i" }} |
+                    Status: {{ need.get_status_display|default:"Open" }}
                 </div>
             </div>
-            
-            <p>{{ need.desc|linebreaks }}</p>
-            
-            <div style="font-size: 12px; color: #666; margin-top: 10px;">
-                Created by: {{ need.created_by.username }} | 
-                Created: {{ need.created_at|date:"M d, Y H:i" }} |
-                Status: {{ need.get_status_display|default:"Open" }}
+        {% empty %}
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <h3>No needs found</h3>
+                <p>This project doesn't have any needs yet.</p>
+                <a href="/n/create/?project={{ project.id }}" class="btn btn-primary">Create First Need</a>
             </div>
+        {% endfor %}
+    
+        <div style="margin-top: 40px; text-align: center;">
+            <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
         </div>
-    {% empty %}
-        <div style="text-align: center; padding: 40px; color: #666;">
-            <h3>No needs found</h3>
-            <p>This project doesn't have any needs yet.</p>
-            <a href="/n/create/?project={{ project.id }}" class="btn btn-primary">Create First Need</a>
-        </div>
-    {% endfor %}
+</div>
 
-    <div style="margin-top: 40px; text-align: center;">
-        <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
-    </div>
-</body>
-</html>
+{% endblock %}

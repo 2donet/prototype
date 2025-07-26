@@ -94,6 +94,18 @@ class Project(models.Model):
         self.skills.set(processed_skills)
         return processed_skills
     
+    def user_can_view(self, user):
+        """Check if user can view this project"""
+        if self.visibility == 'public':
+            return True
+        elif self.visibility == 'logged_in' and user.is_authenticated:
+            return True
+        elif self.visibility in ['restricted', 'private'] and user.is_authenticated:
+            if user == self.created_by:
+                return True
+            if Membership.objects.filter(project=self, user=user).exists():
+                return True
+        return False
     
     def add_member(self, user, role='VIEWER'):
         """Add a user to the project with specified role"""
@@ -196,37 +208,41 @@ class Project(models.Model):
 
 
 class Connection(models.Model):
-    
     from_project = models.ForeignKey(Project, related_name='outgoing_connections', on_delete=models.CASCADE)
     to_project = models.ForeignKey(Project, related_name='incoming_connections', on_delete=models.CASCADE)
-
+    
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
     ]
-
     TYPE_CHOICES = [
         ('child', 'Child'),
         ('parent', 'Parent'),
         ('linked', 'Linked'),
     ]
+    
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
-    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='added_connections', 
+    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='added_connections',
                                 on_delete=models.SET_NULL, null=True, blank=True)
-    moderated_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='moderated_connections', 
+    moderated_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='moderated_connections',
                                     on_delete=models.SET_NULL, null=True, blank=True)
     added_date = models.DateTimeField(auto_now_add=True)
     moderated_date = models.DateTimeField(null=True, blank=True)
-
+    
+    # Add this field - it's optional and can be added as a migration
+    note = models.TextField(blank=True, null=True, help_text="Optional note about the connection")
+    
     class Meta:
         unique_together = ('from_project', 'to_project', 'type')
-
+    
     def __str__(self):
         return f"{self.from_project.name} -> {self.to_project.name} ({self.type})"
-
-
+    
+    def get_status_display(self):
+        """Get human-readable status"""
+        return dict(self.STATUS_CHOICES).get(self.status, self.status)
 class Membership(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)

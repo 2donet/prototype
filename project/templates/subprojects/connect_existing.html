@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Connect Existing Project - {{ parent_project.name }}{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="breadcrumb">
+        <a href="/">Home</a> >
+        <a href="{% url 'project:project' parent_project.id %}">{{ parent_project.name }}</a> >
+        <a href="{% url 'project:subprojects_management' parent_project.id %}">Subprojects</a> >
+        Connect Project
+    </div>
+
+    <div class="header">
+        <h1>🔗 Connect Existing Project</h1>
+        <h2>Parent Project: {{ parent_project.name }}</h2>
+        <p>Search for an existing project to connect as a subproject.</p>
+    </div>
+
+    <div class="search-section">
+        <div class="search-box">
+            <input type="text" id="project-search" placeholder="Search for projects by name..." 
+                   onkeyup="searchProjects()" autocomplete="off">
+            <div id="search-results" class="search-results"></div>
+        </div>
+    </div>
+
+    <form method="post" id="connect-form" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" id="selected-project-id" name="project_id">
+        
+        <div class="selected-project" id="selected-project-info">
+            <!-- Selected project info will be populated here -->
+        </div>
+
+        <div class="form-group">
+            <label for="connection-note">Connection Note (Optional)</label>
+            <textarea id="connection-note" name="note" rows="3" 
+                      placeholder="Add a note about why this project should be connected..."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Send Connection Request</button>
+            <button type="button" onclick="clearSelection()" class="btn btn-secondary">Clear Selection</button>
+            <a href="{% url 'project:subprojects_management' parent_project.id %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <div class="info-box">
+        <h3>How Project Connections Work</h3>
+        <ul>
+            <li>When you connect an existing project, a connection request is sent to the project's administrators</li>
+            <li>The connection will be pending until approved by the target project's administrators</li>
+            <li>Both projects must agree to the connection for it to be active</li>
+            <li>You can only connect projects that you have permission to view</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+    .container { 
+    max-width: 800px; 
+    margin: 0 auto; 
+    padding: 20px; 
+    background-color: var(--bg-color);
+}
+
+.header {
+    border-bottom: 2px solid var(--bg-color3);
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+    color: var(--text);
+}
+
+.project-form {
+    background: var(--bg-color2);
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    border: 1px solid var(--highlightdark);
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--highlightdark);
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+}
+
+.form-section h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text2ndary);
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--highlightdark);
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: var(--bg-color3);
+    color: var(--text);
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: var(--highlight);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(229, 193, 41, 0.2);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 8px;
+    color: var(--text2ndary);
+    font-size: 12px;
+}
+
+.need-form {
+    border: 1px solid var(--highlightdark);
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    background-color: var(--bg-color3);
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-primary { 
+    background-color: var(--information); 
+    color: white; 
+}
+.btn-primary:hover {
+    background-color: var(--bg-color3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-secondary { 
+    background-color: var(--highlightdark); 
+    color: white; 
+}
+.btn-secondary:hover {
+    background-color: var(--bg-color3);
+    transform: translateY(-2px);
+}
+
+.form-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--highlightdark);
+    display: flex;
+    gap: 12px;
+}
+
+.breadcrumb {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--text2ndary);
+}
+
+.breadcrumb a {
+    text-decoration: none;
+    color: var(--information);
+    transition: color 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.breadcrumb a:hover {
+    background-color: var(--bg-color3);
+    color: var(--highlight-dark);
+}
+</style>
+
+<script>
+let searchTimeout;
+let selectedProject = null;
+
+function searchProjects() {
+    const query = document.getElementById('project-search').value.trim();
+    const resultsDiv = document.getElementById('search-results');
+    
+    if (query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+    
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        // Simulate API call - replace with actual AJAX call
+        fetch(`/api/search-projects/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                displaySearchResults(data.results || []);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                displaySearchResults([]);
+            });
+    }, 300);
+}
+
+function displaySearchResults(projects) {
+    const resultsDiv = document.getElementById('search-results');
+    
+    if (projects.length === 0) {
+        resultsDiv.innerHTML = '<div class="no-results">No projects found</div>';
+        resultsDiv.style.display = 'block';
+        return;
+    }
+    
+    resultsDiv.innerHTML = projects.map(project => `
+        <div class="search-result-item" onclick="selectProject(${project.id}, '${project.name}', '${project.summary || ''}', '${project.created_by}')">
+            <strong>${project.name}</strong>
+            <br>
+            <small>Created by: ${project.created_by}</small>
+            ${project.summary ? `<br><small>${project.summary}</small>` : ''}
+        </div>
+    `).join('');
+    
+    resultsDiv.style.display = 'block';
+}
+
+function selectProject(id, name, summary, createdBy) {
+    selectedProject = { id, name, summary, createdBy };
+    
+    document.getElementById('selected-project-id').value = id;
+    document.getElementById('selected-project-info').innerHTML = `
+        <h3>Selected Project: ${name}</h3>
+        <p><strong>Created by:</strong> ${createdBy}</p>
+        ${summary ? `<p><strong>Summary:</strong> ${summary}</p>` : ''}
+    `;
+    
+    document.getElementById('connect-form').style.display = 'block';
+    document.getElementById('search-results').style.display = 'none';
+    document.getElementById('project-search').value = name;
+}
+
+function clearSelection() {
+    selectedProject = null;
+    document.getElementById('connect-form').style.display = 'none';
+    document.getElementById('project-search').value = '';
+    document.getElementById('search-results').style.display = 'none';
+}
+
+// Hide search results when clicking outside
+document.addEventListener('click', function(event) {
+    const searchBox = document.querySelector('.search-box');
+    if (!searchBox.contains(event.target)) {
+        document.getElementById('search-results').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

@@ -33,4 +33,19 @@ urlpatterns = [
     path('<int:project_id>/moderate/members/', views.project_members_management, name='members_management'),
     path('<int:project_id>/moderate/locations/', views.project_locations_management, name='locations_management'),
     path('<int:project_id>/moderate/subprojects/', views.project_subprojects_management, name='subprojects_management'),
+
+
+        # Subproject management
+    path('<int:project_id>/subprojects/', views.project_subprojects_management, name='subprojects_management'),
+    path('<int:project_id>/subprojects/create/', views.create_subproject, name='create_subproject'),
+    path('<int:project_id>/subprojects/connect/', views.connect_existing_project, name='connect_existing_project'),
+    path('<int:project_id>/subprojects/disconnect/<int:connection_id>/', views.disconnect_subproject, name='disconnect_subproject'),
+    
+    # Connection approval/rejection
+    path('connections/<int:connection_id>/approve/', views.approve_connection, name='approve_connection'),
+    path('connections/<int:connection_id>/reject/', views.reject_connection, name='reject_connection'),
+    
+    # API endpoints
+    path('api/search-projects/', views.api_search_projects, name='api_search_projects'),
+    
 ]

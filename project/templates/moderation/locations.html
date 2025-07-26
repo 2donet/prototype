@@ -1,22 +1,98 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Locations Management - {{ project.name }}</title>
+
+{% extends "base.html" %}
+
+{% load static %}
+
+
+{% block title %}Locations Management - {{ project.name }}{% endblock %}
+
+{% block content %}
+
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-        .breadcrumb { margin-bottom: 20px; }
-        .breadcrumb a { text-decoration: none; color: #007cba; }
-        .location-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 5px; }
-        .location-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .btn { padding: 8px 12px; margin: 2px; border: none; border-radius: 3px; cursor: pointer; text-decoration: none; display: inline-block; }
-        .btn-primary { background-color: #007cba; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-danger { background-color: #dc3545; color: white; }
-        .coordinates { font-family: monospace; background: #f8f9fa; padding: 5px; border-radius: 3px; }
+body { 
+    font-family: Arial, sans-serif; 
+    margin: 20px; 
+    background-color: var(--bg-color);
+    color: var(--text);
+}
+
+.header { 
+    border-bottom: 2px solid var(--bg-color3); 
+    padding-bottom: 10px; 
+    margin-bottom: 20px; 
+    color: var(--text);
+}
+
+.breadcrumb { 
+    margin-bottom: 20px; 
+    color: var(--text);
+}
+
+.breadcrumb a { 
+    text-decoration: none; 
+    color: var(--information); 
+}
+
+.location-item { 
+    border: 1px solid var(--highlightdark); 
+    margin-bottom: 15px; 
+    padding: 15px; 
+    border-radius: 5px; 
+    background-color: var(--bg-color2);
+}
+
+.location-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 10px; 
+    color: var(--text);
+}
+
+.btn { 
+    padding: 8px 12px; 
+    margin: 2px; 
+    border: none; 
+    border-radius: 3px; 
+    cursor: pointer; 
+    text-decoration: none; 
+    display: inline-block; 
+    transition: background-color 0.2s ease;
+}
+
+.btn-primary { 
+    background-color: var(--information); 
+    color: white; 
+}
+.btn-primary:hover {
+    background-color: var(--bg-color3);
+}
+
+.btn-secondary { 
+    background-color: var(--highlightdark); 
+    color: white; 
+}
+.btn-secondary:hover {
+    background-color: var(--bg-color3);
+}
+
+.btn-danger { 
+    background-color: var(--danger); 
+    color: white; 
+}
+.btn-danger:hover {
+    background-color: var(--risk);
+}
+
+.coordinates { 
+    font-family: monospace; 
+    background: var(--bg-color3); 
+    padding: 5px; 
+    border-radius: 3px; 
+    color: var(--highlight-dark);
+}
     </style>
-</head>
-<body>
+<div class="container">
     <div class="breadcrumb">
         <a href="/">Home</a> > 
         <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
@@ -58,5 +134,6 @@
     <div style="margin-top: 40px; text-align: center;">
         <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
     </div>
-</body>
-</html>
+</div>
+
+    {% endblock %}

@@ -27,6 +27,7 @@ from skills.models import Skill
 from django.contrib.auth import get_user_model
 User = get_user_model()
 import logging
+from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
@@ -922,8 +923,7 @@ def project_needs_management(request, project_id):
         messages.error(request, "You don't have permission to manage this project.")
         return redirect('project:project', project_id=project.id)
     
-    needs = Need.objects.filter(to_project=project).select_related('created_by').order_by('-created_at')
-    
+    needs = Need.objects.filter(to_project=project).select_related('created_by').order_by('-created_date')    
     context = {
         'project': project,
         'needs': needs,
@@ -981,12 +981,11 @@ def project_subprojects_management(request, project_id):
     # Get child projects (subprojects)
     child_connections = Connection.objects.filter(
         from_project=project, type='child'
-    ).select_related('to_project', 'to_project__created_by').order_by('-created_at')
-    
-    # Get parent projects
+    ).select_related('to_project', 'to_project__created_by').order_by('-added_date')
+
     parent_connections = Connection.objects.filter(
         to_project=project, type='child'
-    ).select_related('from_project', 'from_project__created_by').order_by('-created_at')
+    ).select_related('from_project', 'from_project__created_by').order_by('-added_date')
     
     context = {
         'project': project,
@@ -995,3 +994,239 @@ def project_subprojects_management(request, project_id):
     }
     
     return render(request, 'moderation/subprojects.html', context)
+
+@login_required
+def create_subproject(request, project_id):
+    """Create a new subproject linked to parent project"""
+    parent_project = get_object_or_404(Project, pk=project_id)
+    
+    if not can_moderate_project(request.user, parent_project):
+        messages.error(request, "You don't have permission to create subprojects for this project.")
+        return redirect('project:project', project_id=parent_project.id)
+    
+    if request.method == 'POST':
+        # Basic project data
+        name = request.POST.get('name')
+        visibility = request.POST.get('visibility', 'public')
+        status = request.POST.get('status', 'planning')
+        area = request.POST.get('area', '')
+        tags = request.POST.get('tags', '')
+        summary = request.POST.get('summary', '')
+        desc = request.POST.get('desc', '')
+        published = request.POST.get('published') == '1'
+        
+        if not name:
+            messages.error(request, "Project name is required.")
+            return render(request, 'subprojects/create_subproject.html', {
+                'parent_project': parent_project,
+                'form_data': request.POST
+            })
+        
+        try:
+            # Create the subproject
+            subproject = Project.objects.create(
+                name=name,
+                visibility=visibility,
+                collaboration_mode='volunteering',
+                status=status,
+                area=area,
+                tags=tags,
+                summary=summary,
+                desc=desc,
+                created_by=request.user,
+                published=published,
+            )
+            
+            # Create the connection
+            connection = Connection.objects.create(
+                from_project=parent_project,
+                to_project=subproject,
+                type='child',
+                status='approved',  # Auto-approve since creator is adding it
+                added_by=request.user
+            )
+            
+            # Add creator as admin of subproject
+            subproject.add_member(request.user, 'ADMIN')
+            
+            # Handle initial needs
+            need_names = request.POST.getlist('need_name[]')
+            need_descs = request.POST.getlist('need_desc[]')
+            need_priorities = request.POST.getlist('need_priority[]')
+            
+            if need_names and need_descs and need_priorities:
+                for name, desc, priority in zip(need_names, need_descs, need_priorities):
+                    if name.strip():
+                        Need.objects.create(
+                            name=name,
+                            desc=desc,
+                            priority=int(priority) if priority.isdigit() else 1,
+                            created_by=request.user,
+                            to_project=subproject,
+                        )
+            
+            messages.success(request, f"Subproject '{subproject.name}' created successfully!")
+            return redirect('project:project', project_id=subproject.id)
+            
+        except Exception as e:
+            logger.error(f"Error creating subproject: {str(e)}")
+            messages.error(request, "An error occurred while creating the subproject.")
+            return render(request, 'subprojects/create_subproject.html', {
+                'parent_project': parent_project,
+                'form_data': request.POST
+            })
+    
+    # GET request
+    context = {
+        'parent_project': parent_project,
+        'form_data': {}
+    }
+    return render(request, 'subprojects/create_subproject.html', context)
+
+
+@login_required
+def connect_existing_project(request, project_id):
+    """Connect an existing project as a subproject"""
+    parent_project = get_object_or_404(Project, pk=project_id)
+    
+    if not can_moderate_project(request.user, parent_project):
+        messages.error(request, "You don't have permission to connect projects to this project.")
+        return redirect('project:project', project_id=parent_project.id)
+    
+    if request.method == 'POST':
+        target_project_id = request.POST.get('project_id')
+        note = request.POST.get('note', '')
+        
+        try:
+            target_project = Project.objects.get(pk=target_project_id)
+            
+            # Check if user can view the target project
+            if not target_project.user_can_view(request.user):
+                messages.error(request, "You don't have permission to connect to that project.")
+                return redirect('project:connect_existing_project', project_id=parent_project.id)
+            
+            # Check if connection already exists
+            if Connection.objects.filter(
+                from_project=parent_project,
+                to_project=target_project,
+                type='child'
+            ).exists():
+                messages.error(request, "A connection to this project already exists.")
+                return redirect('project:connect_existing_project', project_id=parent_project.id)
+            
+            # Create connection request
+            connection = Connection.objects.create(
+                from_project=parent_project,
+                to_project=target_project,
+                type='child',
+                status='pending',  # Requires approval from target project
+                added_by=request.user,
+                note=note
+            )
+            
+            messages.success(request, f"Connection request sent to '{target_project.name}'. Waiting for approval.")
+            return redirect('project:subprojects_management', project_id=parent_project.id)
+            
+        except Project.DoesNotExist:
+            messages.error(request, "Selected project not found.")
+        except Exception as e:
+            logger.error(f"Error creating connection: {str(e)}")
+            messages.error(request, "An error occurred while creating the connection.")
+    
+    context = {
+        'parent_project': parent_project,
+    }
+    return render(request, 'subprojects/connect_existing.html', context)
+
+
+@login_required  
+def disconnect_subproject(request, project_id, connection_id):
+    """Disconnect a subproject"""
+    parent_project = get_object_or_404(Project, pk=project_id)
+    connection = get_object_or_404(Connection, pk=connection_id, from_project=parent_project, type='child')
+    
+    if not can_moderate_project(request.user, parent_project):
+        messages.error(request, "You don't have permission to disconnect subprojects.")
+        return redirect('project:subprojects_management', project_id=parent_project.id)
+    
+    if request.method == 'POST':
+        subproject_name = connection.to_project.name
+        connection.delete()
+        messages.success(request, f"Successfully disconnected '{subproject_name}' from this project.")
+    
+    return redirect('project:subprojects_management', project_id=parent_project.id)
+
+
+@login_required
+def approve_connection(request, connection_id):
+    """Approve a pending connection request"""
+    connection = get_object_or_404(Connection, pk=connection_id, status='pending')
+    
+    # Check if user can moderate the target project (the one being connected to)
+    if not can_moderate_project(request.user, connection.to_project):
+        messages.error(request, "You don't have permission to approve this connection.")
+        return redirect('project:project', project_id=connection.to_project.id)
+    
+    connection.status = 'approved'
+    connection.moderated_by = request.user
+    connection.moderated_date = timezone.now()
+    connection.save()
+    
+    messages.success(request, f"Connection approved. '{connection.from_project.name}' is now connected to this project.")
+    return redirect('project:subprojects_management', project_id=connection.to_project.id)
+
+
+@login_required
+def reject_connection(request, connection_id):
+    """Reject a pending connection request"""
+    connection = get_object_or_404(Connection, pk=connection_id, status='pending')
+    
+    # Check if user can moderate the target project
+    if not can_moderate_project(request.user, connection.to_project):
+        messages.error(request, "You don't have permission to reject this connection.")
+        return redirect('project:project', project_id=connection.to_project.id)
+    
+    connection.status = 'rejected'
+    connection.moderated_by = request.user
+    connection.moderated_date = timezone.now()
+    connection.save()
+    
+    messages.success(request, f"Connection rejected. '{connection.from_project.name}' will not be connected to this project.")
+    return redirect('project:subprojects_management', project_id=connection.to_project.id)
+
+
+# API endpoint for project search (for the connect existing project functionality)
+@login_required
+def api_search_projects(request):
+    """API endpoint to search for projects that can be connected"""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    # Search for projects the user can view
+    if request.user.is_authenticated:
+        projects = Project.objects.filter(
+            models.Q(name__icontains=query) | models.Q(summary__icontains=query)
+        ).filter(
+            models.Q(visibility='public') | 
+            models.Q(visibility='logged_in') |
+            models.Q(membership__user=request.user) |
+            models.Q(created_by=request.user)
+        ).distinct().select_related('created_by')[:10]
+    else:
+        projects = Project.objects.filter(
+            models.Q(name__icontains=query) | models.Q(summary__icontains=query),
+            visibility='public'
+        ).select_related('created_by')[:10]
+    
+    results = []
+    for project in projects:
+        results.append({
+            'id': project.id,
+            'name': project.name,
+            'summary': project.summary or '',
+            'created_by': project.created_by.username if project.created_by else 'Unknown'
+        })
+    
+    return JsonResponse({'results': results})

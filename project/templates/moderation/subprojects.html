@@ -1,36 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Subprojects Management - {{ project.name }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-        .breadcrumb { margin-bottom: 20px; }
-        .breadcrumb a { text-decoration: none; color: #007cba; }
-        .section { margin-bottom: 30px; }
-        .project-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 5px; }
-        .project-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .btn { padding: 8px 12px; margin: 2px; border: none; border-radius: 3px; cursor: pointer; text-decoration: none; display: inline-block; }
-        .btn-primary { background-color: #007cba; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-danger { background-color: #dc3545; color: white; }
-        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; color: white; }
-        .status-approved { background-color: #28a745; }
-        .status-pending { background-color: #ffc107; color: #333; }
-        .status-rejected { background-color: #dc3545; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Subprojects Management - {{ project.name }}{% endblock %}
+{% block content %}
+<div class="container">
     <div class="breadcrumb">
-        <a href="/">Home</a> > 
-        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
-        <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> > 
+        <a href="/">Home</a> >
+        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> >
+        <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> >
         Subprojects
     </div>
 
     <div class="header">
         <h1>🔗 Subprojects Management</h1>
         <h2>{{ project.name }}</h2>
+        <div style="margin-top: 15px;">
+            <a href="{% url 'project:create_subproject' project.id %}" class="btn btn-primary">+ Create Subproject</a>
+            <a href="{% url 'project:connect_existing_project' project.id %}" class="btn btn-secondary">🔗 Connect Existing Project</a>
+        </div>
     </div>
 
     <div class="section">
@@ -40,7 +26,7 @@
                 <div class="project-header">
                     <div>
                         <h4>
-                            <a href="{% url 'project:project' connection.to_project.id %}" style="text-decoration: none; color: #333;">
+                            <a href="{% url 'project:project' connection.to_project.id %}" style="text-decoration: none;">
                                 {{ connection.to_project.name }}
                             </a>
                         </h4>
@@ -48,22 +34,26 @@
                     </div>
                     <div>
                         <a href="{% url 'project:project' connection.to_project.id %}" class="btn btn-secondary">View Project</a>
-                        <!-- Add disconnect functionality if needed -->
+                        <a href="{% url 'project:disconnect_subproject' project.id connection.id %}" 
+                           class="btn btn-danger btn-sm" 
+                           onclick="return confirm('Are you sure you want to disconnect this subproject?')">Disconnect</a>
                     </div>
                 </div>
-                
                 {% if connection.to_project.summary %}
                     <p>{{ connection.to_project.summary }}</p>
                 {% endif %}
-                
-                <div style="font-size: 12px; color: #666; margin-top: 10px;">
-                    Created by: {{ connection.to_project.created_by.username }} | 
-                    Connected: {{ connection.created_at|date:"M d, Y" }}
+                <div style="font-size: 12px; margin-top: 10px;">
+                    Created by: {{ connection.to_project.created_by.username }} |
+                    Connected: {{ connection.added_date|date:"M d, Y" }}
+                    {% if connection.status == 'pending' %}
+                        | <span style="color: #ffc107;">Pending Approval</span>
+                    {% endif %}
                 </div>
             </div>
         {% empty %}
-            <div style="text-align: center; padding: 20px; color: #666;">
+            <div style="text-align: center; padding: 20px;">
                 <p>This project doesn't have any subprojects.</p>
+                <a href="{% url 'project:create_subproject' project.id %}" class="btn btn-primary">Create First Subproject</a>
             </div>
         {% endfor %}
     </div>
@@ -75,7 +65,7 @@
                 <div class="project-header">
                     <div>
                         <h4>
-                            <a href="{% url 'project:project' connection.from_project.id %}" style="text-decoration: none; color: #333;">
+                            <a href="{% url 'project:project' connection.from_project.id %}" style="text-decoration: none;">
                                 {{ connection.from_project.name }}
                             </a>
                         </h4>
@@ -83,27 +73,157 @@
                     </div>
                     <div>
                         <a href="{% url 'project:project' connection.from_project.id %}" class="btn btn-secondary">View Project</a>
+                        {% if connection.status == 'pending' %}
+                            <a href="{% url 'project:approve_connection' connection.id %}" class="btn btn-success btn-sm">Approve</a>
+                            <a href="{% url 'project:reject_connection' connection.id %}" class="btn btn-danger btn-sm">Reject</a>
+                        {% endif %}
                     </div>
                 </div>
-                
                 {% if connection.from_project.summary %}
                     <p>{{ connection.from_project.summary }}</p>
                 {% endif %}
-                
-                <div style="font-size: 12px; color: #666; margin-top: 10px;">
-                    Created by: {{ connection.from_project.created_by.username }} | 
-                    Connected: {{ connection.created_at|date:"M d, Y" }}
+                <div style="font-size: 12px; margin-top: 10px;">
+                    Created by: {{ connection.from_project.created_by.username }} |
+                    Connected: {{ connection.added_date|date:"M d, Y" }}
                 </div>
             </div>
         {% empty %}
-            <div style="text-align: center; padding: 20px; color: #666;">
+            <div style="text-align: center; padding: 20px;">
                 <p>This project is not connected to any parent projects.</p>
             </div>
         {% endfor %}
     </div>
 
     <div style="margin-top: 40px; text-align: center;">
-        <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
+        <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none;">← Back to Moderation Dashboard</a>
     </div>
-</body>
-</html>
+</div>
+
+<style>
+.btn {
+    padding: 8px 16px;
+    margin: 4px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-primary { 
+    background-color: var(--information); 
+    color: white; 
+}
+.btn-primary:hover {
+    background-color: var(--bg-color3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-secondary { 
+    background-color: var(--highlightdark); 
+    color: white; 
+}
+.btn-secondary:hover {
+    background-color: var(--bg-color3);
+    transform: translateY(-1px);
+}
+
+.btn-success { 
+    background-color: var(--confirm); 
+    color: white; 
+}
+.btn-success:hover {
+    background-color: var(--confirm--highlight);
+    transform: translateY(-1px);
+}
+
+.btn-danger { 
+    background-color: var(--danger); 
+    color: white; 
+}
+.btn-danger:hover {
+    background-color: var(--risk);
+    transform: translateY(-1px);
+}
+
+.btn-sm { 
+    padding: 4px 8px; 
+    font-size: 12px; 
+}
+
+.project-item {
+    border: 1px solid var(--highlightdark);
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: var(--bg-color2);
+    transition: all 0.2s ease;
+}
+
+.project-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: var(--highlight);
+}
+
+.project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    color: var(--text);
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.2);
+}
+
+.status-approved { 
+    background-color: var(--confirm); 
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.status-pending { 
+    background-color: var(--warning); 
+    color: var(--text);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.status-rejected { 
+    background-color: var(--danger); 
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.section {
+    margin: 30px 0;
+    padding: 20px;
+    border: 1px solid var(--highlightdark);
+    border-radius: 5px;
+    background-color: var(--bg-color2);
+}
+
+.header {
+    border-bottom: 2px solid var(--bg-color3);
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+    color: var(--text);
+
+}
+</style>
+{% endblock %}

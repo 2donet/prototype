@@ -1,211 +1,323 @@
-<!-- project/templates/moderation/comments.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Comments Moderation - {{ project.name }}</title>
+{% extends "base.html" %}
+
+
+{% load static %}
+
+{% block title %}Project Moderation Dashboard - {{ project.name }}{% endblock %}
+
+{% block content %}
+
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-        .breadcrumb { margin-bottom: 20px; }
-        .breadcrumb a { text-decoration: none; color: #007cba; }
-        .filter-bar { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .comment-item { border: 1px solid #ddd; margin-bottom: 15px; border-radius: 5px; overflow: hidden; }
-        .comment-header { background: #f8f9fa; padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-        .comment-content { padding: 15px; }
-        .comment-actions { padding: 10px; background: #f1f3f4; border-top: 1px solid #ddd; }
-        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; color: white; }
-        .status-approved { background-color: #28a745; }
-        .status-pending { background-color: #ffc107; color: #333; }
-        .status-rejected { background-color: #dc3545; }
-        .status-flagged { background-color: #17a2b8; }
-        .status-content_removed { background-color: #6c757d; }
-        .status-author_removed { background-color: #fd7e14; }
-        .status-author_and_content_removed { background-color: #e83e8c; }
-        .status-thread_deleted { background-color: #343a40; }
-        .btn { padding: 8px 12px; margin: 2px; border: none; border-radius: 3px; cursor: pointer; text-decoration: none; display: inline-block; }
-        .btn-danger { background-color: #dc3545; color: white; }
-        .btn-warning { background-color: #ffc107; color: #333; }
-        .btn-success { background-color: #28a745; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: white; margin: 15% auto; padding: 20px; border-radius: 5px; width: 50%; }
-        .pagination { text-align: center; margin: 20px 0; }
-        .pagination a { padding: 8px 12px; margin: 0 2px; text-decoration: none; border: 1px solid #ddd; color: #007cba; }
-        .pagination .current { padding: 8px 12px; margin: 0 2px; background-color: #007cba; color: white; }
-        .comment-meta { font-size: 12px; color: #666; margin-bottom: 5px; }
-        .reports-indicator { color: #dc3545; font-weight: bold; }
+.header { 
+    border-bottom: 2px solid var(--bg-color3); 
+    padding-bottom: 10px; 
+    margin-bottom: 20px; 
+    color: var(--text);
+}
+
+.breadcrumb { 
+    margin-bottom: 20px; 
+    color: var(--text);
+}
+
+.breadcrumb a { 
+    text-decoration: none; 
+    color: var(--information); 
+}
+
+.filter-bar { 
+    background: var(--bg-color2); 
+    padding: 15px; 
+    border-radius: 5px; 
+    margin-bottom: 20px; 
+    border: 1px solid var(--highlightdark);
+}
+
+.comment-item { 
+    border: 1px solid var(--highlightdark); 
+    margin-bottom: 15px; 
+    border-radius: 5px; 
+    overflow: hidden; 
+    background-color: var(--bg-color2);
+}
+
+.comment-header { 
+    background: var(--bg-color3); 
+    padding: 10px; 
+    border-bottom: 1px solid var(--highlightdark); 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    color: var(--text);
+}
+
+.comment-content { 
+    padding: 15px; 
+    color: var(--text);
+}
+
+.comment-actions { 
+    padding: 10px; 
+    background: var(--bg-color3); 
+    border-top: 1px solid var(--highlightdark); 
+}
+
+.status-badge { 
+    padding: 3px 8px; 
+    border-radius: 12px; 
+    font-size: 12px; 
+    color: white; 
+}
+
+.status-approved { background-color: var(--confirm); }
+.status-pending { background-color: var(--warning); color: var(--text); }
+.status-rejected { background-color: var(--danger); }
+.status-flagged { background-color: var(--status-purple); }
+.status-content_removed { background-color: var(--highlightdark); }
+.status-author_removed { background-color: var(--risk); }
+.status-author_and_content_removed { background-color: var(--status-pink); }
+.status-thread_deleted { background-color: var(--bg-color); }
+
+.btn { 
+    padding: 8px 12px; 
+    margin: 2px; 
+    border: none; 
+    border-radius: 3px; 
+    cursor: pointer; 
+    text-decoration: none; 
+    display: inline-block; 
+}
+
+.btn-danger { background-color: var(--danger); color: white; }
+.btn-warning { background-color: var(--warning); color: var(--text); }
+.btn-success { background-color: var(--confirm); color: white; }
+.btn-secondary { background-color: var(--highlightdark); color: white; }
+
+.modal { 
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    background-color: rgba(0,0,0,0.7); 
+}
+
+.modal-content { 
+    background-color: var(--bgpopup); 
+    margin: 15% auto; 
+    padding: 20px; 
+    border-radius: 5px; 
+    width: 50%; 
+    color: var(--text);
+    border: 1px solid var(--highlightdark);
+}
+
+.pagination { 
+    text-align: center; 
+    margin: 20px 0; 
+}
+
+.pagination a { 
+    padding: 8px 12px; 
+    margin: 0 2px; 
+    text-decoration: none; 
+    border: 1px solid var(--highlightdark); 
+    color: var(--information); 
+    background-color: var(--bg-color2);
+}
+
+.pagination .current { 
+    padding: 8px 12px; 
+    margin: 0 2px; 
+    background-color: var(--information); 
+    color: white; 
+}
+
+.comment-meta { 
+    font-size: 12px; 
+    color: var(--text2ndary); 
+    margin-bottom: 5px; 
+}
+
+.reports-indicator { 
+    color: var(--danger); 
+    font-weight: bold; 
+}
     </style>
-</head>
-<body>
-    <div class="breadcrumb">
-        <a href="/">Home</a> > 
-        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
-        <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> > 
-        Comments
-    </div>
-
-    <div class="header">
-        <h1>💬 Comments Moderation</h1>
-        <h2>{{ project.name }}</h2>
-    </div>
-
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-        <form method="get" style="display: flex; align-items: center; gap: 10px;">
-            <label>Filter by status:</label>
-            <select name="status" onchange="this.form.submit()">
-                <option value="">All Statuses</option>
-                {% for value, label in comment_statuses %}
-                    <option value="{{ value }}" {% if current_status_filter == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </form>
-    </div>
-
-    <!-- Comments List -->
-    {% for comment in comments %}
-        <div class="comment-item">
-            <div class="comment-header">
-                <div>
-                    <span class="status-badge status-{{ comment.status|lower }}">{{ comment.get_status_display }}</span>
-                    {% if comment.status == 'AUTHOR_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
-                        <strong>[Hidden]</strong>
-                    {% elif comment.user %}
-                        <strong>{{ comment.user.username }}</strong>
-                    {% else %}
-                        <strong>Anonymous</strong>
-                    {% endif %}
-                    
-                    <span class="comment-meta">
-                        ID: {{ comment.id }} | {{ comment.created_at|date:"M d, Y H:i" }}
-                        {% if comment.to_task %}
-                            | Task: {{ comment.to_task.name }}
-                        {% elif comment.to_need %}
-                            | Need: {{ comment.to_need.name }}
-                        {% endif %}
-                    </span>
-                </div>
-                
-                <div>
-                    {% if comment.reports.exists %}
-                        <span class="reports-indicator">{{ comment.reports.count }} report{{ comment.reports.count|pluralize }}</span>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="comment-content">
-                {% if comment.status == 'CONTENT_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
-                    <em style="color: #666;">[Content removed by moderation]</em>
-                {% elif comment.status == 'THREAD_DELETED' or comment.status == 'REPLY_TO_DELETED' %}
-                    <em style="color: #666;">[Comment deleted]</em>
-                {% else %}
-                    <p>{{ comment.content|linebreaks }}</p>
-                {% endif %}
-                
-                {% if comment.total_replies > 0 %}
-                    <small style="color: #666;">{{ comment.total_replies }} repl{{ comment.total_replies|pluralize:"y,ies" }}</small>
-                {% endif %}
-            </div>
-            
-            <div class="comment-actions">
-                {% if comment.status == 'APPROVED' %}
-                    <button class="btn btn-warning" onclick="showModerationModal({{ comment.id }}, '{{ comment.content|escapejs }}')">
-                        Moderate Comment
-                    </button>
-                {% elif comment.status == 'PENDING' %}
-                    <form style="display: inline;" method="post" action="{% url 'project:moderate_comment_action' project.id comment.id %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="APPROVE">
-                        <input type="hidden" name="reason" value="Approved from project moderation">
-                        <button type="submit" class="btn btn-success">Approve</button>
-                    </form>
-                    <button class="btn btn-warning" onclick="showModerationModal({{ comment.id }}, '{{ comment.content|escapejs }}')">
-                        Moderate
-                    </button>
-                {% elif comment.status in 'FLAGGED,REJECTED' %}
-                    <button class="btn btn-warning" onclick="showModerationModal({{ comment.id }}, '{{ comment.content|escapejs }}')">
-                        Review
-                    </button>
-                {% else %}
-                    <span style="color: #666;">Moderated</span>
-                {% endif %}
-                
-                {% if comment.reports.exists %}
-                    <a href="{% url 'comments:enhanced_report_detail' comment.id %}" class="btn btn-secondary">
-                        View Reports ({{ comment.reports.count }})
-                    </a>
-                {% endif %}
-            </div>
+<div class="container">
+    
+        <div class="breadcrumb">
+            <a href="/">Home</a> > 
+            <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
+            <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> > 
+            Comments
         </div>
-    {% empty %}
-        <div style="text-align: center; padding: 40px; color: #666;">
-            <h3>No comments found</h3>
-            <p>There are no comments matching your current filter.</p>
+    
+        <div class="header">
+            <h1>💬 Comments Moderation</h1>
+            <h2>{{ project.name }}</h2>
         </div>
-    {% endfor %}
-
-    <!-- Pagination -->
-    {% if comments.has_other_pages %}
-        <div class="pagination">
-            {% if comments.has_previous %}
-                <a href="?page={{ comments.previous_page_number }}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}">&laquo; Previous</a>
-            {% endif %}
-            
-            <span class="current">Page {{ comments.number }} of {{ comments.paginator.num_pages }}</span>
-            
-            {% if comments.has_next %}
-                <a href="?page={{ comments.next_page_number }}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}">Next &raquo;</a>
-            {% endif %}
-        </div>
-    {% endif %}
-
-    <!-- Moderation Modal -->
-    <div id="moderationModal" class="modal">
-        <div class="modal-content">
-            <h3>Moderate Comment</h3>
-            <div id="modalCommentContent" style="background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 5px;"></div>
-            
-            <form method="post" id="moderationForm">
-                {% csrf_token %}
-                
-                <div style="margin: 15px 0;">
-                    <label>Moderation Action:</label><br>
-                    <input type="radio" name="action" value="REMOVE_CONTENT_ONLY" id="removeContent">
-                    <label for="removeContent">Remove content only (keep comment structure)</label><br>
-                    
-                    <input type="radio" name="action" value="REMOVE_AUTHOR_ONLY" id="removeAuthor">
-                    <label for="removeAuthor">Hide author only (keep content)</label><br>
-                    
-                    <input type="radio" name="action" value="REMOVE_AUTHOR_AND_CONTENT" id="removeAuthorContent">
-                    <label for="removeAuthorContent">Remove author and content</label><br>
-                    
-                    <input type="radio" name="action" value="DELETE_THREAD" id="deleteThread">
-                    <label for="deleteThread">Delete entire comment thread</label><br>
-                    
-                    <input type="radio" name="action" value="REJECT" id="reject">
-                    <label for="reject">Reject comment (hide completely)</label><br>
-                    
-                    <input type="radio" name="action" value="APPROVE" id="approve">
-                    <label for="approve">Approve comment (dismiss reports)</label>
-                </div>
-                
-                <div style="margin: 15px 0;">
-                    <label for="reason">Reason for moderation:</label><br>
-                    <textarea name="reason" id="reason" rows="3" style="width: 100%; margin-top: 5px;" placeholder="Explain your moderation decision..."></textarea>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <button type="submit" class="btn btn-danger">Apply Moderation</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModerationModal()">Cancel</button>
-                </div>
+    
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <form method="get" style="display: flex; align-items: center; gap: 10px;">
+                <label>Filter by status:</label>
+                <select name="status" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for value, label in comment_statuses %}
+                        <option value="{{ value }}" {% if current_status_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
             </form>
         </div>
-    </div>
-
-    <div style="margin-top: 40px; text-align: center;">
-        <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
-    </div>
-
+    
+        <!-- Comments List -->
+        {% for comment in comments %}
+            <div class="comment-item">
+                <div class="comment-header">
+                    <div>
+                        <span class="status-badge status-{{ comment.status|lower }}">{{ comment.get_status_display }}</span>
+                        {% if comment.status == 'AUTHOR_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
+                            <strong>[Hidden]</strong>
+                        {% elif comment.user %}
+                            <strong>{{ comment.user.username }}</strong>
+                        {% else %}
+                            <strong>Anonymous</strong>
+                        {% endif %}
+                        
+                        <span class="comment-meta">
+                            ID: {{ comment.id }} | {{ comment.created_at|date:"M d, Y H:i" }}
+                            {% if comment.to_task %}
+                                | Task: {{ comment.to_task.name }}
+                            {% elif comment.to_need %}
+                                | Need: {{ comment.to_need.name }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div>
+                        {% if comment.reports.exists %}
+                            <span class="reports-indicator">{{ comment.reports.count }} report{{ comment.reports.count|pluralize }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="comment-content">
+                    {% if comment.status == 'CONTENT_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
+                        <em style="color: #666;">[Content removed by moderation]</em>
+                    {% elif comment.status == 'THREAD_DELETED' or comment.status == 'REPLY_TO_DELETED' %}
+                        <em style="color: #666;">[Comment deleted]</em>
+                    {% else %}
+                        <p>{{ comment.content|linebreaks }}</p>
+                    {% endif %}
+                    
+                    {% if comment.total_replies > 0 %}
+                        <small style="color: #666;">{{ comment.total_replies }} repl{{ comment.total_replies|pluralize:"y,ies" }}</small>
+                    {% endif %}
+                </div>
+                
+                <div class="comment-actions">
+                    {% if comment.status == 'APPROVED' %}
+                        <button class="btn btn-warning" onclick="showModerationModal({{ comment.id }}, '{{ comment.content|escapejs }}')">
+                            Moderate Comment
+                        </button>
+                    {% elif comment.status == 'PENDING' %}
+                        <form style="display: inline;" method="post" action="{% url 'project:moderate_comment_action' project.id comment.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="APPROVE">
+                            <input type="hidden" name="reason" value="Approved from project moderation">
+                            <button type="submit" class="btn btn-success">Approve</button>
+                        </form>
+                        <button class="btn btn-warning" onclick="showModerationModal({{ comment.id }}, '{{ comment.content|escapejs }}')">
+                            Moderate
+                        </button>
+                    {% elif comment.status in 'FLAGGED,REJECTED' %}
+                        <button class="btn btn-warning" onclick="showModerationModal({{ comment.id }}, '{{ comment.content|escapejs }}')">
+                            Review
+                        </button>
+                    {% else %}
+                        <span style="color: #666;">Moderated</span>
+                    {% endif %}
+                    
+                    {% if comment.reports.exists %}
+                        <a href="{% url 'comments:enhanced_report_detail' comment.id %}" class="btn btn-secondary">
+                            View Reports ({{ comment.reports.count }})
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <h3>No comments found</h3>
+                <p>There are no comments matching your current filter.</p>
+            </div>
+        {% endfor %}
+    
+        <!-- Pagination -->
+        {% if comments.has_other_pages %}
+            <div class="pagination">
+                {% if comments.has_previous %}
+                    <a href="?page={{ comments.previous_page_number }}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}">&laquo; Previous</a>
+                {% endif %}
+                
+                <span class="current">Page {{ comments.number }} of {{ comments.paginator.num_pages }}</span>
+                
+                {% if comments.has_next %}
+                    <a href="?page={{ comments.next_page_number }}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}">Next &raquo;</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    
+        <!-- Moderation Modal -->
+        <div id="moderationModal" class="modal">
+            <div class="modal-content">
+                <h3>Moderate Comment</h3>
+                <div id="modalCommentContent" style="background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 5px;"></div>
+                
+                <form method="post" id="moderationForm">
+                    {% csrf_token %}
+                    
+                    <div style="margin: 15px 0;">
+                        <label>Moderation Action:</label><br>
+                        <input type="radio" name="action" value="REMOVE_CONTENT_ONLY" id="removeContent">
+                        <label for="removeContent">Remove content only (keep comment structure)</label><br>
+                        
+                        <input type="radio" name="action" value="REMOVE_AUTHOR_ONLY" id="removeAuthor">
+                        <label for="removeAuthor">Hide author only (keep content)</label><br>
+                        
+                        <input type="radio" name="action" value="REMOVE_AUTHOR_AND_CONTENT" id="removeAuthorContent">
+                        <label for="removeAuthorContent">Remove author and content</label><br>
+                        
+                        <input type="radio" name="action" value="DELETE_THREAD" id="deleteThread">
+                        <label for="deleteThread">Delete entire comment thread</label><br>
+                        
+                        <input type="radio" name="action" value="REJECT" id="reject">
+                        <label for="reject">Reject comment (hide completely)</label><br>
+                        
+                        <input type="radio" name="action" value="APPROVE" id="approve">
+                        <label for="approve">Approve comment (dismiss reports)</label>
+                    </div>
+                    
+                    <div style="margin: 15px 0;">
+                        <label for="reason">Reason for moderation:</label><br>
+                        <textarea name="reason" id="reason" rows="3" style="width: 100%; margin-top: 5px;" placeholder="Explain your moderation decision..."></textarea>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button type="submit" class="btn btn-danger">Apply Moderation</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModerationModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    
+        <div style="margin-top: 40px; text-align: center;">
+            <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
+        </div>
+    
+</div>
     <script>
         function showModerationModal(commentId, commentContent) {
             document.getElementById('modalCommentContent').innerHTML = '<p>' + commentContent.substring(0, 200) + (commentContent.length > 200 ? '...' : '') + '</p>';
@@ -226,5 +338,5 @@
             }
         }
     </script>
-</body>
-</html>
+
+{% endblock %}

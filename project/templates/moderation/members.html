@@ -1,27 +1,120 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Members Management - {{ project.name }}</title>
+
+{% extends "base.html" %}
+
+{% load static %}
+
+
+{% block title %}Project Members - {{ project.name }}{% endblock %}
+
+{% block content %}
+
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-        .breadcrumb { margin-bottom: 20px; }
-        .breadcrumb a { text-decoration: none; color: #007cba; }
-        .member-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .member-info { display: flex; align-items: center; gap: 15px; }
-        .member-avatar { width: 40px; height: 40px; border-radius: 50%; }
-        .btn { padding: 8px 12px; margin: 2px; border: none; border-radius: 3px; cursor: pointer; text-decoration: none; display: inline-block; }
-        .btn-primary { background-color: #007cba; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-danger { background-color: #dc3545; color: white; }
-        .role-badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; color: white; }
-        .role-admin { background-color: #dc3545; }
-        .role-moderator { background-color: #fd7e14; }
-        .role-contributor { background-color: #28a745; }
-        .role-viewer { background-color: #6c757d; }
+body { 
+    font-family: Arial, sans-serif; 
+    margin: 20px; 
+    background-color: var(--bg-color);
+    color: var(--text);
+}
+
+.header { 
+    border-bottom: 2px solid var(--bg-color3); 
+    padding-bottom: 10px; 
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.breadcrumb { 
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.breadcrumb a { 
+    text-decoration: none; 
+    color: var(--information); 
+}
+
+.member-item { 
+    border: 1px solid var(--highlightdark); 
+    margin-bottom: 15px; 
+    padding: 15px; 
+    border-radius: 5px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    background-color: var(--bg-color2);
+}
+
+.member-info { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px;
+    color: var(--text);
+}
+
+.member-avatar { 
+    width: 40px; 
+    height: 40px; 
+    border-radius: 50%; 
+    border: 2px solid var(--highlight);
+}
+
+.btn { 
+    padding: 8px 12px; 
+    margin: 2px; 
+    border: none; 
+    border-radius: 3px; 
+    cursor: pointer; 
+    text-decoration: none; 
+    display: inline-block;
+    transition: background-color 0.2s ease;
+}
+
+.btn-primary { 
+    background-color: var(--information); 
+    color: white; 
+}
+.btn-primary:hover {
+    background-color: var(--bg-color3);
+}
+
+.btn-secondary { 
+    background-color: var(--highlightdark); 
+    color: white; 
+}
+.btn-secondary:hover {
+    background-color: var(--bg-color3);
+}
+
+.btn-danger { 
+    background-color: var(--danger); 
+    color: white; 
+}
+.btn-danger:hover {
+    background-color: var(--risk);
+}
+
+.role-badge { 
+    padding: 3px 8px; 
+    border-radius: 12px; 
+    font-size: 12px; 
+    color: white; 
+}
+
+.role-admin { background-color: var(--danger); }
+.role-moderator { background-color: var(--warning); }
+.role-contributor { background-color: var(--confirm); }
+.role-viewer { background-color: var(--highlightdark); }
     </style>
-</head>
-<body>
+
+<div class="container">
+
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
     <div class="breadcrumb">
         <a href="/">Home</a> > 
         <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
@@ -30,8 +123,8 @@
     </div>
 
     <div class="header">
-        <h1>👥 Members Management</h1>
-        <h2>{{ project.name }}</h2>
+        
+        <h2>👥 Members of {{ project.name }}</h2>
         <a href="{% url 'project:add_member' project.id %}" class="btn btn-primary">+ Add Member</a>
     </div>
 
@@ -46,12 +139,12 @@
                 
                 <div>
                     <h4 style="margin: 0;">
-                        <a href="{% url 'user:userprofile' membership.user.id %}" style="text-decoration: none; color: #333;">
+                        <a href="{% url 'user:userprofile' membership.user.id %}" style="text-decoration: none; color: #e5c129;">
                             {{ membership.user.get_full_name|default:membership.user.username }}
                         </a>
                     </h4>
                     <span class="role-badge role-{{ membership.role|lower }}">{{ membership.get_role_display }}</span>
-                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    <div style="font-size: 12px; color: #d1d1d5; margin-top: 5px;">
                         Joined: {{ membership.date_joined|date:"M d, Y" }}
                     </div>
                 </div>
@@ -75,5 +168,5 @@
     <div style="margin-top: 40px; text-align: center;">
         <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
