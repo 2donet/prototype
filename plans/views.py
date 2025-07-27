@@ -327,17 +327,45 @@ def reorder_steps(request, plan_id):
     try:
         step_orders = json.loads(request.body)
         
-        for step_data in step_orders:
-            step_id = step_data['id']
-            new_order = step_data['order']
-            
-            Step.objects.filter(id=step_id, plan=plan).update(order=new_order)
+        # Validate that all steps belong to this plan
+        step_ids = [step_data['id'] for step_data in step_orders]
+        existing_steps = Step.objects.filter(id__in=step_ids, plan=plan)
         
-        return JsonResponse({'success': True})
+        if len(existing_steps) != len(step_ids):
+            return JsonResponse({'error': 'Invalid step IDs'}, status=400)
+        
+        # Use a transaction to ensure atomicity
+        from django.db import transaction
+        
+        with transaction.atomic():
+            # Update all steps in a single transaction
+            for step_data in step_orders:
+                step_id = step_data['id']
+                new_order = step_data['order']
+                
+                # Validate order is positive
+                if new_order <= 0:
+                    return JsonResponse({'error': 'Order must be positive'}, status=400)
+                
+                Step.objects.filter(id=step_id, plan=plan).update(order=new_order)
+        
+        return JsonResponse({
+            'success': True, 
+            'message': 'Steps reordered successfully',
+            'updated_count': len(step_orders)
+        })
     
-    except (json.JSONDecodeError, KeyError) as e:
-        return JsonResponse({'error': 'Invalid data'}, status=400)
-
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except KeyError as e:
+        return JsonResponse({'error': f'Missing required field: {e}'}, status=400)
+    except Exception as e:
+        # Log the error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error reordering steps for plan {plan_id}: {e}")
+        
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 @login_required
 def suggest_plan(request, content_type, object_id):

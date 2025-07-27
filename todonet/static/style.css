@@ -582,102 +582,6 @@ To add
     margin: 0 0 2px;
 }
 
-/* DETAILS */
-details {
-    /* margin: 2px 10px; */
-    padding: 4px 0px 4px 6px;
-    border-radius: 20px;
-}
-
-details summary::-webkit-details-marker {
-    background: var(--bg-light);
-    text-decoration: none !important;
-}
-details summary::marker {
-    background: var(--bg-light);
-    text-decoration: none !important;
-    text-decoration-line: none !important;
-}
-details[open] {
-    border: solid #272b41 4px;
-    padding-left: 0px;
-    margin: 0px 13px 10px 13px;
-    padding-top: 0px;
-    border-radius: 10px;
-    margin: 5px 0px;
-    background-color: var(--bg-color2);
-}
-
-details[open] p, details[open] a, details[open] h4, details[open] i{
-    padding-left: 0.5rem;
-}
-details summary {
-
-    cursor: pointer;
-    padding: 2px 6px;
-    width: auto;
-    border: none;
-    padding: 3px 4px;
-    color: var(--text);
-}
-details[open] summary {
-    background-color: var(--bg-color);
-    /* font-weight: 800; */
-    padding: 0px;
-    border: solid #272b41 3px;
-    padding-left: 0px;
-    font-weight: 800;
-    padding-left: 0px !important;
-}
-details[open] summary:hover {
-    text-decoration: none;
-}
-details summary>* {
-    display: inline;
-}
-details[open] summary b {
-    color: var(--highlight);
-}
-details i {
-    color: var(--text2ndary);
-}
-details p {
-    padding: 4px 9px;
-    margin: 0;
-}
-
-details[open] .subdet summary {
-    cursor: pointer;
-    padding: 2px 6px;
-    width: auto;
-    border: none;
-    padding: 3px 4px;
-    color: var(--text2ndary);
-    background-color: transparent;
-}
-
-details[open] .subdet[open] {
-    border: solid #272b41 4px;
-    padding-left: 0px;
-    margin: 0px 13px 10px 13px;
-    padding-top: 0px;
-    border-radius: 10px;
-    background-color: var(--bg-color3);
-}
-
-details[open] .subdet[open] summary {
-    background-color: var(--bg-color);
-    /* font-weight: 800; */
-    padding: 0px;
-    border: solid #272b41 3px;
-    padding-left: 0px;
-    font-weight: 800;
-    color: var(--text);
-}
-
-details[open] .iconbar{
-    padding: 1px 3px;
-}
 
 
 
@@ -1997,7 +1901,6 @@ input, textarea {
    .child-card:hover {
     border-color:var(--highlight);
     border: var(--highlight) solid 2px;
-    box-shadow: 0 4px 18px 0 rgba(0, 0, 0, 0.25);
    }
    
    .child-card:hover .card-button {

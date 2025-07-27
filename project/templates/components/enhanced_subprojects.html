@@ -151,7 +151,7 @@
         
         <div class="projects-grid children-grid">
             {% for project in child_projects %}
-            <div class="project-card child-card">
+            <div class="project-card child-card" style="border-color: var(--confirm)">
                 <div class="card-header">
                     <div class="project-type-badge child">
                         <i class="material-icons">keyboard_arrow_down</i>
@@ -486,9 +486,6 @@
     border-color: var(--information);
 }
 
-.child-card {
-    border-color: var(--confirm);
-}
 
 /* Connection Lines */
 .connection-line-to-main {

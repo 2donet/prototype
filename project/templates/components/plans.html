@@ -125,16 +125,7 @@
         <h6>No Plans Suggested Yet</h6>
         <p>This project doesn't have any <strong>approved plan suggestions</strong> yet.</p>
         
-        <!-- Debug info for development -->
-        <div class="debug-info" style="background: var(--bg-color2); padding: 15px; border-radius: 4px; margin: 15px 0; font-size: 0.85em;">
-            <strong>How it works:</strong>
-            <ol style="margin: 10px 0; padding-left: 20px; color: var(--text2ndary);">
-                <li>Create a plan OR use existing plan</li>
-                <li><strong>Suggest it for this project</strong> (this step might be missing!)</li>
-                <li>Project admin approves the suggestion</li>
-                <li>Plan appears here</li>
-            </ol>
-        </div>
+
         
         <div class="empty-actions">
             <a href="{% url 'plans:create_plan' %}" class="btn waves-effect waves-light">
@@ -241,7 +232,6 @@
 
 .plan-status.chip.green {
     background-color: var(--confirm);
-    color: var(--bg-color);
 }
 
 .plan-description {

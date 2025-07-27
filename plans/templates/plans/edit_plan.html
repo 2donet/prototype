@@ -64,9 +64,9 @@
             </span>
             
             {% if plan.steps.all %}
-            <div class="collection">
+            <div id="steps-container" class="collection">
                 {% for step in plan.steps.all %}
-                <div class="collection-item">
+                <div class="collection-item" data-step-id="{{ step.id }}">
                     <div class="step-content">
                         <span class="step-number">{{ forloop.counter }}</span>
                         <div class="step-details">
@@ -82,6 +82,16 @@
                             <a href="{% url 'plans:delete_step' plan.id step.id %}" class="btn-small red waves-effect">
                                 <i class="material-icons">delete</i>
                             </a>
+                            {% if not forloop.first %}
+                            <button class="btn-small waves-effect move-up" data-step-id="{{ step.id }}">
+                                <i class="material-icons">keyboard_arrow_up</i>
+                            </button>
+                            {% endif %}
+                            {% if not forloop.last %}
+                            <button class="btn-small waves-effect move-down" data-step-id="{{ step.id }}">
+                                <i class="material-icons">keyboard_arrow_down</i>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -117,6 +127,7 @@
     font-weight: bold;
     margin-right: 15px;
     flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
 .step-details {
@@ -139,6 +150,25 @@
     padding: 0 8px;
     height: 30px;
     line-height: 30px;
+    transition: all 0.2s ease;
+}
+
+.step-actions .btn-small:hover {
+    transform: scale(1.05);
+}
+
+
+/* Ensure buttons are not disabled */
+.step-actions button {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.step-actions button:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: not-allowed;
 }
 
 .card-action {
@@ -170,6 +200,35 @@
     transform: scale(1.05);
 }
 
+/* Animation for step reordering */
+.collection-item {
+    transition: all 0.3s ease;
+}
+
+.collection-item.moving {
+    background-color: var(--bg-color2);
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Visual feedback for reordering */
+.step-reorder-feedback {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--confirm);
+    color: var(--bg-color);
+    padding: 10px 15px;
+    border-radius: 4px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.step-reorder-feedback.show {
+    opacity: 1;
+}
+
 @media (max-width: 600px) {
     .card-action {
         flex-direction: column;
@@ -188,26 +247,99 @@
         padding-top: 15px;
         text-align: center;
     }
+    
+    .step-actions {
+        flex-wrap: wrap;
+        gap: 3px;
+    }
+    
+    .step-actions .btn-small {
+        padding: 0 6px;
+        height: 28px;
+        line-height: 28px;
+        font-size: 0.8rem;
+    }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Materialize components
-    M.updateTextFields();
-    M.textareaAutoResize(document.querySelectorAll('textarea'));
-    
-    // Add confirmation for delete button
-    const deleteBtn = document.querySelector('a[href*="delete"]');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            if (confirm('Are you sure you want to delete "{{ plan.name|escapejs }}"?\n\nThis will permanently remove the plan and all its steps.')) {
-                window.location.href = this.href;
+    const moveUpButtons = document.querySelectorAll('.move-up');
+    const moveDownButtons = document.querySelectorAll('.move-down');
+
+    moveUpButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const stepId = this.dataset.stepId;
+            moveStep(stepId, 'up');
+        });
+    });
+
+    moveDownButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const stepId = this.dataset.stepId;
+            moveStep(stepId, 'down');
+        });
+    });
+
+    function moveStep(stepId, direction) {
+        const stepItems = Array.from(document.querySelectorAll('.collection-item'));
+        const currentItem = stepItems.find(item => item.dataset.stepId === stepId);
+        const currentIndex = stepItems.indexOf(currentItem);
+
+        let newIndex;
+        if (direction === 'up' && currentIndex > 0) {
+            newIndex = currentIndex - 1;
+        } else if (direction === 'down' && currentIndex < stepItems.length - 1) {
+            newIndex = currentIndex + 1;
+        } else {
+            return;
+        }
+
+        const container = document.getElementById('steps-container');
+        if (direction === 'up') {
+            container.insertBefore(currentItem, stepItems[currentIndex - 1]);
+        } else {
+            container.insertBefore(stepItems[currentIndex + 1], currentItem);
+        }
+
+        updateStepOrders();
+    }
+
+    function updateStepOrders() {
+        const stepItems = document.querySelectorAll('.collection-item');
+        const stepOrders = [];
+
+        stepItems.forEach((item, index) => {
+            stepOrders.push({
+                id: parseInt(item.dataset.stepId),
+                order: index + 1
+            });
+        });
+
+        const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        const csrfToken = csrfTokenInput ? csrfTokenInput.value : window.csrfToken;
+
+        fetch(`{% url 'plans:reorder_steps' plan.id %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(stepOrders)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.error('Failed to update step orders');
+                location.reload(); // fallback
             }
+        })
+        .catch(error => {
+            console.error('Error updating step orders:', error);
+            location.reload();
         });
     }
 });
 </script>
+
 {% endblock %}
