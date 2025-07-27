@@ -5,7 +5,7 @@ from django.urls import path, reverse
 from django.db.models import Prefetch, Count, Q
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from comment.models import Comment
+from comment.models import Comment, CommentStatus
 from decisions.models import Decision
 from user.models import Membership, UserProfile, Post
 from project.models import Project, Membership as ProjectMembership
@@ -97,8 +97,11 @@ def userprofile(request, user_id):
     all_user_projects.sort(key=lambda x: x.id, reverse=True)
     
     # ==== COMMENTS DATA ====
-    # Get user's comments with context
-    user_comments = Comment.objects.filter(user=user).select_related(
+    # Get user's approved comments with context
+    user_comments = Comment.objects.filter(
+        user=user,
+        status=CommentStatus.APPROVED  # Only show approved comments
+    ).select_related(
         'user',
         'to_project',
         'to_task',
@@ -112,7 +115,7 @@ def userprofile(request, user_id):
         if comment.to_project:
             comment.context_type = "project"
             comment.context_name = comment.to_project.name
-            comment.context_url = f"/project/{comment.to_project.id}/"
+            comment.context_url = f"/{comment.to_project.id}/"
         elif comment.to_task:
             comment.context_type = "task"
             comment.context_name = comment.to_task.name
