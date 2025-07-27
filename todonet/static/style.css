@@ -3900,3 +3900,30 @@ nav ul li a {
     background-color: var(--information);
     border: 1px solid var(--bg-color3);
 }
+
+
+/* buttons styling */
+.btn-small.waves-effect.grey {
+    background-color: var(--bg-color3) !important;
+    color: var(--text2ndary) !important;
+}
+.btn-small.waves-effect.blue {
+    background-color: var(--highlight) !important;
+    color: var(--bg-color) !important;
+}
+
+.btn.waves-effect.waves-light{
+    background-color: var(--highlight) !important;
+    color: var(--bg-color) !important;
+
+}
+.messages-header, .start-conversation-form, .contentBASE{
+
+    & i.material-icons{
+        color: var(--bg-color) !important;
+    }
+}
+
+.project-type-badge.main span  {
+            color: var(--bg-color) !important;
+}

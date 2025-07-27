@@ -28,15 +28,15 @@
                 <div class="sort-controls">
                     <span>Sort by:</span>
                     <a href="?sort_by=recent{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
-                       class="btn-small waves-effect {% if sort_by == 'recent' %}blue{% else %}grey lighten-2{% endif %}">
+                       class="btn-small waves-effect {% if sort_by == 'recent' %}blue{% else %}grey{% endif %}">
                         Recent
                     </a>
                     <a href="?sort_by=oldest{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
-                       class="btn-small waves-effect {% if sort_by == 'oldest' %}blue{% else %}grey lighten-2{% endif %}">
+                       class="btn-small waves-effect {% if sort_by == 'oldest' %}blue{% else %}grey{% endif %}">
                         Oldest
                     </a>
                     <a href="?sort_by=unread{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}" 
-                       class="btn-small waves-effect {% if sort_by == 'unread' %}blue{% else %}grey lighten-2{% endif %}">
+                       class="btn-small waves-effect {% if sort_by == 'unread' %}blue{% else %}grey{% endif %}">
                         Unread
                     </a>
                 </div>

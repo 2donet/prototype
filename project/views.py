@@ -243,7 +243,7 @@ def project(request, project_id):
     needs = Need.objects.filter(to_project=project_id).order_by('-priority', 'id')
     
     # Load comments with filtering based on user permissions
-    comment_filter = Q(to_project=content.id, parent__isnull=True)
+    comment_filter = Q(to_project=content.id, parent__isnull=True) & ~Q(status=CommentStatus.THREAD_DELETED)
     
     # Filter comments based on user role
     if can_moderate_project(request.user, content):
