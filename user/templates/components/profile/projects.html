@@ -1,100 +1,199 @@
-                <div class="projects-grid">
-                    <!-- Example project 1 -->
-                    <div class="card project-card">
-                        <div class="card-content">
-                            <span class="card-title">Comment System Overhaul</span>
-                            <p class="project-summary">Redesigning the comment system with improved moderation tools, reaction support, and threaded conversations.</p>
-                            
-                            <div class="project-meta">
-                                <div class="project-stat">
-                                    <i class="material-icons">group</i>
-                                    <span>8</span>
-                                </div>
-                                <div class="project-stat">
-                                    <i class="material-icons">comment</i>
-                                    <span>42</span>
-                                </div>
-                                <div class="project-stat">
-                                    <i class="material-icons">assignment</i>
-                                    <span>15</span>
-                                </div>
-                            </div>
-                            
-                            <div class="project-skills">
-                                <span class="chip">Django</span>
-                                <span class="chip">JavaScript</span>
-                                <span class="chip">UI/UX</span>
-                            </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="#" class="btn-flat waves-effect">View Project</a>
-                            <span class="project-role">Project Lead</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Example project 2 -->
-                    <div class="card project-card">
-                        <div class="card-content">
-                            <span class="card-title">Task Management Dashboard</span>
-                            <p class="project-summary">Building an intuitive dashboard for tracking project tasks, deadlines, and team member assignments.</p>
-                            
-                            <div class="project-meta">
-                                <div class="project-stat">
-                                    <i class="material-icons">group</i>
-                                    <span>5</span>
-                                </div>
-                                <div class="project-stat">
-                                    <i class="material-icons">comment</i>
-                                    <span>27</span>
-                                </div>
-                                <div class="project-stat">
-                                    <i class="material-icons">assignment</i>
-                                    <span>12</span>
-                                </div>
-                            </div>
-                            
-                            <div class="project-skills">
-                                <span class="chip">React</span>
-                                <span class="chip">Python</span>
-                                <span class="chip">UX Research</span>
-                            </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="#" class="btn-flat waves-effect">View Project</a>
-                            <span class="project-role">Contributor</span>
+{% load humanize %}
+
+<div class="projects-section">
+    {% if user_projects %}
+        <div class="projects-header">
+            <h6>
+                <i class="material-icons left">work</i>
+                Projects ({{ total_projects }})
+            </h6>
+            <div class="projects-filter">
+                <span class="filter-item active" data-filter="all">All ({{ total_projects }})</span>
+                <span class="filter-item" data-filter="created">Created ({{ created_projects_count }})</span>
+                <span class="filter-item" data-filter="member">Member ({{ member_projects_count }})</span>
+            </div>
+        </div>
+
+        <div class="projects-grid">
+            {% for project in user_projects %}
+            <div class="card project-card" data-type="{{ project.user_role_type }}">
+                <div class="card-content">
+                    <div class="project-header">
+                        <span class="card-title">
+                            <a href="/{{ project.id }}/" class="project-link">{{ project.name }}</a>
+                        </span>
+                        <div class="project-status">
+                            {% if project.status %}
+                                <span class="status-badge status-{{ project.status }}">{{ project.get_status_display }}</span>
+                            {% endif %}
+                            {% if project.visibility == 'private' %}
+                                <i class="material-icons tiny private-icon" title="Private Project">lock</i>
+                            {% elif project.visibility == 'restricted' %}
+                                <i class="material-icons tiny restricted-icon" title="Restricted Project">group</i>
+                            {% endif %}
                         </div>
                     </div>
                     
-                    <!-- Example project 3 -->
-                    <div class="card project-card">
-                        <div class="card-content">
-                            <span class="card-title">User Authentication System</span>
-                            <p class="project-summary">Implementing a secure authentication system with multi-factor authentication and OAuth integration.</p>
-                            
-                            <div class="project-meta">
-                                <div class="project-stat">
-                                    <i class="material-icons">group</i>
-                                    <span>3</span>
-                                </div>
-                                <div class="project-stat">
-                                    <i class="material-icons">comment</i>
-                                    <span>18</span>
-                                </div>
-                                <div class="project-stat">
-                                    <i class="material-icons">assignment</i>
-                                    <span>9</span>
-                                </div>
-                            </div>
-                            
-                            <div class="project-skills">
-                                <span class="chip">Security</span>
-                                <span class="chip">Django</span>
-                                <span class="chip">API</span>
-                            </div>
+                    <p class="project-summary">
+                        {{ project.summary|default:"No summary provided"|truncatechars:120 }}
+                    </p>
+                    
+                    <div class="project-meta">
+                        <div class="project-stat" title="Members">
+                            <i class="material-icons">group</i>
+                            <span>{{ project.member_count|default:0 }}</span>
                         </div>
-                        <div class="card-action">
-                            <a href="#" class="btn-flat waves-effect">View Project</a>
-                            <span class="project-role">Developer</span>
+                        <div class="project-stat" title="Comments">
+                            <i class="material-icons">comment</i>
+                            <span>{{ project.comment_count|default:0 }}</span>
                         </div>
+                        <div class="project-stat" title="Tasks">
+                            <i class="material-icons">assignment</i>
+                            <span>{{ project.task_count|default:0 }}</span>
+                        </div>
+                        {% if project.area %}
+                        <div class="project-area" title="Area">
+                            <i class="material-icons">place</i>
+                            <span>{{ project.area }}</span>
+                        </div>
+                        {% endif %}
                     </div>
+                    
+                    {% if project.skills.all %}
+                    <div class="project-skills">
+                        {% for skill in project.skills.all|slice:":5" %}
+                            <span class="chip">{{ skill.name }}</span>
+                        {% endfor %}
+                        {% if project.skills.count > 5 %}
+                            <span class="chip more-skills">+{{ project.skills.count|add:"-5" }} more</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
+                <div class="card-action">
+                    <a href="/{{ project.id }}/" class="btn-flat waves-effect project-view-btn">
+                        <i class="material-icons left">visibility</i>View Project
+                    </a>
+                    <span class="project-role role-{{ project.user_role_type }}">{{ project.user_role }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if total_projects > 6 %}
+        <div class="projects-pagination">
+            <a href="#" class="btn-flat waves-effect load-more-projects">
+                <i class="material-icons left">expand_more</i>Load More Projects
+            </a>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <!-- Empty state -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="material-icons">work_off</i>
+            </div>
+            <h6>No Projects Yet</h6>
+            <p>
+                {% if is_own_profile %}
+                    You haven't created or joined any projects yet.
+                    <a href="/create/" class="highlight-link">Create your first project</a> to get started!
+                {% else %}
+                    {{ user.username }} hasn't created or joined any projects yet.
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Project filtering functionality
+    const filterItems = document.querySelectorAll('.filter-item');
+    const projectCards = document.querySelectorAll('.project-card');
+    
+    filterItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+            
+            // Update active filter
+            filterItems.forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter projects
+            projectCards.forEach(card => {
+                const cardType = card.getAttribute('data-type');
+                
+                if (filter === 'all') {
+                    card.style.display = 'block';
+                } else if (filter === 'created' && cardType === 'creator') {
+                    card.style.display = 'block';
+                } else if (filter === 'member' && cardType !== 'creator') {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Load more projects functionality (if needed)
+    const loadMoreBtn = document.querySelector('.load-more-projects');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Implement AJAX loading of more projects if needed
+            console.log('Load more projects clicked');
+        });
+    }
+});
+</script>
+<style>
+
+
+.projects-filter {
+    display: flex;
+    gap: 15px;
+}
+.filter-item:hover,
+.filter-item.active {
+    color: var(--highlight);
+    background-color: var(--bg-color3);
+}
+
+.filter-item {
+    color: var(--text2ndary);
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+
+
+.projects-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--bg-color3);
+}
+
+.projects-header h6 {
+    color: var(--text);
+    margin: 0;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+}
+
+.projects-header h6 i.material-icons {
+    color: var(--highlight);
+    margin-right: 8px;
+}
+
+</style>

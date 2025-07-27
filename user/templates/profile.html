@@ -1,5 +1,41 @@
 {% extends "base.html" %}
 {% block title %}{{ user.username }} | Profile {% endblock %}
+
+{% block extra_css %}
+<style>
+
+.profile-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-detail {
+    display: flex;
+    align-items: center;
+    color: var(--text2ndary);
+    font-size: 0.95rem;
+}
+
+.profile-detail i {
+    margin-right: 12px;
+    color: var(--highlight) !important;
+    font-size: 18px;
+}
+
+.profile-detail a {
+    color: var(--highlight);
+    text-decoration: none;
+}
+
+.profile-detail a:hover {
+    text-decoration: underline;
+}
+
+
+</style>
+{% endblock %}
+
 {% block content %}
 {% load static %}
 {% load humanize %}
@@ -7,7 +43,7 @@
 <div class="profile-container">
     <!-- Profile Header with Background Image -->
     <div class="profile-header">
-        <div class="profile-cover" style="background-image: url('/static/images/default-cover.jpg');">
+        <div class="profile-cover" style="background: linear-gradient(135deg, var(--bg-color2) 0%, var(--bg-color3) 100%);">
         <div class="profile-avatar-container">
             {% if user_profile.avatar %}
                 <img class="profile-avatar" src="{{ user_profile.avatar.url }}" alt="{{ user.username }}">
@@ -19,24 +55,24 @@
         
         <div class="profile-header-content">
             <div class="profile-info">
-                <h1 class="profile-name">{{ user.username|default:"JaneDoe123" }}</h1>
-                <p class="profile-tagline">{{ user_profile.tagline|default:"Full Stack Developer | Open Source Enthusiast" }}</p>
+                <h1 class="profile-name">{{ user.username }}</h1>
+                <p class="profile-tagline">{{ user_profile.bio|default:"Member of the 2do.net community" }}</p>
                 
                 <div class="profile-stats">
                     <div class="stat">
-                        <span class="stat-value">{{ user_profile.total_projects|default:"12" }}</span>
+                        <span class="stat-value">{{ total_projects }}</span>
                         <span class="stat-label">Projects</span>
                     </div>
                     <div class="stat">
-                        <span class="stat-value">{{ user_profile.total_tasks|default:"47" }}</span>
+                        <span class="stat-value">{{ total_tasks }}</span>
                         <span class="stat-label">Tasks</span>
                     </div>
                     <div class="stat">
-                        <span class="stat-value">{{ user_profile.total_comments|default:"153" }}</span>
+                        <span class="stat-value">{{ total_comments }}</span>
                         <span class="stat-label">Comments</span>
                     </div>
                     <div class="stat">
-                        <span class="stat-value">{{ user_profile.join_date|default:"2 months ago" }}</span>
+                        <span class="stat-value">{{ join_date|timesince }} ago</span>
                         <span class="stat-label">Joined</span>
                     </div>
                 </div>
@@ -65,28 +101,32 @@
             <div class="card">
                 <div class="card-content">
                     <span class="card-title">About</span>
-                    <p class="profile-bio">{{ user_profile.bio|default:"Software developer with 5+ years of experience in web development. Passionate about open-source projects and building tools that help people collaborate more effectively. Currently working on improving collaborative project management systems." }}</p>
+                    <p class="profile-bio">{{ user_profile.bio|default:"This user hasn't added a bio yet." }}</p>
                     
                     <div class="profile-details">
+                        {% if user_profile.location %}
                         <div class="profile-detail">
                             <i class="material-icons">location_on</i>
-                            <span>{{ user_profile.location|default:"Warsaw, Poland" }}</span>
+                            <span>{{ user_profile.location }}</span>
                         </div>
+                        {% endif %}
                         
+                        {% if user_profile.website %}
                         <div class="profile-detail">
                             <i class="material-icons">link</i>
-                            <a href="{{ user_profile.website|default:'https://github.com/janedoe' }}" target="_blank" rel="noopener">{{ user_profile.website|default:"github.com/janedoe" }}</a>
+                            <a href="{{ user_profile.website }}" target="_blank" rel="noopener">{{ user_profile.website }}</a>
                         </div>
+                        {% endif %}
                         
                         <div class="profile-detail">
                             <i class="material-icons">calendar_today</i>
-                            <span>Member since {{ user.date_joined|default:"January 2024" }}</span>
+                            <span>Member since {{ user.date_joined|date:"F Y" }}</span>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Skills Section -->
+            <!-- Skills Section - PLACEHOLDER -->
             <div class="card">
                 <div class="card-content">
                     <span class="card-title">Skills</span>
@@ -185,7 +225,7 @@
                 </div>
             </div>
             
-            <!-- Badges & Achievements -->
+            <!-- Badges & Achievements - PLACEHOLDER -->
             <div class="card">
                 <div class="card-content">
                     <span class="card-title">Badges & Achievements</span>
@@ -223,39 +263,34 @@
             <!-- Tabs Navigation -->
             <div class="profile-tabs-container">
                 <ul class="tabs profile-tabs">
-                    <li class="tab"><a class="active" href="#activity">Activity</a></li>
-                    <li class="tab"><a href="#projects">Projects</a></li>
-                    <li class="tab"><a href="#posts">Posts</a></li>
-                    <li class="tab"><a href="#comments">Comments</a></li>
+                    <li class="tab"><a href="#profile-activity">Activity</a></li>
+                    <li class="tab"><a href="#profile-projects">Projects</a></li>
+                    <li class="tab"><a href="#profile-posts">Posts</a></li>
+                    <li class="tab"><a href="#profile-comments">Comments</a></li>
                 </ul>
             </div>
             
-            <!-- Activity Tab -->
-            <div id="activity" class="tab-content">
+            <!-- Activity Tab - PLACEHOLDER -->
+            <div id="profile-activity" class="profile-tab-content">
                 {%include "components/profile/activity.html" %}
-
             </div>
             
-            <!-- Projects Tab -->
-            <div id="projects" class="tab-content">
+            <!-- Projects Tab - REAL DATA -->
+            <div id="profile-projects" class="profile-tab-content">
                 {% include "components/profile/projects.html" %}
-                
-                
             </div>
             
             <!-- Posts Tab -->
-            <div id="posts" class="tab-content">
+            <div id="profile-posts" class="profile-tab-content">
                 {% include "components/profile/posts.html" %}
             </div>
             
-            <!-- Comments Tab -->
-            <div id="comments" class="tab-content">
+            <!-- Comments Tab - REAL DATA -->
+            <div id="profile-comments" class="profile-tab-content">
                 {% include "components/profile/comments.html" %}
             </div>
         </div>
     </div>
 </div>
-
-
 
 {% endblock %}

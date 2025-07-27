@@ -1,94 +1,515 @@
-                <div class="comments-container">
-                    <div class="comments-filters">
-                        <div class="input-field inline">
-                            <select id="comment-sort">
-                                <option value="newest">Newest First</option>
-                                <option value="oldest">Oldest First</option>
-                                <option value="most_liked">Most Liked</option>
-                            </select>
-                            <label for="comment-sort">Sort By</label>
+{% load humanize %}
+
+<div class="comments-section">
+    {% if user_comments %}
+        <div class="comments-header">
+            <h6>
+                <i class="material-icons left">comment</i>
+                Recent Comments ({{ total_comments }})
+            </h6>
+            <div class="comments-stats">
+                <span class="stat-item">{{ user_comments.paginator.count }} total</span>
+                {% if user_comments.has_other_pages %}
+                <span class="stat-item">Page {{ user_comments.number }} of {{ user_comments.paginator.num_pages }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="comments-list">
+            {% for comment in user_comments %}
+            <div class="comment-item">
+                <div class="comment-header">
+                    <div class="comment-context">
+                        <i class="material-icons context-icon">
+                            {% if comment.context_type == 'project' %}
+                                work
+                            {% elif comment.context_type == 'task' %}
+                                assignment
+                            {% elif comment.context_type == 'need' %}
+                                help_outline
+                            {% else %}
+                                chat_bubble
+                            {% endif %}
+                        </i>
+                        <div class="context-info">
+                            <span class="context-type">{{ comment.context_type|title }}</span>
+                            <a href="{{ comment.context_url }}" class="context-link">{{ comment.context_name }}</a>
+                            {% if comment.project_name and comment.context_type != 'project' %}
+                                <span class="project-context">in {{ comment.project_name }}</span>
+                            {% endif %}
                         </div>
                     </div>
-                    
-                    <!-- Example comments -->
-                    <div class="card comment-card">
-                        <div class="card-content">
-                            <div class="comment-header">
-                                <span class="comment-context">
-                                    On <a href="#">Comment System Overhaul</a>
-                                </span>
-                                <span class="comment-date">2 days ago</span>
-                            </div>
-                            
-                            <p class="comment-content">I've been testing the new reaction feature and it works great! The emoji picker is intuitive and the animations are smooth. One suggestion: could we add the ability to see who reacted with each emoji?</p>
-                            
-                            <div class="comment-stats">
-                                <div class="comment-stat">
-                                    <i class="material-icons">thumb_up</i>
-                                    <span>8</span>
-                                </div>
-                                <div class="comment-stat">
-                                    <i class="material-icons">reply</i>
-                                    <span>3</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="#" class="btn-flat waves-effect">View Thread</a>
-                        </div>
-                    </div>
-                    
-                    <div class="card comment-card">
-                        <div class="card-content">
-                            <div class="comment-header">
-                                <span class="comment-context">
-                                    On <a href="#">Task Management Dashboard</a>
-                                </span>
-                                <span class="comment-date">5 days ago</span>
-                            </div>
-                            
-                            <p class="comment-content">The new Kanban view is excellent. It really helps to visualize the workflow and identify bottlenecks. I think we should make this the default view for all projects.</p>
-                            
-                            <div class="comment-stats">
-                                <div class="comment-stat">
-                                    <i class="material-icons">thumb_up</i>
-                                    <span>12</span>
-                                </div>
-                                <div class="comment-stat">
-                                    <i class="material-icons">reply</i>
-                                    <span>5</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="#" class="btn-flat waves-effect">View Thread</a>
-                        </div>
-                    </div>
-                    
-                    <div class="card comment-card">
-                        <div class="card-content">
-                            <div class="comment-header">
-                                <span class="comment-context">
-                                    On <a href="#">Building Effective User Authentication Systems</a>
-                                </span>
-                                <span class="comment-date">1 week ago</span>
-                            </div>
-                            
-                            <p class="comment-content">Great article! I've implemented something similar using Django's authentication system. One thing worth mentioning is the importance of rate limiting login attempts to prevent brute force attacks.</p>
-                            
-                            <div class="comment-stats">
-                                <div class="comment-stat">
-                                    <i class="material-icons">thumb_up</i>
-                                    <span>15</span>
-                                </div>
-                                <div class="comment-stat">
-                                    <i class="material-icons">reply</i>
-                                    <span>2</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-action">
-                            <a href="#" class="btn-flat waves-effect">View Thread</a>
-                        </div>
+                    <div class="comment-meta">
+                        <span class="comment-date" title="{{ comment.created_at }}">
+                            {{ comment.created_at|timesince }} ago
+                        </span>
+                        {% if comment.updated_at != comment.created_at %}
+                            <span class="comment-edited" title="Last edited {{ comment.updated_at }}">
+                                (edited)
+                            </span>
+                        {% endif %}
                     </div>
                 </div>
+                
+                <div class="comment-content">
+                    <div class="comment-text">
+                        {{ comment.content|linebreaks|truncatechars:300 }}
+                        {% if comment.content|length > 300 %}
+                            <a href="{{ comment.context_url }}#comment-{{ comment.id }}" class="read-more">Read more</a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="comment-actions">
+                    <a href="{{ comment.context_url }}#comment-{{ comment.id }}" class="btn-flat waves-effect comment-action">
+                        <i class="material-icons left">visibility</i>View
+                    </a>
+                    
+                    {% if comment.votes.count > 0 %}
+                    <span class="comment-votes">
+                        <i class="material-icons">thumb_up</i>
+                        {{ comment.votes.count }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if comment.replies.count > 0 %}
+                    <span class="comment-replies">
+                        <i class="material-icons">reply</i>
+                        {{ comment.replies.count }} repl{{ comment.replies.count|pluralize:"y,ies" }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if comment.status and comment.status != 'approved' %}
+                    <span class="comment-status status-{{ comment.status }}">
+                        {{ comment.get_status_display }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if user_comments.has_other_pages %}
+        <div class="comments-pagination">
+            <div class="pagination-controls">
+                {% if user_comments.has_previous %}
+                    <a href="?comments_page={{ user_comments.previous_page_number }}#comments" 
+                       class="btn-flat waves-effect pagination-btn">
+                        <i class="material-icons left">chevron_left</i>Previous
+                    </a>
+                {% endif %}
+                
+                <span class="pagination-info">
+                    Page {{ user_comments.number }} of {{ user_comments.paginator.num_pages }}
+                </span>
+                
+                {% if user_comments.has_next %}
+                    <a href="?comments_page={{ user_comments.next_page_number }}#comments" 
+                       class="btn-flat waves-effect pagination-btn">
+                        Next<i class="material-icons right">chevron_right</i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <!-- Empty state -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="material-icons">comment</i>
+            </div>
+            <h6>No Comments Yet</h6>
+            <p>
+                {% if is_own_profile %}
+                    You haven't made any comments yet. Start engaging with the community by commenting on projects, tasks, or needs!
+                {% else %}
+                    {{ user.username }} hasn't made any comments yet.
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+/* Comments Section Styles */
+.comments-section {
+    width: 100%;
+}
+
+.comments-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--bg-color3);
+}
+
+.comments-header h6 {
+    color: var(--text);
+    margin: 0;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+}
+
+.comments-header h6 i {
+    color: var(--highlight);
+    margin-right: 8px;
+}
+
+.comments-stats {
+    display: flex;
+    gap: 15px;
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+}
+
+.stat-item {
+    padding: 4px 8px;
+    background-color: var(--bg-color3);
+    border-radius: 4px;
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.comment-item {
+    background-color: var(--bg-color3);
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.comment-item:hover {
+    border-color: var(--highlight);
+    background-color: var(--bg-light);
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.comment-context {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.context-icon {
+    color: var(--highlight);
+    font-size: 20px;
+}
+
+.context-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.context-type {
+    color: var(--text2ndary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.context-link {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.context-link:hover {
+    color: var(--highlight);
+}
+
+.project-context {
+    color: var(--text2ndary);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.comment-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.comment-date {
+    color: var(--text2ndary);
+    font-size: 0.85rem;
+}
+
+.comment-edited {
+    color: var(--warning);
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+.comment-content {
+    margin-bottom: 15px;
+}
+
+.comment-text {
+    color: var(--text);
+    line-height: 1.6;
+    word-wrap: break-word;
+}
+
+.comment-text p {
+    margin-bottom: 10px;
+}
+
+.comment-text p:last-child {
+    margin-bottom: 0;
+}
+
+.read-more {
+    color: var(--highlight);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-left: 8px;
+}
+
+.read-more:hover {
+    text-decoration: underline;
+}
+
+.comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.comment-action {
+    color: var(--highlight);
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.comment-action:hover {
+    background-color: var(--bg-color);
+}
+
+.comment-votes,
+.comment-replies {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text2ndary);
+    font-size: 0.85rem;
+}
+
+.comment-votes i,
+.comment-replies i {
+    font-size: 16px;
+}
+
+.comment-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background-color: var(--warning);
+    color: var(--highlightdark);
+}
+
+.status-approved {
+    background-color: var(--confirm);
+    color: var(--highlightdark);
+}
+
+.status-rejected {
+    background-color: var(--danger);
+    color: white;
+}
+
+.status-flagged {
+    background-color: var(--risk);
+    color: white;
+}
+
+/* Pagination */
+.comments-pagination {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--bg-color3);
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pagination-btn {
+    color: var(--highlight);
+    border: 1px solid var(--bg-color3);
+    border-radius: 4px;
+    padding: 8px 16px;
+}
+
+.pagination-btn:hover {
+    background-color: var(--bg-color3);
+}
+
+.pagination-info {
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text2ndary);
+}
+
+.empty-icon {
+    margin-bottom: 20px;
+}
+
+.empty-icon i {
+    font-size: 4rem;
+    color: var(--bg-color3);
+}
+
+.empty-state h6 {
+    color: var(--text);
+    margin-bottom: 15px;
+}
+
+.empty-state p {
+    line-height: 1.6;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .comments-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .comments-stats {
+        gap: 10px;
+    }
+    
+    .comment-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .comment-meta {
+        align-items: flex-start;
+    }
+    
+    .pagination-controls {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .pagination-info {
+        order: -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .comment-item {
+        padding: 15px;
+    }
+    
+    .comment-context {
+        gap: 8px;
+    }
+    
+    .context-icon {
+        font-size: 18px;
+    }
+    
+    .comment-actions {
+        gap: 10px;
+    }
+    
+    .comment-action {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .stat-item {
+        font-size: 0.8rem;
+        padding: 3px 6px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Smooth scrolling for pagination links
+    const paginationLinks = document.querySelectorAll('a[href*="#comments"]');
+    
+    paginationLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+            const url = href.split('#')[0];
+            const anchor = href.split('#')[1];
+            
+            // Navigate to the new page
+            window.location.href = url;
+            
+            // Smooth scroll to anchor after page load
+            window.addEventListener('load', function() {
+                const target = document.getElementById(anchor);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    });
+    
+    // Comment text expansion for truncated content
+    const readMoreLinks = document.querySelectorAll('.read-more');
+    
+    readMoreLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Allow normal navigation to the comment
+            // This is just for any future enhancement needs
+        });
+    });
+    
+    // Add hover effects for better UX
+    const commentItems = document.querySelectorAll('.comment-item');
+    
+    commentItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>

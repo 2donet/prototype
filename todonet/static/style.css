@@ -3823,8 +3823,15 @@ nav ul li a {
 .messages-header, .start-conversation-form, .contentBASE{
 
     & i.material-icons{
-        color: var(--bg-color) !important;
+        color: var(--bg-color);
     }
+}
+
+.btn-flat i.material-icons, 
+.project-stat i.material-icons,
+
+.project-area i.material-icons{
+    color: var(--highlight);
 }
 
 .project-type-badge.main span  {
