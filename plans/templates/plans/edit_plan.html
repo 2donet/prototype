@@ -39,10 +39,17 @@
         </div>
         
         <div class="card-action">
-            <button type="submit" class="btn waves-effect waves-light">
-                <i class="material-icons left">save</i>Save Changes
-            </button>
-            <a href="{% url 'plans:plan_detail' plan.id %}" class="btn-flat waves-effect">Cancel</a>
+            <div class="action-group">
+                <button type="submit" class="btn waves-effect waves-light">
+                    <i class="material-icons left">save</i>Save Changes
+                </button>
+                <a href="{% url 'plans:plan_detail' plan.id %}" class="btn-flat waves-effect">Cancel</a>
+            </div>
+            <div class="danger-action">
+                <a href="{% url 'plans:delete_plan' plan.id %}" class="btn red waves-effect waves-light delete-btn">
+                    <i class="material-icons left">delete</i>Delete Plan
+                </a>
+            </div>
         </div>
     </form>
 
@@ -133,6 +140,55 @@
     height: 30px;
     line-height: 30px;
 }
+
+.card-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 20px 24px;
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.danger-action {
+    border-left: 1px solid var(--bg-color3);
+    padding-left: 15px;
+}
+
+.delete-btn {
+    transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+    background-color: var(--danger) !important;
+    transform: scale(1.05);
+}
+
+@media (max-width: 600px) {
+    .card-action {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 20px;
+    }
+    
+    .action-group {
+        justify-content: center;
+    }
+    
+    .danger-action {
+        border-left: none;
+        border-top: 1px solid var(--bg-color3);
+        padding-left: 0;
+        padding-top: 15px;
+        text-align: center;
+    }
+}
 </style>
 
 <script>
@@ -140,6 +196,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Materialize components
     M.updateTextFields();
     M.textareaAutoResize(document.querySelectorAll('textarea'));
+    
+    // Add confirmation for delete button
+    const deleteBtn = document.querySelector('a[href*="delete"]');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (confirm('Are you sure you want to delete "{{ plan.name|escapejs }}"?\n\nThis will permanently remove the plan and all its steps.')) {
+                window.location.href = this.href;
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
