@@ -20,7 +20,7 @@ urlpatterns = [
     
     # Project-specific plans view (without /p/ prefix as requested)
     path('<int:project_id>/plans/', project_plans, name='project_plans'),
-    path("plans/", include("plans.urls")),  # Plans app URLs - IMPORTANT: This must be BEFORE project.urls
+
     path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'favicon.ico', permanent=True)),
     path("messages/", include("messaging.urls")),
 ]
