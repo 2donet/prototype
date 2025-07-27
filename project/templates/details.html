@@ -75,13 +75,13 @@
     <i class="material-icons left">assignment</i>Apply Now
 </a>
 {% include "components/status.html" %}
-            <h5>Goal</h5>
+<h5>Goal</h5>
             <p>
                 Creating MVP/Prototype showcasing main idea which is splitting big pieces of work into smaller and smaller parts. 
             </p>
             {{content.desc | linebreaks}}
             
-            {% include "components/plan.html" %}
+            {% include "components/plans.html" %}
 
 
 
@@ -173,12 +173,14 @@
 <div class="card-content">
     <span class="card-title">👥 Project Members</span>
     {% if can_manage_members %}
-    <a href="{% url 'project:project_members' content.id %}" class="btn waves-effect waves-light blue">
-        <i class="material-icons left">group</i>Manage Members
-    </a>
-    <a href="{% url 'project:add_member' content.id %}" class="btn waves-effect waves-light green">
-        <i class="material-icons left">person_add</i>Add Member
-    </a>
+    <div class="right-align" style="margin-bottom: 20px;">
+        <a href="{% url 'project:project_members' content.id %}" class="btn waves-effect waves-light blue">
+            <i class="material-icons left">group</i>Manage Members
+        </a>
+        <a href="{% url 'project:add_member' content.id %}" class="btn waves-effect waves-light green">
+            <i class="material-icons left">person_add</i>Add Member
+        </a>
+    </div>
     {% endif %}
     
     <!-- Administrators group -->
@@ -194,7 +196,6 @@
                 {% for user in admin_users %}
                 <li class="user-item">
                     <div class="user-info">
-                        <!-- Fixed Avatar Handling -->
                         {% if user.profile.avatar %}
                             <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
                         {% else %}
@@ -217,7 +218,6 @@
                         <span class="user-menu-icon">⋮</span>
                     </div>
                     
-                    <!-- Dropdown menu -->
                     <ul id="admin-actions-{{ user.id }}" class="dropdown-content">
                         <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
                         <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
@@ -246,7 +246,6 @@
                 {% for user in moderator_users %}
                 <li class="user-item">
                     <div class="user-info">
-                        <!-- Fixed Avatar Handling -->
                         {% if user.profile.avatar %}
                             <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
                         {% else %}
@@ -269,7 +268,6 @@
                         <span class="user-menu-icon">⋮</span>
                     </div>
                     
-                    <!-- Dropdown menu -->
                     <ul id="mod-actions-{{ user.id }}" class="dropdown-content">
                         <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
                         <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
@@ -298,7 +296,6 @@
                 {% for user in contributor_users %}
                 <li class="user-item">
                     <div class="user-info">
-                        <!-- Fixed Avatar Handling -->
                         {% if user.profile.avatar %}
                             <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
                         {% else %}
@@ -321,7 +318,6 @@
                         <span class="user-menu-icon">⋮</span>
                     </div>
                 
-                    <!-- Dropdown menu -->
                     <ul id="contrib-actions-{{ user.id }}" class="dropdown-content">
                         <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
                         <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
@@ -337,7 +333,7 @@
         </div>
     </details>
     
-    <!-- Members/Supporters group -->
+    <!-- Members/Supporters group - Updated to match admin/moderator style -->
     <details>
         <summary class="user-group-summary">
             <span class="user-group-title">👥 Members</span>
@@ -350,7 +346,6 @@
                 {% for user in member_users %}
                 <li class="user-item">
                     <div class="user-info">
-                        <!-- Fixed Avatar Handling -->
                         {% if user.profile.avatar %}
                             <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
                         {% else %}
@@ -373,7 +368,6 @@
                         <span class="user-menu-icon">⋮</span>
                     </div>
                     
-                    <!-- Dropdown menu -->
                     <ul id="member-actions-{{ user.id }}" class="dropdown-content">
                         <li><a href="{% url 'user:userprofile' user.id %}">🧑 Profile</a></li>
                         <li><a href="{% url 'project:member_detail' content.id user.id %}">👥 Membership Details</a></li>
@@ -389,6 +383,181 @@
         </div>
     </details>
 </div>
+
+<style>
+.user-group-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: var(--bg-color3);
+    border-radius: 8px;
+    margin: 15px 0 10px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--highlight);
+}
+
+.user-group-summary:hover {
+    background: var(--bg-light);
+    transform: translateY(-2px);
+}
+
+.user-group-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-count {
+    background-color: var(--highlight);
+    color: var(--highlightdark);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    min-width: 30px;
+    text-align: center;
+}
+
+.user-group-content {
+    margin: 0 10px 15px 10px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+details[open] .user-group-content {
+    opacity: 1;
+    max-height: none;
+    margin: 10px 10px 20px 10px;
+}
+
+.user-group-desc {
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+    margin: 10px 0 15px 0;
+    line-height: 1.5;
+    padding: 10px;
+    background-color: var(--bg-color2);
+    border-radius: 6px;
+}
+
+.user-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    margin: 8px 0;
+    background-color: var(--bg-color3);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.user-item:hover {
+    background-color: var(--bg-light);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    object-fit: cover;
+    border: 2px solid var(--bg-color2);
+    border-radius: 50%;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+.user-joined {
+    color: var(--text2ndary);
+    font-size: 0.8rem;
+}
+
+.user-location {
+    color: var(--text2ndary);
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.user-actions {
+    position: relative;
+}
+
+.user-menu-icon {
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.user-menu-icon:hover {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.empty-list-message {
+    color: var(--text2ndary);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    background-color: var(--bg-light);
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+@media (max-width: 600px) {
+    .user-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .user-actions {
+        width: 100%;
+        text-align: right;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize dropdowns
+    var dropdowns = document.querySelectorAll('.dropdown-trigger');
+    M.Dropdown.init(dropdowns, {
+        constrainWidth: false,
+        coverTrigger: false,
+        alignment: 'right'
+    });
+});
+</script>
         </div>
 
 

@@ -68,7 +68,8 @@ INSTALLED_APPS = [
     'imagekit',
     'skills', 
     'rest_framework',
-    'messaging',  
+    'messaging', 
+    'plans',
 
 
 ]

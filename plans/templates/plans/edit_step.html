@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - Edit Step{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="/plans/">Plans</a> > 
+        <a href="{% url 'plans:plan_detail' plan.id %}">{{ plan.name }}</a> > 
+        Edit Step
+    </div>
+
+    <div class="header">
+        <h1>✏️ Edit Step</h1>
+        <p>Editing step in: <strong>{{ plan.name }}</strong></p>
+    </div>
+
+    <form method="post" class="card">
+        {% csrf_token %}
+        <div class="card-content">
+            
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="name" type="text" name="name" required maxlength="200" value="{{ step.name }}">
+                    <label for="name" class="active">Step Name *</label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="desc" name="desc" class="materialize-textarea">{{ step.desc }}</textarea>
+                    <label for="desc" class="active">Step Description</label>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="card-action">
+            <button type="submit" class="btn waves-effect waves-light">
+                <i class="material-icons left">save</i>Save Changes
+            </button>
+            <a href="{% url 'plans:plan_detail' plan.id %}" class="btn-flat waves-effect">Cancel</a>
+        </div>
+    </form>
+
+    <!-- Step Preview -->
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">Step Preview</span>
+            <div class="step-preview">
+                <div class="step-content">
+                    <span class="step-number">{{ step.order }}</span>
+                    <div class="step-details">
+                        <h6>{{ step.name }}</h6>
+                        {% if step.desc %}
+                        <p class="grey-text">{{ step.desc|linebreaks }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+.step-preview {
+    background: var(--bg-light);
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 3px solid var(--highlight);
+}
+
+.step-content {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 0;
+}
+
+.step-number {
+    background: var(--highlight);
+    color: var(--bg-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.step-details {
+    flex-grow: 1;
+}
+
+.step-details h6 {
+    margin: 0 0 5px 0;
+    color: var(--text);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.updateTextFields();
+    M.textareaAutoResize(document.querySelectorAll('textarea'));
+    
+    // Live preview functionality
+    const nameInput = document.getElementById('name');
+    const descInput = document.getElementById('desc');
+    const previewName = document.querySelector('.step-details h6');
+    const previewDesc = document.querySelector('.step-details p');
+    
+    nameInput.addEventListener('input', function() {
+        previewName.textContent = this.value || '{{ step.name }}';
+    });
+    
+    descInput.addEventListener('input', function() {
+        if (this.value.trim()) {
+            if (!previewDesc) {
+                const newDesc = document.createElement('p');
+                newDesc.className = 'grey-text';
+                document.querySelector('.step-details').appendChild(newDesc);
+            }
+            const descElement = document.querySelector('.step-details p') || newDesc;
+            descElement.innerHTML = this.value.replace(/\n/g, '<br>');
+        } else if (previewDesc) {
+            previewDesc.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

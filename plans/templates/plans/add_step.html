@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - Add Step to {{ plan.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="/plans/">Plans</a> > 
+        <a href="{% url 'plans:plan_detail' plan.id %}">{{ plan.name }}</a> > 
+        Add Step
+    </div>
+
+    <div class="header">
+        <h1>➕ Add Step</h1>
+        <p>Add a new step to: <strong>{{ plan.name }}</strong></p>
+    </div>
+
+    <form method="post" class="card">
+        {% csrf_token %}
+        <div class="card-content">
+            
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="name" type="text" name="name" required maxlength="200">
+                    <label for="name">Step Name *</label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="desc" name="desc" class="materialize-textarea"></textarea>
+                    <label for="desc">Step Description</label>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="card-action">
+            <button type="submit" class="btn waves-effect waves-light">
+                <i class="material-icons left">add</i>Add Step
+            </button>
+            <a href="{% url 'plans:plan_detail' plan.id %}" class="btn-flat waves-effect">Cancel</a>
+        </div>
+    </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.updateTextFields();
+    M.textareaAutoResize(document.querySelectorAll('textarea'));
+});
+</script>
+{% endblock %}

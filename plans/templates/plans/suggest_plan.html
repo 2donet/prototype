@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - Suggest Plan{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="/plans/">Plans</a> > 
+        Suggest Plan
+    </div>
+
+    <div class="header">
+        <h1>💡 Suggest Plan</h1>
+        <p>Suggest a plan for: <strong>{{ content_object }}</strong></p>
+    </div>
+
+    <!-- Action Selection -->
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">How would you like to suggest a plan?</span>
+            
+            <div class="row">
+                <div class="col s12 m6">
+                    <div class="card-panel hoverable plan-option" data-action="suggest_existing">
+                        <h6><i class="material-icons left">link</i>Use Existing Plan</h6>
+                        <p class="grey-text">Link an existing plan that you've created to this content.</p>
+                    </div>
+                </div>
+                <div class="col s12 m6">
+                    <div class="card-panel hoverable plan-option" data-action="create_new">
+                        <h6><i class="material-icons left">add_circle</i>Create New Plan</h6>
+                        <p class="grey-text">Create a brand new plan specifically for this content.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Plan Form -->
+    <form method="post" id="existing-plan-form" class="card" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="suggest_existing">
+        
+        <div class="card-content">
+            <span class="card-title">Select Existing Plan</span>
+            
+            {% if available_plans %}
+            <div class="row">
+                <div class="input-field col s12">
+                    <select name="plan_id" required>
+                        <option value="" disabled selected>Choose a plan</option>
+                        {% for plan in available_plans %}
+                        <option value="{{ plan.id }}">{{ plan.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>Select Plan</label>
+                </div>
+            </div>
+            {% else %}
+            <p class="red-text">You don't have any existing plans. Create a new plan instead.</p>
+            {% endif %}
+            
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="suggestion_note_existing" name="suggestion_note" class="materialize-textarea"></textarea>
+                    <label for="suggestion_note_existing">Why do you suggest this plan? (optional)</label>
+                </div>
+            </div>
+        </div>
+        
+        {% if available_plans %}
+        <div class="card-action">
+            <button type="submit" class="btn waves-effect waves-light">
+                <i class="material-icons left">send</i>Suggest Plan
+            </button>
+            <button type="button" class="btn-flat cancel-action waves-effect">Cancel</button>
+        </div>
+        {% endif %}
+    </form>
+
+    <!-- New Plan Form -->
+    <form method="post" id="new-plan-form" class="card" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_new">
+        
+        <div class="card-content">
+            <span class="card-title">Create New Plan</span>
+            
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="plan_name" type="text" name="plan_name" required maxlength="200">
+                    <label for="plan_name">Plan Name *</label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="plan_desc" name="plan_desc" class="materialize-textarea"></textarea>
+                    <label for="plan_desc">Plan Description</label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="suggestion_note_new" name="suggestion_note" class="materialize-textarea"></textarea>
+                    <label for="suggestion_note_new">Why do you suggest this plan? (optional)</label>
+                </div>
+            </div>
+
+            <!-- Steps Section -->
+            <div class="divider" style="margin: 20px 0;"></div>
+            <h6>Plan Steps</h6>
+            
+            <div id="steps-container">
+                <!-- Initial step -->
+                <div class="step-input">
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <input type="text" name="step_name[]" placeholder="Step name">
+                            <label>Step Name</label>
+                        </div>
+                        <div class="input-field col s12 m5">
+                            <textarea name="step_desc[]" class="materialize-textarea" placeholder="Step description (optional)"></textarea>
+                            <label>Description</label>
+                        </div>
+                        <div class="col s12 m1">
+                            <button type="button" class="btn-small red remove-step waves-effect" style="margin-top: 20px;">
+                                <i class="material-icons">remove</i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" id="add-step" class="btn-small waves-effect waves-light">
+                <i class="material-icons left">add</i>Add Another Step
+            </button>
+        </div>
+        
+        <div class="card-action">
+            <button type="submit" class="btn waves-effect waves-light">
+                <i class="material-icons left">send</i>Create & Suggest Plan
+            </button>
+            <button type="button" class="btn-flat cancel-action waves-effect">Cancel</button>
+        </div>
+    </form>
+
+</div>
+
+<style>
+.plan-option {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.plan-option:hover {
+    border-color: var(--highlight);
+    background-color: var(--bg-light);
+}
+
+.plan-option.selected {
+    border-color: var(--highlight);
+    background-color: var(--bg-light);
+}
+
+.step-input {
+    border-left: 3px solid var(--highlight);
+    padding-left: 15px;
+    margin-bottom: 15px;
+    background: var(--bg-light);
+    border-radius: 0 4px 4px 0;
+}
+
+.step-input .row {
+    margin-bottom: 10px;
+}
+
+.remove-step {
+    margin-top: 20px !important;
+}
+
+#add-step {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const planOptions = document.querySelectorAll('.plan-option');
+    const existingForm = document.getElementById('existing-plan-form');
+    const newForm = document.getElementById('new-plan-form');
+    const cancelButtons = document.querySelectorAll('.cancel-action');
+    
+    // Handle option selection
+    planOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const action = this.dataset.action;
+            
+            // Remove selected class from all options
+            planOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // Add selected class to clicked option
+            this.classList.add('selected');
+            
+            // Show appropriate form
+            if (action === 'suggest_existing') {
+                existingForm.style.display = 'block';
+                newForm.style.display = 'none';
+            } else if (action === 'create_new') {
+                existingForm.style.display = 'none';
+                newForm.style.display = 'block';
+            }
+            
+            // Initialize Materialize components
+            M.FormSelect.init(document.querySelectorAll('select'));
+            M.updateTextFields();
+        });
+    });
+    
+    // Handle cancel actions
+    cancelButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            existingForm.style.display = 'none';
+            newForm.style.display = 'none';
+            planOptions.forEach(opt => opt.classList.remove('selected'));
+        });
+    });
+    
+    // Step management for new plan form
+    const stepsContainer = document.getElementById('steps-container');
+    const addStepButton = document.getElementById('add-step');
+    
+    if (addStepButton) {
+        addStepButton.addEventListener('click', function() {
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'step-input';
+            stepDiv.innerHTML = `
+                <div class="row">
+                    <div class="input-field col s12 m6">
+                        <input type="text" name="step_name[]" placeholder="Step name">
+                        <label>Step Name</label>
+                    </div>
+                    <div class="input-field col s12 m5">
+                        <textarea name="step_desc[]" class="materialize-textarea" placeholder="Step description (optional)"></textarea>
+                        <label>Description</label>
+                    </div>
+                    <div class="col s12 m1">
+                        <button type="button" class="btn-small red remove-step waves-effect" style="margin-top: 20px;">
+                            <i class="material-icons">remove</i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            stepsContainer.appendChild(stepDiv);
+            
+            // Initialize Materialize components for new elements
+            M.updateTextFields();
+            M.textareaAutoResize(stepDiv.querySelector('textarea'));
+            
+            // Add remove functionality
+            stepDiv.querySelector('.remove-step').addEventListener('click', function() {
+                stepDiv.remove();
+            });
+        });
+    }
+    
+    // Remove step functionality for existing steps
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-step') || e.target.parentElement.classList.contains('remove-step')) {
+            const stepDiv = e.target.closest('.step-input');
+            if (stepDiv) {
+                stepDiv.remove();
+            }
+        }
+    });
+    
+    // Initialize Materialize components
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.updateTextFields();
+    M.textareaAutoResize(document.querySelectorAll('textarea'));
+});
+</script>
+{% endblock %}

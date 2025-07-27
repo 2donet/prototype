@@ -66,6 +66,7 @@ class Need(models.Model):
     modified_date = models.DateTimeField(auto_now=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public')
     
+    main_project = models.ForeignKey("project.Project", null=True, blank=True, on_delete=models.CASCADE, related_name='all_needs')
     to_project = models.ForeignKey("project.Project", blank=True, null=True, on_delete=models.CASCADE)
     to_task = models.ForeignKey("task.Task", blank=True, null=True, on_delete=models.CASCADE)
     custom_fields = models.JSONField(default=dict, blank=True, 
@@ -75,7 +76,7 @@ class Need(models.Model):
     is_current = models.BooleanField(default=True)
     is_remote = models.BooleanField(default=False, help_text="Can this need be fulfilled remotely?")
     is_stationary = models.BooleanField(default=False, help_text="Is this need location-dependent (stationary)?")
-
+    
     required_skills = models.ManyToManyField('skills.Skill', blank=True,
                                        help_text="Skills required to fulfill this need")
     skill_level = models.CharField(max_length=20, blank=True, null=True,

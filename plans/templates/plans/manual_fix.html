@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - Manual Plan Fix{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="header">
+        <h1>🔧 Manual Plan Fix</h1>
+        <p>Link existing plans to: <strong>{{ project.name }}</strong></p>
+    </div>
+
+    {% if unlinked_plans %}
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">Available Plans to Link</span>
+            
+            {% for plan in unlinked_plans %}
+            <div class="plan-item">
+                <div class="plan-info">
+                    <h6>{{ plan.name }}</h6>
+                    <p>{{ plan.desc|truncatewords:20 }}</p>
+                    <small>Created by: {{ plan.created_by.username }} | {{ plan.steps.count }} steps</small>
+                </div>
+                
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                    <button type="submit" class="btn green waves-effect">
+                        <i class="material-icons left">link</i>Link to Project
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-content center-align">
+            <h5>✅ All Plans Linked</h5>
+            <p>All existing plans are already linked to this project, or no plans exist.</p>
+            <a href="{% url 'plans:create_plan' %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">add</i>Create New Plan
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="{% url 'project:project' project.id %}" class="btn-flat waves-effect">← Back to Project</a>
+    </div>
+
+</div>
+
+<style>
+.plan-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: var(--bg-light);
+    border-radius: 8px;
+    border-left: 4px solid var(--highlight);
+}
+
+.plan-info {
+    flex-grow: 1;
+    margin-right: 20px;
+}
+
+.plan-info h6 {
+    margin: 0 0 5px 0;
+    color: var(--text);
+}
+
+.plan-info p {
+    margin: 5px 0;
+    color: var(--text2ndary);
+}
+
+.plan-info small {
+    color: var(--text2ndary);
+    font-size: 0.8em;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - Create Plan{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="/plans/">Plans</a> > 
+        Create Plan
+    </div>
+
+    <div class="header">
+        <h1>📋 Create New Plan</h1>
+        {% if is_moderation_context and target_project %}
+        <p>Creating plan for: <strong>{{ target_project.name }}</strong> (will be automatically approved)</p>
+        {% else %}
+        <p>Create a structured plan with steps that can be suggested for projects, tasks, or needs.</p>
+        {% endif %}
+    </div>
+
+    <form method="post" class="card">
+        {% csrf_token %}
+        <div class="card-content">
+            
+            <!-- Plan Basic Info -->
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="name" type="text" name="name" required maxlength="200" value="{{ request.POST.name }}">
+                    <label for="name">Plan Name *</label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="desc" name="desc" class="materialize-textarea">{{ request.POST.desc }}</textarea>
+                    <label for="desc">Description</label>
+                </div>
+            </div>
+
+            <!-- Steps Section -->
+            <div class="divider" style="margin: 20px 0;"></div>
+            <h5>Plan Steps</h5>
+            <p class="grey-text">Add the steps that make up this plan. You can reorder them later.</p>
+
+            <div id="steps-container">
+                <!-- Initial step -->
+                <div class="step-input">
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <input type="text" name="step_name[]" placeholder="Step name">
+                            <label>Step Name</label>
+                        </div>
+                        <div class="input-field col s12 m5">
+                            <textarea name="step_desc[]" class="materialize-textarea" placeholder="Step description (optional)"></textarea>
+                            <label>Description</label>
+                        </div>
+                        <div class="col s12 m1">
+                            <button type="button" class="btn-small red remove-step waves-effect" style="margin-top: 20px;">
+                                <i class="material-icons">remove</i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" id="add-step" class="btn-small waves-effect waves-light">
+                <i class="material-icons left">add</i>Add Another Step
+            </button>
+
+            <!-- Auto-suggest for admin projects -->
+            {% if is_moderation_context and target_project %}
+            <!-- Coming from project moderation - show target project -->
+            <div class="divider" style="margin: 20px 0;"></div>
+            <div class="card green lighten-4">
+                <div class="card-content">
+                    <span class="card-title green-text text-darken-2">
+                        <i class="material-icons left">check_circle</i>
+                        Auto-Adding to Project
+                    </span>
+                    <p>This plan will be automatically approved and added to:</p>
+                    <h6><strong>{{ target_project.name }}</strong></h6>
+                    <p class="grey-text">Since you're creating this from the project moderation dashboard, it will skip the suggestion workflow.</p>
+                </div>
+            </div>
+            {% elif admin_projects %}
+            <!-- Regular creation - show project selection -->
+            <div class="divider" style="margin: 20px 0;"></div>
+            <h5>🚀 Auto-Add to Your Projects</h5>
+            <p class="grey-text">Since you're an admin of these projects, you can automatically add this plan to them (skips suggestion workflow):</p>
+            
+            <div class="auto-suggest-section">
+                {% for project in admin_projects %}
+                <p>
+                    <label>
+                        <input type="checkbox" name="auto_suggest_projects" value="{{ project.id }}" class="filled-in" />
+                        <span>{{ project.name }}</span>
+                    </label>
+                </p>
+                {% endfor %}
+                
+                <div class="input-field" id="auto-suggest-note-field" style="display: none;">
+                    <textarea name="auto_suggest_note" id="auto_suggest_note" class="materialize-textarea" placeholder="Optional note about why this plan is good for your projects..."></textarea>
+                    <label for="auto_suggest_note">Auto-Suggestion Note (Optional)</label>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+        
+        <div class="card-action">
+            <button type="submit" class="btn waves-effect waves-light">
+                <i class="material-icons left">save</i>Create Plan
+            </button>
+            <a href="/" class="btn-flat waves-effect">Cancel</a>
+        </div>
+    </form>
+
+</div>
+
+<style>
+.step-input {
+    border-left: 3px solid var(--highlight);
+    padding-left: 15px;
+    margin-bottom: 15px;
+    background: var(--bg-light);
+    border-radius: 0 4px 4px 0;
+}
+
+.step-input .row {
+    margin-bottom: 10px;
+}
+
+.remove-step {
+    margin-top: 20px !important;
+}
+
+#add-step {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    color: var(--text);
+}
+
+.header p {
+    color: var(--text2ndary);
+}
+
+.auto-suggest-section {
+    background: var(--bg-light);
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid var(--highlight);
+    margin: 15px 0;
+}
+
+.auto-suggest-section p {
+    margin-bottom: 10px;
+}
+
+.auto-suggest-section label {
+    color: var(--text) !important;
+    font-size: 1rem;
+}
+
+#auto-suggest-note-field {
+    margin-top: 15px;
+    background: var(--bg-color2);
+    padding: 15px;
+    border-radius: 4px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stepsContainer = document.getElementById('steps-container');
+    const addStepButton = document.getElementById('add-step');
+    
+    // Add step functionality
+    addStepButton.addEventListener('click', function() {
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'step-input';
+        stepDiv.innerHTML = `
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <input type="text" name="step_name[]" placeholder="Step name">
+                    <label>Step Name</label>
+                </div>
+                <div class="input-field col s12 m5">
+                    <textarea name="step_desc[]" class="materialize-textarea" placeholder="Step description (optional)"></textarea>
+                    <label>Description</label>
+                </div>
+                <div class="col s12 m1">
+                    <button type="button" class="btn-small red remove-step waves-effect" style="margin-top: 20px;">
+                        <i class="material-icons">remove</i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        stepsContainer.appendChild(stepDiv);
+        
+        // Initialize Materialize components for new elements
+        M.updateTextFields();
+        M.textareaAutoResize(stepDiv.querySelector('textarea'));
+        
+        // Add remove functionality
+        stepDiv.querySelector('.remove-step').addEventListener('click', function() {
+            stepDiv.remove();
+        });
+    });
+    
+    // Remove step functionality for existing steps
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-step') || e.target.parentElement.classList.contains('remove-step')) {
+            const stepDiv = e.target.closest('.step-input');
+            if (stepDiv) {
+                stepDiv.remove();
+            }
+        }
+    });
+    
+    // Initialize Materialize components
+    M.updateTextFields();
+    M.textareaAutoResize(document.querySelectorAll('textarea'));
+    
+    // Auto-suggest functionality (only for regular creation)
+    const projectCheckboxes = document.querySelectorAll('input[name="auto_suggest_projects"]');
+    const noteField = document.getElementById('auto-suggest-note-field');
+    const isModerationContext = {{ is_moderation_context|yesno:"true,false" }};
+    
+    if (projectCheckboxes.length > 0 && noteField && !isModerationContext) {
+        projectCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const anyChecked = Array.from(projectCheckboxes).some(cb => cb.checked);
+                noteField.style.display = anyChecked ? 'block' : 'none';
+                if (anyChecked) {
+                    M.updateTextFields();
+                    M.textareaAutoResize(document.getElementById('auto_suggest_note'));
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

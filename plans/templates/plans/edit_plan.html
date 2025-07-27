@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - Edit {{ plan.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="/plans/">Plans</a> > 
+        <a href="{% url 'plans:plan_detail' plan.id %}">{{ plan.name }}</a> > 
+        Edit
+    </div>
+
+    <div class="header">
+        <h1>✏️ Edit Plan</h1>
+        <p>Modify the details of your plan.</p>
+    </div>
+
+    <form method="post" class="card">
+        {% csrf_token %}
+        <div class="card-content">
+            
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="name" type="text" name="name" required maxlength="200" value="{{ plan.name }}">
+                    <label for="name" class="active">Plan Name *</label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12">
+                    <textarea id="desc" name="desc" class="materialize-textarea">{{ plan.desc }}</textarea>
+                    <label for="desc" class="active">Description</label>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="card-action">
+            <button type="submit" class="btn waves-effect waves-light">
+                <i class="material-icons left">save</i>Save Changes
+            </button>
+            <a href="{% url 'plans:plan_detail' plan.id %}" class="btn-flat waves-effect">Cancel</a>
+        </div>
+    </form>
+
+    <!-- Steps Management -->
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">
+                Steps Management
+                <a href="{% url 'plans:add_step' plan.id %}" class="btn-small waves-effect waves-light right">
+                    <i class="material-icons left">add</i>Add Step
+                </a>
+            </span>
+            
+            {% if plan.steps.all %}
+            <div class="collection">
+                {% for step in plan.steps.all %}
+                <div class="collection-item">
+                    <div class="step-content">
+                        <span class="step-number">{{ forloop.counter }}</span>
+                        <div class="step-details">
+                            <h6>{{ step.name }}</h6>
+                            {% if step.desc %}
+                            <p class="grey-text">{{ step.desc|truncatewords:20 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="step-actions">
+                            <a href="{% url 'plans:edit_step' plan.id step.id %}" class="btn-small waves-effect">
+                                <i class="material-icons">edit</i>
+                            </a>
+                            <a href="{% url 'plans:delete_step' plan.id step.id %}" class="btn-small red waves-effect">
+                                <i class="material-icons">delete</i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="grey-text">No steps added yet.</p>
+            <a href="{% url 'plans:add_step' plan.id %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">add</i>Add First Step
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<style>
+.step-content {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 0;
+}
+
+.step-number {
+    background: var(--highlight);
+    color: var(--bg-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.step-details {
+    flex-grow: 1;
+    margin-right: 15px;
+}
+
+.step-details h6 {
+    margin: 0 0 5px 0;
+    color: var(--text);
+}
+
+.step-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.step-actions .btn-small {
+    padding: 0 8px;
+    height: 30px;
+    line-height: 30px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.updateTextFields();
+    M.textareaAutoResize(document.querySelectorAll('textarea'));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,509 @@
+{% load static %}
+
+<div class="plans-section">
+    <div class="section-header">
+        <h5>📋 Plans</h5>
+        <div class="header-actions">
+            <a href="{% url 'project_plans' content.id %}" class="btn-small waves-effect waves-light">
+                <i class="material-icons left">visibility</i>View All
+            </a>
+            <a href="{% url 'plans:suggest_plan' 'project' content.id %}" class="btn-small waves-effect waves-light">
+                <i class="material-icons left">lightbulb_outline</i>Suggest Plan
+            </a>
+            <a href="{% url 'plans:create_plan' %}" class="btn-small waves-effect waves-light">
+                <i class="material-icons left">add</i>Create Plan
+            </a>
+        </div>
+    </div>
+
+    {% if project_plans %}
+    <div class="plans-grid">
+        {% for plan_suggestion in project_plans %}
+        <div class="plan-card modal-trigger" data-target="plan-modal-{{ plan_suggestion.plan.id }}">
+            <div class="plan-header">
+                <h6>{{ plan_suggestion.plan.name }}</h6>
+                <span class="plan-status chip green">Approved</span>
+            </div>
+            <p class="plan-description">{{ plan_suggestion.plan.desc|truncatewords:15 }}</p>
+            <div class="plan-meta">
+                <span class="step-count">{{ plan_suggestion.plan.steps.count }} step{{ plan_suggestion.plan.steps.count|pluralize }}</span>
+                <span class="suggested-by">by {{ plan_suggestion.suggested_by.username }}</span>
+            </div>
+            <div class="plan-preview-steps">
+                {% for step in plan_suggestion.plan.steps.all|slice:":3" %}
+                <div class="preview-step">
+                    <span class="step-number">{{ forloop.counter }}</span>
+                    <span class="step-name">{{ step.name }}</span>
+                </div>
+                {% endfor %}
+                {% if plan_suggestion.plan.steps.count > 3 %}
+                <div class="more-steps">+{{ plan_suggestion.plan.steps.count|add:"-3" }} more step{{ plan_suggestion.plan.steps.count|add:"-3"|pluralize }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Modal for this plan -->
+        <div id="plan-modal-{{ plan_suggestion.plan.id }}" class="modal modal-fixed-footer">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4>{{ plan_suggestion.plan.name }}</h4>
+                    <div class="modal-badges">
+                        <span class="chip green">Approved</span>
+                        {% if plan_suggestion.plan.created_by == user %}
+                        <span class="chip blue">Your Plan</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if plan_suggestion.plan.desc %}
+                <div class="plan-description-full">
+                    <h6>Description</h6>
+                    <p>{{ plan_suggestion.plan.desc|linebreaks }}</p>
+                </div>
+                {% endif %}
+
+                <div class="plan-steps-full">
+                    <h6>Steps ({{ plan_suggestion.plan.steps.count }})</h6>
+                    {% if plan_suggestion.plan.steps.all %}
+                    <div class="steps-list">
+                        {% for step in plan_suggestion.plan.steps.all %}
+                        <div class="step-item-modal">
+                            <div class="step-content-modal">
+                                <span class="step-number-modal">{{ forloop.counter }}</span>
+                                <div class="step-details-modal">
+                                    <h6>{{ step.name }}</h6>
+                                    {% if step.desc %}
+                                    <p class="grey-text">{{ step.desc|linebreaks }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="grey-text">No steps defined yet.</p>
+                    {% endif %}
+                </div>
+
+                <div class="plan-meta-full">
+                    <div class="meta-item">
+                        <strong>Created by:</strong> 
+                        <a href="{% url 'user:userprofile' plan_suggestion.plan.created_by.id %}">{{ plan_suggestion.plan.created_by.username }}</a>
+                    </div>
+                    <div class="meta-item">
+                        <strong>Suggested by:</strong> 
+                        <a href="{% url 'user:userprofile' plan_suggestion.suggested_by.id %}">{{ plan_suggestion.suggested_by.username }}</a>
+                    </div>
+                    <div class="meta-item">
+                        <strong>Created:</strong> {{ plan_suggestion.plan.created_at|date:"M d, Y" }}
+                    </div>
+                    {% if plan_suggestion.suggestion_note %}
+                    <div class="meta-item">
+                        <strong>Suggestion Note:</strong> {{ plan_suggestion.suggestion_note }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <a href="{% url 'plans:plan_detail' plan_suggestion.plan.id %}" class="btn waves-effect waves-light">
+                    <i class="material-icons left">visibility</i>View Full Plan
+                </a>
+                {% if plan_suggestion.plan.created_by == user or can_moderate %}
+                <a href="{% url 'plans:edit_plan' plan_suggestion.plan.id %}" class="btn waves-effect waves-light">
+                    <i class="material-icons left">edit</i>Edit Plan
+                </a>
+                {% endif %}
+                <a href="#!" class="modal-close btn-flat">Close</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-plans">
+        <div class="empty-icon">📋</div>
+        <h6>No Plans Suggested Yet</h6>
+        <p>This project doesn't have any <strong>approved plan suggestions</strong> yet.</p>
+        
+        <!-- Debug info for development -->
+        <div class="debug-info" style="background: var(--bg-color2); padding: 15px; border-radius: 4px; margin: 15px 0; font-size: 0.85em;">
+            <strong>How it works:</strong>
+            <ol style="margin: 10px 0; padding-left: 20px; color: var(--text2ndary);">
+                <li>Create a plan OR use existing plan</li>
+                <li><strong>Suggest it for this project</strong> (this step might be missing!)</li>
+                <li>Project admin approves the suggestion</li>
+                <li>Plan appears here</li>
+            </ol>
+        </div>
+        
+        <div class="empty-actions">
+            <a href="{% url 'plans:create_plan' %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">add</i>Create New Plan
+            </a>
+            <a href="{% url 'plans:suggest_plan' 'project' content.id %}" class="btn green waves-effect waves-light">
+                <i class="material-icons left">lightbulb_outline</i>Suggest Existing Plan
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if pending_plan_suggestions and can_moderate %}
+    <div class="pending-plans-section">
+        <h6 class="orange-text">⏳ Pending Plan Suggestions</h6>
+        <div class="pending-plans-list">
+            {% for suggestion in pending_plan_suggestions %}
+            <div class="pending-plan-item">
+                <div class="pending-plan-info">
+                    <strong>{{ suggestion.plan.name }}</strong>
+                    <span class="grey-text">by {{ suggestion.suggested_by.username }}</span>
+                </div>
+                <div class="pending-plan-actions">
+                    <a href="{% url 'project:plans_management' content.id %}" class="btn-small orange waves-effect">
+                        <i class="material-icons left">rate_review</i>Review
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.plans-section {
+    margin: 20px 0;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h5 {
+    margin: 0;
+    color: var(--text);
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.header-actions .btn-small {
+    height: 32px;
+    line-height: 32px;
+    padding: 0 16px;
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.plan-card {
+    background: var(--bg-light);
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid var(--highlight);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.plan-card:hover {
+    background: var(--bg-color2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.plan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.plan-header h6 {
+    margin: 0;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.plan-status.chip {
+    font-size: 0.8em;
+    height: 24px;
+    line-height: 24px;
+    padding: 0 12px;
+}
+
+.plan-status.chip.green {
+    background-color: var(--confirm);
+    color: var(--bg-color);
+}
+
+.plan-description {
+    color: var(--text2ndary);
+    font-size: 0.9em;
+    line-height: 1.4;
+    margin-bottom: 15px;
+}
+
+.plan-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: var(--text2ndary);
+    margin-bottom: 15px;
+}
+
+.plan-preview-steps {
+    border-top: 1px solid var(--bg-color3);
+    padding-top: 15px;
+}
+
+.preview-step {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.85em;
+}
+
+.step-number {
+    background: var(--highlight);
+    color: var(--bg-color);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    font-weight: bold;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.step-name {
+    color: var(--text);
+    flex-grow: 1;
+}
+
+.more-steps {
+    color: var(--text2ndary);
+    font-style: italic;
+    font-size: 0.8em;
+    margin-top: 5px;
+}
+
+/* Modal Styles */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h4 {
+    margin: 0;
+    color: var(--text);
+}
+
+.modal-badges {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-badges .chip {
+    font-size: 0.8em;
+    height: 28px;
+    line-height: 28px;
+}
+
+.modal-badges .chip.blue {
+    background-color: var(--information);
+    color: var(--text);
+}
+
+.plan-description-full,
+.plan-steps-full,
+.plan-meta-full {
+    margin-bottom: 20px;
+}
+
+.plan-description-full h6,
+.plan-steps-full h6 {
+    color: var(--text);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.steps-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.step-item-modal {
+    background: var(--bg-light);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--highlight);
+}
+
+.step-content-modal {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px;
+}
+
+.step-number-modal {
+    background: var(--highlight);
+    color: var(--bg-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.step-details-modal {
+    flex-grow: 1;
+}
+
+.step-details-modal h6 {
+    margin: 0 0 5px 0;
+    color: var(--text);
+    font-size: 1em;
+}
+
+.plan-meta-full {
+    background: var(--bg-light);
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.meta-item {
+    margin-bottom: 10px;
+    color: var(--text2ndary);
+    font-size: 0.9em;
+}
+
+.meta-item:last-child {
+    margin-bottom: 0;
+}
+
+.meta-item a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.meta-item a:hover {
+    color: var(--highlight);
+}
+
+/* Empty State */
+.empty-plans {
+    text-align: center;
+    padding: 40px 20px;
+    background: var(--bg-light);
+    border-radius: 8px;
+    border: 2px dashed var(--bg-color3);
+}
+
+.empty-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+}
+
+.empty-plans h6 {
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.empty-plans p {
+    color: var(--text2ndary);
+    margin-bottom: 20px;
+}
+
+.empty-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Pending Plans */
+.pending-plans-section {
+    background: var(--bg-light);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid var(--warning);
+    margin-top: 20px;
+}
+
+.pending-plans-section h6 {
+    margin: 0 0 15px 0;
+}
+
+.pending-plan-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--bg-color3);
+}
+
+.pending-plan-item:last-child {
+    border-bottom: none;
+}
+
+.pending-plan-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pending-plan-info strong {
+    color: var(--text);
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .plans-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .empty-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize modals
+    var modals = document.querySelectorAll('.modal');
+    M.Modal.init(modals, {
+        dismissible: true,
+        opacity: 0.5,
+        inDuration: 300,
+        outDuration: 200
+    });
+});
+</script>

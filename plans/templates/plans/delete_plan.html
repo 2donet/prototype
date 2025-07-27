@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - Delete Plan{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="/plans/">Plans</a> > 
+        <a href="{% url 'plans:plan_detail' plan.id %}">{{ plan.name }}</a> > 
+        Delete
+    </div>
+
+    <div class="header">
+        <h1>🗑️ Delete Plan</h1>
+        <p>Are you sure you want to permanently delete this plan?</p>
+    </div>
+
+    <!-- Plan to be deleted -->
+    <div class="card red lighten-4">
+        <div class="card-content">
+            <span class="card-title red-text text-darken-2">
+                <i class="material-icons left">warning</i>
+                Plan to be Deleted
+            </span>
+            
+            <div class="plan-preview">
+                <h5>{{ plan.name }}</h5>
+                {% if plan.desc %}
+                <p>{{ plan.desc }}</p>
+                {% endif %}
+                
+                <div class="plan-stats">
+                    <strong>{{ plan.steps.count }} step{{ plan.steps.count|pluralize }}</strong>
+                    {% if plan.suggestions.count > 0 %}
+                    | <strong>{{ plan.suggestions.count }} suggestion{{ plan.suggestions.count|pluralize }}</strong>
+                    {% endif %}
+                </div>
+                
+                {% if plan.steps.count > 0 %}
+                <div class="steps-preview">
+                    <h6>Steps that will be deleted:</h6>
+                    <ol>
+                        {% for step in plan.steps.all %}
+                        <li>{{ step.name }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+                {% endif %}
+            </div>
+            
+            <p class="red-text text-darken-1">
+                <strong>Warning:</strong> This action cannot be undone. The plan and all its steps will be permanently deleted.
+                {% if plan.suggestions.count > 0 %}
+                All plan suggestions will also be removed.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Confirmation Form -->
+    <form method="post" class="card">
+        {% csrf_token %}
+        <div class="card-content">
+            <p>Please confirm that you want to delete "<strong>{{ plan.name }}</strong>" and all its associated data.</p>
+        </div>
+        
+        <div class="card-action">
+            <button type="submit" id="delete-btn" class="btn red waves-effect waves-light">
+                <i class="material-icons left">delete_forever</i>Yes, Delete Plan Forever
+            </button>
+            <a href="{% url 'plans:plan_detail' plan.id %}" class="btn-flat waves-effect">Cancel</a>
+        </div>
+    </form>
+
+</div>
+
+<style>
+.plan-preview {
+    background: var(--bg-light);
+    padding: 20px;
+    border-radius: 4px;
+    border-left: 3px solid var(--danger);
+    margin: 15px 0;
+}
+
+.plan-preview h5 {
+    color: var(--text);
+    margin-top: 0;
+}
+
+.plan-stats {
+    color: var(--text2ndary);
+    margin: 15px 0;
+    font-size: 0.9em;
+}
+
+.steps-preview {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--bg-color2);
+}
+
+.steps-preview h6 {
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.steps-preview ol {
+    margin-left: 20px;
+}
+
+.steps-preview li {
+    color: var(--text2ndary);
+    margin-bottom: 5px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteBtn = document.getElementById('delete-btn');
+    
+    deleteBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Simple confirmation dialog
+        if (confirm('Are you sure you want to delete "{{ plan.name|escapejs }}"?\n\nThis action cannot be undone and will remove:\n- The plan and all its steps\n- All plan suggestions\n- All related data')) {
+            // Show loading state
+            this.innerHTML = '<i class="material-icons left">hourglass_empty</i>Deleting...';
+            this.disabled = true;
+            
+            // Submit the form
+            this.form.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

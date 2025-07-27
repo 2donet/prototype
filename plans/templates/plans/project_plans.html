@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - {{ project.name }} Plans{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
+        Plans
+    </div>
+
+    <div class="header">
+        <h1>📋 Plans for {{ project.name }}</h1>
+        <p>All approved plans associated with this project and its content.</p>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'plans:create_plan' %}" class="btn waves-effect waves-light">
+            <i class="material-icons left">add</i>Create New Plan
+        </a>
+        <a href="{% url 'plans:suggest_plan' 'project' project.id %}" class="btn waves-effect waves-light">
+            <i class="material-icons left">lightbulb_outline</i>Suggest Plan for Project
+        </a>
+        {% if can_moderate %}
+        <a href="{% url 'project:plans_management' project.id %}" class="btn orange waves-effect waves-light">
+            <i class="material-icons left">admin_panel_settings</i>Manage Plans
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Pending Suggestions (Admin Only) -->
+    {% if pending_suggestions and can_moderate %}
+    <div class="card orange lighten-4">
+        <div class="card-content">
+            <span class="card-title orange-text text-darken-2">
+                <i class="material-icons left">notifications</i>
+                Pending Plan Suggestions ({{ pending_suggestions|length }})
+            </span>
+            
+            {% for suggestion in pending_suggestions %}
+            <div class="suggestion-item pending">
+                <div class="suggestion-header">
+                    <strong>{{ suggestion.plan.name }}</strong>
+                    <span class="chip orange">Pending Review</span>
+                </div>
+                <p>For: <strong>{{ suggestion.content_object }}</strong></p>
+                <p class="grey-text">
+                    Suggested by {{ suggestion.suggested_by.username }} 
+                    on {{ suggestion.created_at|date:"M d, Y" }}
+                </p>
+                {% if suggestion.suggestion_note %}
+                <p><em>"{{ suggestion.suggestion_note }}"</em></p>
+                {% endif %}
+                
+                <div class="suggestion-actions">
+                    <form method="post" action="{% url 'plans:approve_suggestion' suggestion.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-small green waves-effect">
+                            <i class="material-icons left">check</i>Approve
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'plans:reject_suggestion' suggestion.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-small red waves-effect">
+                            <i class="material-icons left">close</i>Reject
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Project Plans -->
+    {% if project_suggestions %}
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">📁 Project Plans</span>
+            <p class="grey-text">Plans suggested directly for this project.</p>
+            
+            {% for suggestion in project_suggestions %}
+            <div class="plan-item">
+                <div class="plan-header">
+                    <h6><a href="{% url 'plans:plan_detail' suggestion.plan.id %}">{{ suggestion.plan.name }}</a></h6>
+                    <span class="chip green">Approved</span>
+                </div>
+                {% if suggestion.plan.desc %}
+                <p class="plan-desc">{{ suggestion.plan.desc|truncatewords:30 }}</p>
+                {% endif %}
+                <p class="plan-meta">
+                    {{ suggestion.plan.steps.count }} step{{ suggestion.plan.steps.count|pluralize }} 
+                    | Suggested by {{ suggestion.suggested_by.username }}
+                    | Created {{ suggestion.created_at|date:"M d, Y" }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Task Plans -->
+    {% if task_suggestions %}
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">📋 Task Plans</span>
+            <p class="grey-text">Plans suggested for tasks in this project.</p>
+            
+            {% for suggestion in task_suggestions %}
+            <div class="plan-item">
+                <div class="plan-header">
+                    <h6><a href="{% url 'plans:plan_detail' suggestion.plan.id %}">{{ suggestion.plan.name }}</a></h6>
+                    <span class="chip green">Approved</span>
+                </div>
+                <p class="task-ref">For task: <strong>{{ suggestion.content_object.name }}</strong></p>
+                {% if suggestion.plan.desc %}
+                <p class="plan-desc">{{ suggestion.plan.desc|truncatewords:30 }}</p>
+                {% endif %}
+                <p class="plan-meta">
+                    {{ suggestion.plan.steps.count }} step{{ suggestion.plan.steps.count|pluralize }} 
+                    | Suggested by {{ suggestion.suggested_by.username }}
+                    | Created {{ suggestion.created_at|date:"M d, Y" }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Need Plans -->
+    {% if need_suggestions %}
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">🎯 Need Plans</span>
+            <p class="grey-text">Plans suggested for needs in this project.</p>
+            
+            {% for suggestion in need_suggestions %}
+            <div class="plan-item">
+                <div class="plan-header">
+                    <h6><a href="{% url 'plans:plan_detail' suggestion.plan.id %}">{{ suggestion.plan.name }}</a></h6>
+                    <span class="chip green">Approved</span>
+                </div>
+                <p class="need-ref">For need: <strong>{{ suggestion.content_object.name }}</strong></p>
+                {% if suggestion.plan.desc %}
+                <p class="plan-desc">{{ suggestion.plan.desc|truncatewords:30 }}</p>
+                {% endif %}
+                <p class="plan-meta">
+                    {{ suggestion.plan.steps.count }} step{{ suggestion.plan.steps.count|pluralize }} 
+                    | Suggested by {{ suggestion.suggested_by.username }}
+                    | Created {{ suggestion.created_at|date:"M d, Y" }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- No Plans Message -->
+    {% if not project_suggestions and not task_suggestions and not need_suggestions %}
+    <div class="card">
+        <div class="card-content center-align">
+            <i class="material-icons large grey-text">assignment_outlined</i>
+            <h5 class="grey-text">No Plans Yet</h5>
+            <p class="grey-text">This project doesn't have any approved plans yet.</p>
+            <div style="margin-top: 20px;">
+                <a href="{% url 'plans:create_plan' %}" class="btn waves-effect waves-light">
+                    <i class="material-icons left">add</i>Create First Plan
+                </a>
+                <a href="{% url 'plans:suggest_plan' 'project' project.id %}" class="btn-flat waves-effect">
+                    <i class="material-icons left">lightbulb_outline</i>Suggest Plan
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+.action-buttons {
+    margin: 20px 0;
+}
+
+.action-buttons .btn {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.suggestion-item {
+    border-left: 3px solid var(--warning);
+    padding-left: 15px;
+    margin-bottom: 15px;
+    background: var(--bg-light);
+    padding: 15px;
+    border-radius: 0 4px 4px 0;
+}
+
+.suggestion-item.pending {
+    border-left-color: var(--warning);
+}
+
+.suggestion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.suggestion-actions {
+    margin-top: 10px;
+}
+
+.suggestion-actions .btn-small {
+    margin-right: 5px;
+}
+
+.plan-item {
+    border-left: 3px solid var(--highlight);
+    padding-left: 15px;
+    margin-bottom: 20px;
+    background: var(--bg-light);
+    padding: 15px;
+    border-radius: 0 4px 4px 0;
+}
+
+.plan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.plan-header h6 {
+    margin: 0;
+}
+
+.plan-header h6 a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.plan-header h6 a:hover {
+    color: var(--highlight);
+}
+
+.task-ref, .need-ref {
+    color: var(--text2ndary);
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+.plan-desc {
+    margin: 10px 0;
+    color: var(--text);
+    line-height: 1.4;
+}
+
+.plan-meta {
+    color: var(--text2ndary);
+    font-size: 0.85em;
+    margin-top: 10px;
+}
+
+.chip.green {
+    background-color: var(--confirm);
+    color: var(--bg-color);
+}
+
+.chip.orange {
+    background-color: var(--warning);
+    color: var(--bg-color);
+}
+</style>
+{% endblock %}

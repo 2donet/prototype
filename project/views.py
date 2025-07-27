@@ -10,6 +10,7 @@ from comment.models import (
     Comment, CommentReport, CommentStatus, ModerationAction, 
     ModerationDecision, DecisionScope, ReportType, ReportStatus
 )
+from plans.models import Plan, PlanSuggestion, PlanSuggestionStatus
 from comment.utils import is_moderator, get_moderator_level
 
 from task.models import Task
@@ -29,6 +30,9 @@ User = get_user_model()
 import logging
 from django.utils import timezone
 logger = logging.getLogger(__name__)
+
+
+from django.contrib.contenttypes.models import ContentType
 
 
 def index(request):
@@ -85,7 +89,7 @@ def create_project(request):
             created_by=user,
             published=published,
         )
-
+        project.add_member(user, 'ADMIN')
         # Dane potrzeb
         need_names = request.POST.getlist('need_name[]')  # Lista nazw potrzeb
         need_descs = request.POST.getlist('need_desc[]')  # Lista opisów potrzeb
@@ -161,7 +165,14 @@ def project_members(request, project_id):
     moderator_users = []
     contributor_users = []
     member_users = []
+    all_members = User.objects.filter(
+        membership__project=project
+    ).select_related('profile').order_by('username')
     
+    paginator = Paginator(all_members, 15)  # Show 15 members per page
+    page_number = request.GET.get('page')
+    all_members = paginator.get_page(page_number)
+
     for membership in memberships:
         user = membership.user
         # Add membership data to the user object for template access
@@ -197,6 +208,8 @@ def project_members(request, project_id):
         'member_users': member_users,
         'can_manage_members': can_manage_members,
         'role_choices': ProjectPermissionGroup.choices,
+        'all_members': all_members,
+        'total_members': paginator.count,
     }
     
     return render(request, 'members.html', context)
@@ -304,8 +317,10 @@ def project(request, project_id):
         
         if membership.is_administrator:
             admin_users.append(user)
+            member_users.append(user)
         elif membership.is_moderator:
             moderator_users.append(user)
+            member_users.append(user)
         elif membership.is_contributor:
             contributor_users.append(user)
         else:
@@ -335,7 +350,22 @@ def project(request, project_id):
             type='child',
             status='pending'
         ).count()
-
+    project_ct = ContentType.objects.get_for_model(Project)
+    task_ct = ContentType.objects.get_for_model(Task)
+    need_ct = ContentType.objects.get_for_model(Need)
+    project_plans = PlanSuggestion.objects.filter(
+    content_type=project_ct,
+    object_id=content.id,
+    status=PlanSuggestionStatus.APPROVED
+    ).select_related('plan', 'suggested_by', 'plan__created_by').prefetch_related('plan__steps')
+    pending_plan_suggestions = []
+    if can_moderate:
+        pending_plan_suggestions = PlanSuggestion.objects.filter(
+            Q(content_type=project_ct, object_id=content.id) |
+            Q(content_type=task_ct, object_id__in=content.task_set.values_list('id', flat=True)) |
+            Q(content_type=need_ct, object_id__in=content.need_set.values_list('id', flat=True)),
+            status=PlanSuggestionStatus.PENDING
+        ).select_related('plan', 'suggested_by')[:5]  # Limit to 5 for the preview
     context = {
         "content": content,
         "child_projects": child_projects,
@@ -351,7 +381,9 @@ def project(request, project_id):
         "is_member": is_member,
         "can_manage_members": can_manage_members,
         "can_moderate": can_moderate,
-        "pending_connection_requests_count": pending_connection_requests_count,  # NEW
+        "pending_connection_requests_count": pending_connection_requests_count,
+        "project_plans": project_plans,
+        "pending_plan_suggestions": pending_plan_suggestions,
     }
     return render(request, "details.html", context=context)
 
@@ -794,7 +826,19 @@ def project_moderation_dashboard(request, project_id):
         'total_locations': project.localizations.count(),
         'total_subprojects': Connection.objects.filter(
             from_project=project, type='child', status='approved'
+        ).count(),        
+        'total_plan_suggestions': PlanSuggestion.objects.filter(
+            Q(content_type=ContentType.objects.get_for_model(Project), object_id=project.id) |
+            Q(content_type=ContentType.objects.get_for_model(Task), object_id__in=project.task_set.values_list('id', flat=True)) |
+            Q(content_type=ContentType.objects.get_for_model(Need), object_id__in=project.need_set.values_list('id', flat=True))
         ).count(),
+        'pending_plan_suggestions': PlanSuggestion.objects.filter(
+            Q(content_type=ContentType.objects.get_for_model(Project), object_id=project.id) |
+            Q(content_type=ContentType.objects.get_for_model(Task), object_id__in=project.task_set.values_list('id', flat=True)) |
+            Q(content_type=ContentType.objects.get_for_model(Need), object_id__in=project.need_set.values_list('id', flat=True)),
+            status=PlanSuggestionStatus.PENDING
+        ).count(),
+
     }
     
     context = {
@@ -1374,3 +1418,80 @@ def request_parent_connection(request, project_id):
         'pending_parent_request': pending_parent_request,
     }
     return render(request, 'subprojects/request_parent.html', context)
+
+@user_passes_test(lambda u: u.is_authenticated)
+def project_plans_management(request, project_id):
+    """Project plans management page"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to manage this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    # Get content types
+    project_ct = ContentType.objects.get_for_model(Project)
+    task_ct = ContentType.objects.get_for_model(Task)
+    need_ct = ContentType.objects.get_for_model(Need)
+    
+    # Get all plan suggestions for this project and its content
+    all_suggestions = PlanSuggestion.objects.filter(
+        models.Q(content_type=project_ct, object_id=project.id) |
+        models.Q(content_type=task_ct, object_id__in=project.task_set.values_list('id', flat=True)) |
+        models.Q(content_type=need_ct, object_id__in=project.need_set.values_list('id', flat=True))
+    ).select_related('plan', 'suggested_by', 'reviewed_by').prefetch_related('content_object').order_by('-created_at')
+    
+    # Separate by status
+    pending_suggestions = all_suggestions.filter(status=PlanSuggestionStatus.PENDING)
+    approved_suggestions = all_suggestions.filter(status=PlanSuggestionStatus.APPROVED)
+    rejected_suggestions = all_suggestions.filter(status=PlanSuggestionStatus.REJECTED)
+    
+    # Get statistics
+    stats = {
+        'total_suggestions': all_suggestions.count(),
+        'pending_suggestions': pending_suggestions.count(),
+        'approved_suggestions': approved_suggestions.count(),
+        'rejected_suggestions': rejected_suggestions.count(),
+    }
+    
+    context = {
+        'project': project,
+        'pending_suggestions': pending_suggestions,
+        'approved_suggestions': approved_suggestions,
+        'rejected_suggestions': rejected_suggestions,
+        'stats': stats,
+    }
+    
+    return render(request, 'moderation/plans.html', context)
+
+
+@user_passes_test(lambda u: u.is_authenticated)
+def moderate_plan_suggestion(request, project_id, suggestion_id):
+    """Handle plan suggestion moderation actions"""
+    project = get_object_or_404(Project, id=project_id)
+    suggestion = get_object_or_404(PlanSuggestion, id=suggestion_id)
+    
+    if not can_moderate_project(request.user, project):
+        messages.error(request, "You don't have permission to moderate this project.")
+        return redirect('project:project', project_id=project.id)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        review_note = request.POST.get('review_note', '')
+        
+        try:
+            if action == 'approve':
+                suggestion.approve(request.user, review_note)
+                messages.success(request, f"Plan suggestion '{suggestion.plan.name}' approved successfully.")
+                
+            elif action == 'reject':
+                suggestion.reject(request.user, review_note)
+                messages.success(request, f"Plan suggestion '{suggestion.plan.name}' rejected.")
+                
+            else:
+                messages.error(request, "Invalid moderation action.")
+                
+        except Exception as e:
+            logger.error(f"Error in plan suggestion moderation: {str(e)}")
+            messages.error(request, "An error occurred while processing the moderation action.")
+    
+    return redirect('project:plans_management', project_id=project.id)

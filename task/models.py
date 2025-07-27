@@ -19,7 +19,7 @@ class Task(models.Model):
     
     to_project = models.ForeignKey("project.Project", blank=True, null=True, on_delete=models.CASCADE)
     to_task = models.ForeignKey("task.Task", blank=True, null=True, on_delete=models.CASCADE)
-    
+    main_project = models.ForeignKey("project.Project", null=True, blank=True, on_delete=models.CASCADE, related_name='all_tasks')
     # Skills relationship
     skills = models.ManyToManyField('skills.Skill', blank=True)
     

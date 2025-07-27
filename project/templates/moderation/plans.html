@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Plans Management - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="{% url 'project:project' project.id %}">{{ project.name }}</a> > 
+        <a href="{% url 'project:moderation_dashboard' project.id %}">Moderation</a> > 
+        Plans Management
+    </div>
+
+    <div class="header">
+        <h1>📋 Plans Management</h1>
+        <h2>{{ project.name }}</h2>
+        <p>Manage plan suggestions and approvals for this project</p>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'plans:create_plan' %}?project={{ project.id }}" class="btn waves-effect waves-light">
+            <i class="material-icons left">add</i>Create New Plan
+        </a>
+        <a href="{% url 'plans:suggest_plan' 'project' project.id %}" class="btn waves-effect waves-light">
+            <i class="material-icons left">lightbulb_outline</i>Suggest Plan for Project
+        </a>
+        <a href="{% url 'project_plans' project.id %}" class="btn-flat waves-effect waves-light">
+            <i class="material-icons left">visibility</i>View All Project Plans
+        </a>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_suggestions }}</div>
+            <div>Total Suggestions</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.pending_suggestions }}</div>
+            <div>Pending Review</div>
+            {% if stats.pending_suggestions > 0 %}
+                <div style="color: var(--warning); font-size: 12px;">Need attention</div>
+            {% endif %}
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.approved_suggestions }}</div>
+            <div>Approved</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.rejected_suggestions }}</div>
+            <div>Rejected</div>
+        </div>
+    </div>
+
+    <!-- Pending Suggestions -->
+    {% if pending_suggestions %}
+    <div class="card orange lighten-4">
+        <div class="card-content">
+            <span class="card-title orange-text text-darken-2">
+                <i class="material-icons left">pending_actions</i>
+                Pending Plan Suggestions ({{ pending_suggestions|length }})
+            </span>
+            
+            {% for suggestion in pending_suggestions %}
+            <div class="suggestion-item pending">
+                <div class="suggestion-header">
+                    <div class="suggestion-info">
+                        <h6><a href="{% url 'plans:plan_detail' suggestion.plan.id %}" target="_blank">{{ suggestion.plan.name }}</a></h6>
+                        <p class="suggestion-target">For: <strong>{{ suggestion.content_object }}</strong></p>
+                        <p class="suggestion-meta">
+                            Suggested by <strong>{{ suggestion.suggested_by.username }}</strong> 
+                            on {{ suggestion.created_at|date:"M d, Y H:i" }}
+                        </p>
+                    </div>
+                    <div class="suggestion-status">
+                        <span class="chip orange">Pending Review</span>
+                    </div>
+                </div>
+                
+                {% if suggestion.suggestion_note %}
+                <div class="suggestion-note">
+                    <strong>Suggestion Note:</strong>
+                    <p><em>"{{ suggestion.suggestion_note }}"</em></p>
+                </div>
+                {% endif %}
+                
+                <div class="plan-preview">
+                    <strong>Plan Summary:</strong>
+                    {% if suggestion.plan.desc %}
+                    <p>{{ suggestion.plan.desc|truncatewords:25 }}</p>
+                    {% endif %}
+                    <p class="grey-text">{{ suggestion.plan.steps.count }} step{{ suggestion.plan.steps.count|pluralize }}</p>
+                </div>
+                
+                <!-- Moderation Form -->
+                <form method="post" action="{% url 'project:moderate_plan_suggestion' project.id suggestion.id %}" class="moderation-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <textarea name="review_note" id="review_note_{{ suggestion.id }}" class="materialize-textarea" placeholder="Optional review note..."></textarea>
+                            <label for="review_note_{{ suggestion.id }}">Review Note (Optional)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="moderation-actions">
+                        <button type="submit" name="action" value="approve" class="btn green waves-effect waves-light">
+                            <i class="material-icons left">check</i>Approve
+                        </button>
+                        <button type="submit" name="action" value="reject" class="btn red waves-effect waves-light">
+                            <i class="material-icons left">close</i>Reject
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card green lighten-4">
+        <div class="card-content">
+            <span class="card-title green-text text-darken-2">
+                <i class="material-icons left">check_circle</i>
+                No Pending Suggestions
+            </span>
+            <p>All plan suggestions have been reviewed.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Approved Suggestions -->
+    {% if approved_suggestions %}
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">
+                <i class="material-icons left">check_circle</i>
+                Approved Plan Suggestions
+            </span>
+            
+            <div class="collection">
+                {% for suggestion in approved_suggestions %}
+                <div class="collection-item">
+                    <div class="suggestion-summary">
+                        <div class="suggestion-info">
+                            <h6><a href="{% url 'plans:plan_detail' suggestion.plan.id %}" target="_blank">{{ suggestion.plan.name }}</a></h6>
+                            <p>For: <strong>{{ suggestion.content_object }}</strong></p>
+                            <p class="grey-text">
+                                Suggested by {{ suggestion.suggested_by.username }} | 
+                                Approved by {{ suggestion.reviewed_by.username }} on {{ suggestion.reviewed_at|date:"M d, Y" }}
+                            </p>
+                        </div>
+                        <div class="suggestion-status">
+                            <span class="chip green">Approved</span>
+                        </div>
+                    </div>
+                    
+                    {% if suggestion.review_note %}
+                    <div class="review-note">
+                        <strong>Review Note:</strong> {{ suggestion.review_note }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Rejected Suggestions -->
+    {% if rejected_suggestions %}
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">
+                <i class="material-icons left">cancel</i>
+                Rejected Plan Suggestions
+            </span>
+            
+            <div class="collection">
+                {% for suggestion in rejected_suggestions %}
+                <div class="collection-item">
+                    <div class="suggestion-summary">
+                        <div class="suggestion-info">
+                            <h6><a href="{% url 'plans:plan_detail' suggestion.plan.id %}" target="_blank">{{ suggestion.plan.name }}</a></h6>
+                            <p>For: <strong>{{ suggestion.content_object }}</strong></p>
+                            <p class="grey-text">
+                                Suggested by {{ suggestion.suggested_by.username }} | 
+                                Rejected by {{ suggestion.reviewed_by.username }} on {{ suggestion.reviewed_at|date:"M d, Y" }}
+                            </p>
+                        </div>
+                        <div class="suggestion-status">
+                            <span class="chip red">Rejected</span>
+                        </div>
+                    </div>
+                    
+                    {% if suggestion.review_note %}
+                    <div class="review-note">
+                        <strong>Rejection Reason:</strong> {{ suggestion.review_note }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="{% url 'project:moderation_dashboard' project.id %}" style="text-decoration: none; color: #007cba;">← Back to Moderation Dashboard</a>
+    </div>
+
+</div>
+
+<style>
+.action-buttons {
+    margin: 20px 0;
+}
+
+.action-buttons .btn,
+.action-buttons .btn-flat {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: var(--bg-light);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border-left: 4px solid var(--highlight);
+}
+
+.stat-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: var(--highlight);
+}
+
+.suggestion-item {
+    border-left: 3px solid var(--warning);
+    padding: 20px;
+    margin-bottom: 20px;
+    background: var(--bg-light);
+    border-radius: 0 8px 8px 0;
+}
+
+.suggestion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.suggestion-info h6 {
+    margin: 0 0 5px 0;
+}
+
+.suggestion-info h6 a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.suggestion-info h6 a:hover {
+    color: var(--highlight);
+}
+
+.suggestion-target {
+    color: var(--text2ndary);
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+.suggestion-meta {
+    color: var(--text2ndary);
+    font-size: 0.85em;
+    margin: 0;
+}
+
+.suggestion-note {
+    background: var(--bg-color2);
+    padding: 15px;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+.plan-preview {
+    background: var(--bg-color2);
+    padding: 15px;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+.moderation-form {
+    margin-top: 20px;
+    border-top: 1px solid var(--bg-color3);
+    padding-top: 20px;
+}
+
+.moderation-actions {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.moderation-actions .btn {
+    margin-left: 10px;
+}
+
+.suggestion-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.review-note {
+    background: var(--bg-light);
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.chip.green {
+    background-color: var(--confirm);
+    color: var(--bg-color);
+}
+
+.chip.red {
+    background-color: var(--danger);
+    color: var(--text);
+}
+
+.chip.orange {
+    background-color: var(--warning);
+    color: var(--bg-color);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.textareaAutoResize(document.querySelectorAll('textarea'));
+    M.updateTextFields();
+});
+</script>
+{% endblock %}

@@ -28,209 +28,304 @@
                 <div class="card-content">
                     <span class="card-title">👥 Project Members</span>
                     
-                    <!-- Administrators group -->
-                    <details open>
-                        <summary class="user-group-summary">
-                            <span class="user-group-title">👑 Administrators</span>
-                            <span class="user-count">{{ admin_users|length }}</span>
-                        </summary>
-                        <div class="user-group-content">
-                            <p class="user-group-desc">Project administrators have full control over the project, including managing members and settings.</p>
-                            
-                            <ul class="user-list">
-                                {% for user in admin_users %}
-                                <li class="user-item">
-                                    <div class="user-info">
-                                        <!-- Fixed Avatar Handling -->
-                                        {% if user.profile.avatar %}
-                                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
-                                        {% else %}
-                                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
-                                        {% endif %}
-                                        
-                                        <div class="user-details">
-                                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
-                                            <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
-                                            {% if user.profile.location %}
-                                                <span class="user-location">
-                                                    <i class="material-icons tiny">location_on</i>
-                                                    {{ user.profile.location }}
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="user-actions">
-                                        {% if can_manage_members %}
-                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
-                                            <i class="material-icons left">settings</i>Manage
-                                        </a>
-                                        {% else %}
-                                        <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
-                                            <i class="material-icons left">visibility</i>View Profile
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                </li>
-                                {% empty %}
-                                <li class="empty-list-message">No administrators found</li>
-                                {% endfor %}
-                            </ul>
+                    <!-- Search and filter bar -->
+                    <div class="row" style="margin-bottom: 20px;">
+                        <div class="col s12 m6">
+                            <div class="input-field">
+                                <input type="text" id="member-search" placeholder="Search members...">
+                                <i class="material-icons prefix">search</i>
+                            </div>
                         </div>
-                    </details>
+                        <div class="col s12 m6">
+                            <div class="input-field">
+                                <select id="role-filter">
+                                    <option value="all" selected>All Roles</option>
+                                    <option value="admin">Administrators</option>
+                                    <option value="moderator">Moderators</option>
+                                    <option value="contributor">Contributors</option>
+                                    <option value="member">Members</option>
+                                </select>
+                                <label>Filter by Role</label>
+                            </div>
+                        </div>
+                    </div>
                     
-                    <!-- Moderators group -->
-                    <details>
-                        <summary class="user-group-summary">
-                            <span class="user-group-title">🛡️ Moderators</span>
-                            <span class="user-count">{{ moderator_users|length }}</span>
-                        </summary>
-                        <div class="user-group-content">
-                            <p class="user-group-desc">Moderators help manage project content and comments.</p>
-                            
-                            <ul class="user-list">
-                                {% for user in moderator_users %}
-                                <li class="user-item">
-                                    <div class="user-info">
-                                        <!-- Fixed Avatar Handling -->
-                                        {% if user.profile.avatar %}
-                                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
-                                        {% else %}
-                                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
-                                        {% endif %}
-                                        
-                                        <div class="user-details">
-                                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
-                                            <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
-                                            {% if user.profile.location %}
-                                                <span class="user-location">
-                                                    <i class="material-icons tiny">location_on</i>
-                                                    {{ user.profile.location }}
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="user-actions">
-                                        {% if can_manage_members %}
-                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
-                                            <i class="material-icons left">settings</i>Manage
-                                        </a>
-                                        {% else %}
-                                        <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
-                                            <i class="material-icons left">visibility</i>View Profile
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                </li>
-                                {% empty %}
-                                <li class="empty-list-message">No moderators found</li>
-                                {% endfor %}
-                            </ul>
+                    <!-- Members count stats -->
+                    <div class="members-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ total_members }}</span>
+                            <span class="stat-label">Total Members</span>
                         </div>
-                    </details>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ admin_users|length }}</span>
+                            <span class="stat-label">Admins</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ moderator_users|length }}</span>
+                            <span class="stat-label">Moderators</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ contributor_users|length }}</span>
+                            <span class="stat-label">Contributors</span>
+                        </div>
+                    </div>
                     
-                    <!-- Contributors group -->
-                    <details>
-                        <summary class="user-group-summary">
-                            <span class="user-group-title">🔨 Contributors</span>
-                            <span class="user-count">{{ contributor_users|length }}</span>
-                        </summary>
-                        <div class="user-group-content">
-                            <p class="user-group-desc">Contributors actively help build and develop the project.</p>
-                            
-                            <ul class="user-list">
-                                {% for user in contributor_users %}
-                                <li class="user-item">
-                                    <div class="user-info">
-                                        <!-- Fixed Avatar Handling -->
-                                        {% if user.profile.avatar %}
-                                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
-                                        {% else %}
-                                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
-                                        {% endif %}
-                                        
-                                        <div class="user-details">
-                                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
-                                            <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
-                                            {% if user.profile.location %}
-                                                <span class="user-location">
-                                                    <i class="material-icons tiny">location_on</i>
-                                                    {{ user.profile.location }}
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="user-actions">
-                                        {% if can_manage_members %}
-                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
-                                            <i class="material-icons left">settings</i>Manage
-                                        </a>
-                                        {% else %}
-                                        <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
-                                            <i class="material-icons left">visibility</i>View Profile
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                </li>
-                                {% empty %}
-                                <li class="empty-list-message">No contributors found</li>
-                                {% endfor %}
-                            </ul>
+                    <!-- All Members List with Pagination -->
+                    <div class="all-members-section">
+                        <h5>All Members</h5>
+                        
+                        <!-- Pagination top -->
+                        <div class="pagination-top">
+                            {% include 'components/details-pagination.html' with items=all_members %}
                         </div>
-                    </details>
+                        
+                        <ul class="user-list">
+                            {% for user in all_members %}
+                            <li class="user-item" data-role="{{ user.membership_role|lower }}">
+                                <div class="user-info">
+                                    {% if user.profile.avatar %}
+                                        <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                    {% else %}
+                                        <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                                    {% endif %}
+                                    
+                                    <div class="user-details">
+                                        <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                        <span class="user-role-badge {{ user.membership_role|lower }}">
+                                            {{ user.membership_role|title }}
+                                        </span>
+                                        <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                        {% if user.profile.location %}
+                                            <span class="user-location">
+                                                <i class="material-icons tiny">location_on</i>
+                                                {{ user.profile.location }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="user-actions">
+                                    {% if can_manage_members %}
+                                    <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                        <i class="material-icons left">settings</i>Manage
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                        <i class="material-icons left">visibility</i>View
+                                    </a>
+                                </div>
+                            </li>
+                            {% empty %}
+                            <li class="empty-list-message">No members found</li>
+                            {% endfor %}
+                        </ul>
+                        
+                        <!-- Pagination bottom -->
+                        <div class="pagination-bottom">
+                            {% include 'components/details-pagination.html' with items=all_members %}
+                        </div>
+                    </div>
                     
-                    <!-- Members/Supporters group -->
-                    <details>
-                        <summary class="user-group-summary">
-                            <span class="user-group-title">👥 Members</span>
-                            <span class="user-count">{{ member_users|length }}</span>
-                        </summary>
-                        <div class="user-group-content">
-                            <p class="user-group-desc">Project members who follow and support the project.</p>
-                            
-                            <ul class="user-list">
-                                {% for user in member_users %}
-                                <li class="user-item">
-                                    <div class="user-info">
-                                        <!-- Fixed Avatar Handling -->
-                                        {% if user.profile.avatar %}
-                                            <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
-                                        {% else %}
-                                            <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
-                                        {% endif %}
-                                        
-                                        <div class="user-details">
-                                            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
-                                            <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
-                                            {% if user.profile.location %}
-                                                <span class="user-location">
-                                                    <i class="material-icons tiny">location_on</i>
-                                                    {{ user.profile.location }}
-                                                </span>
+                    <!-- Role Groups (collapsed by default) -->
+                    <div class="role-groups-section">
+                        <h5>Members by Role</h5>
+                        
+                        <!-- Administrators group -->
+                        <details>
+                            <summary class="user-group-summary">
+                                <span class="user-group-title">👑 Administrators</span>
+                                <span class="user-count">{{ admin_users|length }}</span>
+                            </summary>
+                            <div class="user-group-content">
+                                <p class="user-group-desc">Project administrators have full control over the project, including managing members and settings.</p>
+                                
+                                <ul class="user-list">
+                                    {% for user in admin_users %}
+                                    <li class="user-item">
+                                        <div class="user-info">
+                                            {% if user.profile.avatar %}
+                                                <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                            {% else %}
+                                                <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
                                             {% endif %}
+                                            
+                                            <div class="user-details">
+                                                <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                                <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                                {% if user.profile.location %}
+                                                    <span class="user-location">
+                                                        <i class="material-icons tiny">location_on</i>
+                                                        {{ user.profile.location }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div class="user-actions">
-                                        {% if can_manage_members %}
-                                        <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
-                                            <i class="material-icons left">settings</i>Manage
-                                        </a>
-                                        {% else %}
-                                        <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
-                                            <i class="material-icons left">visibility</i>View Profile
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                </li>
-                                {% empty %}
-                                <li class="empty-list-message">No members found</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </details>
+                                        
+                                        <div class="user-actions">
+                                            {% if can_manage_members %}
+                                            <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                                <i class="material-icons left">settings</i>Manage
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                                <i class="material-icons left">visibility</i>View
+                                            </a>
+                                        </div>
+                                    </li>
+                                    {% empty %}
+                                    <li class="empty-list-message">No administrators found</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </details>
+                        
+                        <!-- Moderators group -->
+                        <details>
+                            <summary class="user-group-summary">
+                                <span class="user-group-title">🛡️ Moderators</span>
+                                <span class="user-count">{{ moderator_users|length }}</span>
+                            </summary>
+                            <div class="user-group-content">
+                                <p class="user-group-desc">Moderators help manage project content and comments.</p>
+                                
+                                <ul class="user-list">
+                                    {% for user in moderator_users %}
+                                    <li class="user-item">
+                                        <div class="user-info">
+                                            {% if user.profile.avatar %}
+                                                <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                            {% else %}
+                                                <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                                            {% endif %}
+                                            
+                                            <div class="user-details">
+                                                <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                                <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                                {% if user.profile.location %}
+                                                    <span class="user-location">
+                                                        <i class="material-icons tiny">location_on</i>
+                                                        {{ user.profile.location }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="user-actions">
+                                            {% if can_manage_members %}
+                                            <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                                <i class="material-icons left">settings</i>Manage
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                                <i class="material-icons left">visibility</i>View
+                                            </a>
+                                        </div>
+                                    </li>
+                                    {% empty %}
+                                    <li class="empty-list-message">No moderators found</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </details>
+                        
+                        <!-- Contributors group -->
+                        <details>
+                            <summary class="user-group-summary">
+                                <span class="user-group-title">🔨 Contributors</span>
+                                <span class="user-count">{{ contributor_users|length }}</span>
+                            </summary>
+                            <div class="user-group-content">
+                                <p class="user-group-desc">Contributors actively help build and develop the project.</p>
+                                
+                                <ul class="user-list">
+                                    {% for user in contributor_users %}
+                                    <li class="user-item">
+                                        <div class="user-info">
+                                            {% if user.profile.avatar %}
+                                                <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                            {% else %}
+                                                <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                                            {% endif %}
+                                            
+                                            <div class="user-details">
+                                                <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                                <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                                {% if user.profile.location %}
+                                                    <span class="user-location">
+                                                        <i class="material-icons tiny">location_on</i>
+                                                        {{ user.profile.location }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="user-actions">
+                                            {% if can_manage_members %}
+                                            <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                                <i class="material-icons left">settings</i>Manage
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                                <i class="material-icons left">visibility</i>View
+                                            </a>
+                                        </div>
+                                    </li>
+                                    {% empty %}
+                                    <li class="empty-list-message">No contributors found</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </details>
+                        
+                        <!-- Members/Supporters group -->
+                        <details>
+                            <summary class="user-group-summary">
+                                <span class="user-group-title">👥 Members</span>
+                                <span class="user-count">{{ member_users|length }}</span>
+                            </summary>
+                            <div class="user-group-content">
+                                <p class="user-group-desc">Project members who follow and support the project.</p>
+                                
+                                <ul class="user-list">
+                                    {% for user in member_users %}
+                                    <li class="user-item">
+                                        <div class="user-info">
+                                            {% if user.profile.avatar %}
+                                                <img class="user-avatar circle" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                            {% else %}
+                                                <img class="user-avatar circle" src="{% static 'icons/default-avatar.svg' %}" alt="{{ user.username }}">
+                                            {% endif %}
+                                            
+                                            <div class="user-details">
+                                                <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                                                <span class="user-joined">Joined {{ user.membership_date_joined|naturaltime }}</span>
+                                                {% if user.profile.location %}
+                                                    <span class="user-location">
+                                                        <i class="material-icons tiny">location_on</i>
+                                                        {{ user.profile.location }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="user-actions">
+                                            {% if can_manage_members %}
+                                            <a href="{% url 'project:member_detail' project.id user.id %}" class="btn-small waves-effect waves-light blue">
+                                                <i class="material-icons left">settings</i>Manage
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'user:userprofile' user.id %}" class="btn-small waves-effect waves-light">
+                                                <i class="material-icons left">visibility</i>View
+                                            </a>
+                                        </div>
+                                    </li>
+                                    {% empty %}
+                                    <li class="empty-list-message">No members found</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </details>
+                    </div>
                 </div>
             </div>
             
@@ -299,6 +394,38 @@
     font-weight: 600;
     color: var(--text);
     font-size: 1rem;
+}
+
+.user-role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin: 2px 0;
+}
+
+.user-role-badge.admin {
+    background-color: #ffeb3b;
+    color: #ff6f00;
+}
+
+.user-role-badge.moderator {
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.user-role-badge.contributor {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.user-role-badge.viewer,
+.user-role-badge.supporter,
+.user-role-badge.member {
+    background-color: #f5f5f5;
+    color: #616161;
 }
 
 .user-joined {
@@ -407,6 +534,79 @@ details[open] .user-group-content {
     border-left: 3px solid var(--highlight);
 }
 
+/* Members Stats */
+.members-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.stat-item {
+    flex: 1;
+    min-width: 120px;
+    background-color: var(--bg-color3);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--highlight);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text2ndary);
+}
+
+/* Pagination Styles */
+.pagination-top, .pagination-bottom {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination li {
+    margin: 0 5px;
+}
+
+.pagination li a {
+    display: block;
+    padding: 8px 15px;
+    background-color: var(--bg-color3);
+    border-radius: 4px;
+    color: var(--text);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.pagination li.active a {
+    background-color: var(--highlight);
+    color: white;
+}
+
+.pagination li a:hover {
+    background-color: var(--bg-light);
+}
+
+.pagination li.disabled a {
+    color: var(--text2ndary);
+    pointer-events: none;
+    opacity: 0.6;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .user-item {
@@ -422,11 +622,11 @@ details[open] .user-group-content {
     
     .user-actions {
         width: 100%;
-        justify-content: center;
+        justify-content: flex-end;
     }
     
     .user-actions .btn-small {
-        flex: 1;
+        flex: none;
         text-align: center;
     }
     
@@ -444,6 +644,20 @@ details[open] .user-group-content {
     
     .user-name {
         font-size: 0.95rem;
+    }
+    
+    .members-stats {
+        gap: 10px;
+    }
+    
+    .stat-item {
+        min-width: calc(50% - 10px);
+    }
+}
+
+@media (max-width: 480px) {
+    .stat-item {
+        min-width: 100%;
     }
 }
 
@@ -489,6 +703,81 @@ details[open] > summary::before {
     align-items: center;
     gap: 10px;
 }
+
+/* Section headings */
+.all-members-section h5,
+.role-groups-section h5 {
+    font-size: 1.3rem;
+    color: var(--text);
+    margin: 30px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--bg-color3);
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize select
+    var elems = document.querySelectorAll('select');
+    M.FormSelect.init(elems);
+    
+    // Search functionality
+    const searchInput = document.getElementById('member-search');
+    const roleFilter = document.getElementById('role-filter');
+    const userItems = document.querySelectorAll('.user-item');
+    
+    function filterMembers() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const roleValue = roleFilter.value;
+        
+        userItems.forEach(item => {
+            const name = item.querySelector('.user-name').textContent.toLowerCase();
+            const role = item.dataset.role;
+            const matchesSearch = name.includes(searchTerm);
+            const matchesRole = roleValue === 'all' || role === roleValue;
+            
+            if (matchesSearch && matchesRole) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterMembers);
+    roleFilter.addEventListener('change', filterMembers);
+    
+    // Toggle between all members and role groups
+    const allMembersSection = document.querySelector('.all-members-section');
+    const roleGroupsSection = document.querySelector('.role-groups-section');
+    const toggleButton = document.createElement('button');
+    toggleButton.className = 'btn waves-effect waves-light grey';
+    toggleButton.innerHTML = '<i class="material-icons left">swap_vert</i>Toggle View';
+    toggleButton.style.margin = '10px 0';
+    
+    toggleButton.addEventListener('click', function() {
+        if (allMembersSection.style.display === 'none') {
+            allMembersSection.style.display = 'block';
+            roleGroupsSection.style.display = 'none';
+            toggleButton.innerHTML = '<i class="material-icons left">swap_vert</i>Show Role Groups';
+        } else {
+            allMembersSection.style.display = 'none';
+            roleGroupsSection.style.display = 'block';
+            toggleButton.innerHTML = '<i class="material-icons left">swap_vert</i>Show All Members';
+        }
+    });
+    
+    // Insert toggle button after the stats
+    const statsSection = document.querySelector('.members-stats');
+    if (statsSection) {
+        statsSection.parentNode.insertBefore(toggleButton, statsSection.nextSibling);
+    }
+    
+    // Default to showing all members
+    allMembersSection.style.display = 'block';
+    roleGroupsSection.style.display = 'none';
+    toggleButton.innerHTML = '<i class="material-icons left">swap_vert</i>Show Role Groups';
+});
+</script>
 
 {% endblock %}

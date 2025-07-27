@@ -48,5 +48,8 @@ urlpatterns = [
     
     # API endpoints
     path('api/search-projects/', views.api_search_projects, name='api_search_projects'),
+
+    path('<int:project_id>/moderate/plans/', views.project_plans_management, name='plans_management'),
+    path('<int:project_id>/moderate/plans/<int:suggestion_id>/', views.moderate_plan_suggestion, name='moderate_plan_suggestion'),
     
 ]

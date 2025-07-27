@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2do.net - {{ plan.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="breadcrumb">
+        <a href="/">Home</a> > 
+        <a href="/plans/">Plans</a> > 
+        {{ plan.name }}
+    </div>
+
+    <div class="header">
+        <h1>📋 {{ plan.name }}</h1>
+        {% if plan.created_by %}
+        <p>Created by <a href="/u/{{ plan.created_by.id }}">{{ plan.created_by.username }}</a> 
+           on {{ plan.created_at|date:"M d, Y" }}</p>
+        {% endif %}
+    </div>
+
+    {% if can_edit %}
+    <div class="action-buttons">
+        <a href="{% url 'plans:edit_plan' plan.id %}" class="btn waves-effect waves-light">
+            <i class="material-icons left">edit</i>Edit Plan
+        </a>
+        <a href="{% url 'plans:add_step' plan.id %}" class="btn waves-effect waves-light">
+            <i class="material-icons left">add</i>Add Step
+        </a>
+        <a href="{% url 'plans:delete_plan' plan.id %}" class="btn red waves-effect waves-light">
+            <i class="material-icons left">delete</i>Delete Plan
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Plan Description -->
+    {% if plan.desc %}
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">Description</span>
+            <p>{{ plan.desc|linebreaks }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Steps -->
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">
+                Steps 
+                {% if can_edit %}
+                <a href="{% url 'plans:add_step' plan.id %}" class="btn-small waves-effect waves-light right">
+                    <i class="material-icons left">add</i>Add Step
+                </a>
+                {% endif %}
+            </span>
+            
+            {% if plan.steps.all %}
+            <div id="steps-container" class="collection">
+                {% for step in plan.steps.all %}
+                <div class="collection-item" data-step-id="{{ step.id }}">
+                    <div class="step-content">
+                        <span class="step-number">{{ forloop.counter }}</span>
+                        <div class="step-details">
+                            <h6>{{ step.name }}</h6>
+                            {% if step.desc %}
+                            <p class="grey-text">{{ step.desc|linebreaks }}</p>
+                            {% endif %}
+                        </div>
+                        {% if can_edit %}
+                        <div class="step-actions">
+                            <a href="{% url 'plans:edit_step' plan.id step.id %}" class="btn-small waves-effect">
+                                <i class="material-icons">edit</i>
+                            </a>
+                            <a href="{% url 'plans:delete_step' plan.id step.id %}" class="btn-small red waves-effect">
+                                <i class="material-icons">delete</i>
+                            </a>
+                            {% if not forloop.first %}
+                            <button class="btn-small waves-effect move-up" data-step-id="{{ step.id }}">
+                                <i class="material-icons">keyboard_arrow_up</i>
+                            </button>
+                            {% endif %}
+                            {% if not forloop.last %}
+                            <button class="btn-small waves-effect move-down" data-step-id="{{ step.id }}">
+                                <i class="material-icons">keyboard_arrow_down</i>
+                            </button>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="grey-text">No steps added yet.</p>
+            {% if can_edit %}
+            <a href="{% url 'plans:add_step' plan.id %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">add</i>Add First Step
+            </a>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Suggestions -->
+    {% if suggestions %}
+    <div class="card">
+        <div class="card-content">
+            <span class="card-title">Where This Plan is Used</span>
+            
+            {% for suggestion in suggestions %}
+            <div class="suggestion-item">
+                <div class="chip {{ suggestion.status }}">
+                    {{ suggestion.get_status_display }}
+                </div>
+                <strong>{{ suggestion.content_object }}</strong>
+                <p class="grey-text">
+                    Suggested by {{ suggestion.suggested_by.username }} 
+                    on {{ suggestion.created_at|date:"M d, Y" }}
+                </p>
+                {% if suggestion.suggestion_note %}
+                <p><em>"{{ suggestion.suggestion_note }}"</em></p>
+                {% endif %}
+                {% if suggestion.review_note %}
+                <p class="review-note"><strong>Review:</strong> {{ suggestion.review_note }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+.action-buttons {
+    margin: 20px 0;
+}
+
+.action-buttons .btn {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.step-content {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 0;
+}
+
+.step-number {
+    background: var(--highlight);
+    color: var(--bg-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.step-details {
+    flex-grow: 1;
+    margin-right: 15px;
+}
+
+.step-details h6 {
+    margin: 0 0 5px 0;
+    color: var(--text);
+}
+
+.step-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.step-actions .btn-small {
+    padding: 0 8px;
+    height: 30px;
+    line-height: 30px;
+}
+
+.suggestion-item {
+    border-left: 3px solid var(--highlight);
+    padding-left: 15px;
+    margin-bottom: 15px;
+}
+
+.chip.pending {
+    background-color: var(--warning);
+    color: var(--bg-color);
+}
+
+.chip.approved {
+    background-color: var(--confirm);
+    color: var(--bg-color);
+}
+
+.chip.rejected {
+    background-color: var(--danger);
+    color: var(--text);
+}
+
+.review-note {
+    background: var(--bg-light);
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle step reordering
+    const moveUpButtons = document.querySelectorAll('.move-up');
+    const moveDownButtons = document.querySelectorAll('.move-down');
+    
+    moveUpButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const stepId = this.dataset.stepId;
+            moveStep(stepId, 'up');
+        });
+    });
+    
+    moveDownButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const stepId = this.dataset.stepId;
+            moveStep(stepId, 'down');
+        });
+    });
+    
+    function moveStep(stepId, direction) {
+        const stepItems = Array.from(document.querySelectorAll('.collection-item'));
+        const currentItem = stepItems.find(item => item.dataset.stepId === stepId);
+        const currentIndex = stepItems.indexOf(currentItem);
+        
+        let newIndex;
+        if (direction === 'up' && currentIndex > 0) {
+            newIndex = currentIndex - 1;
+        } else if (direction === 'down' && currentIndex < stepItems.length - 1) {
+            newIndex = currentIndex + 1;
+        } else {
+            return; // Can't move
+        }
+        
+        // Swap elements in DOM
+        const container = document.getElementById('steps-container');
+        if (direction === 'up') {
+            container.insertBefore(currentItem, stepItems[currentIndex - 1]);
+        } else {
+            container.insertBefore(stepItems[currentIndex + 1], currentItem);
+        }
+        
+        // Update step orders via AJAX
+        updateStepOrders();
+    }
+    
+    function updateStepOrders() {
+        const stepItems = document.querySelectorAll('.collection-item');
+        const stepOrders = [];
+        
+        stepItems.forEach((item, index) => {
+            stepOrders.push({
+                id: parseInt(item.dataset.stepId),
+                order: index + 1
+            });
+        });
+        
+        fetch(`{% url 'plans:reorder_steps' plan.id %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': window.csrfToken
+            },
+            body: JSON.stringify(stepOrders)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.error('Failed to update step orders');
+                location.reload(); // Reload to reset order
+            }
+        })
+        .catch(error => {
+            console.error('Error updating step orders:', error);
+            location.reload(); // Reload to reset order
+        });
+    }
+});
+</script>
+{% endblock %}

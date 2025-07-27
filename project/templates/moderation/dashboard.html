@@ -63,6 +63,14 @@
             <div class="stat-number">{{ stats.total_subprojects }}</div>
             <div>Subprojects</div>
         </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_plan_suggestions }}</div>
+            <div>Plan Suggestions</div>
+            {% if stats.pending_plan_suggestions > 0 %}
+                <div style="color: #dc3545; font-size: 12px;">{{ stats.pending_plan_suggestions }} pending</div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Quick Alerts -->
@@ -75,6 +83,12 @@
     {% if stats.pending_comments > 0 %}
     <div class="alert alert-info">
         ℹ️ There are {{ stats.pending_comments }} comment{{ stats.pending_comments|pluralize }} pending approval.
+    </div>
+    {% endif %}
+
+    {% if stats.pending_plan_suggestions > 0 %}
+    <div class="alert alert-warning">
+        📋 There are {{ stats.pending_plan_suggestions }} plan suggestion{{ stats.pending_plan_suggestions|pluralize }} that need your review.
     </div>
     {% endif %}
 
@@ -111,6 +125,16 @@
             <h3>📍 Locations Management</h3>
             <p>Manage project locations and geographical information.</p>
             <strong>{{ stats.total_locations }} locations</strong>
+        </a>
+
+        <a href="{% url 'project:plans_management' project.id %}" class="nav-card">
+            <h3>📋 Plans Management</h3>
+            <p>Review and approve plan suggestions for this project and its content.</p>
+            {% if stats.pending_plan_suggestions > 0 %}
+                <strong style="color: #dc3545;">{{ stats.pending_plan_suggestions }} suggestions pending</strong>
+            {% else %}
+                <strong>{{ stats.total_plan_suggestions }} total suggestions</strong>
+            {% endif %}
         </a>
 
         <a href="{% url 'project:subprojects_management' project.id %}" class="nav-card">

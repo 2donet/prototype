@@ -53,6 +53,7 @@ class Project(models.Model):
     tags = models.TextField(blank=True, null=True, help_text="Comma-separated tags")
     published = models.BooleanField(default=False)
     skills = models.ManyToManyField('skills.Skill', blank=True)
+    main_project = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='sub_projects')
     
     # New fields for permission management
     allow_anonymous_comments = models.BooleanField(default=True, 
@@ -117,20 +118,20 @@ class Project(models.Model):
                 'is_administrator': role == 'ADMIN',
                 'is_moderator': role in ['ADMIN', 'MODERATOR'],
                 'is_contributor': role in ['ADMIN', 'CONTRIBUTOR', 'MENTOR'],
-                'is_owner': user == self.created_by
+                'is_owner': user == self.created_by,
+                'is_member': role in ['ADMIN', 'MODERATOR'] or user == self.created_by
             }
         )
         
         if not created:
-            # Update existing membership with new role
             membership.role = role
             membership.is_administrator = role == 'ADMIN'
             membership.is_moderator = role in ['ADMIN', 'MODERATOR']
             membership.is_contributor = role in ['ADMIN', 'CONTRIBUTOR', 'MENTOR']
+            membership.is_member = role in ['ADMIN', 'MODERATOR'] or membership.is_owner
             membership.save()
         
         return membership
-    
     def get_members_by_role(self, role):
         """Get all users with a specific role in this project"""
         return User.objects.filter(
@@ -252,8 +253,7 @@ class Membership(models.Model):
     is_administrator = models.BooleanField(default=False)
     is_owner = models.BooleanField(default=False)
     is_contributor = models.BooleanField(default=False)
-    
-    # New field for fine-grained permissions
+    is_member = models.BooleanField(default=False)
     custom_permissions = models.JSONField(default=dict, blank=True,
         help_text="Custom permission overrides for this membership")
 
@@ -267,6 +267,12 @@ class Membership(models.Model):
             ("can_remove_members", "Can remove members from project"),
             ("can_view_analytics", "Can view project analytics"),
         ]
+
+    def save(self, *args, **kwargs):
+        # Automatically set is_member for moderators, admins, and owners
+        if self.is_moderator or self.is_administrator or self.is_owner:
+            self.is_member = True
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user.username} - {self.project.name} ({self.get_role_display()})"
