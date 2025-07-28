@@ -1,0 +1,837 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %}{{ project.name }} Needs | 2do.net{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project Header Section -->
+    <div class="row">
+        <div class="col s12">
+            <div class="project-header-card card">
+                <div class="card-content">
+                    <div class="project-header-content">
+                        <div class="project-info">
+                            <div class="breadcrumb-nav">
+                                <a href="{% url 'need:need_list' %}" class="breadcrumb-link">
+                                    <i class="material-icons left">arrow_back</i>All Needs
+                                </a>
+                                <span class="breadcrumb-separator">/</span>
+                                <a href="/{{ project.id }}/" class="breadcrumb-link">{{ project.name }}</a>
+                                <span class="breadcrumb-separator">/</span>
+                                <span class="current-page">Needs</span>
+                            </div>
+                            
+                            <h3 class="project-title">
+                                <i class="material-icons large project-icon">folder</i>
+                                Needs for <span class="project-name">{{ project.name }}</span>
+                            </h3>
+                            
+                            {% if project.desc %}
+                            <p class="project-description">{{ project.desc|truncatewords:30 }}</p>
+                            {% endif %}
+                            
+                            <div class="project-stats">
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ stats.total_needs }}</div>
+                                    <div class="stat-label">Total Needs</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ stats.fulfilled_needs }}</div>
+                                    <div class="stat-label">Fulfilled</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ stats.in_progress_needs }}</div>
+                                    <div class="stat-label">In Progress</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ stats.pending_needs }}</div>
+                                    <div class="stat-label">Pending</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Circular -->
+                        <div class="project-progress">
+                            <div class="progress-circle">
+                                <div class="circle-content">
+                                    <span class="percentage">
+                                        {% if stats.total_needs > 0 %}
+                                            {% widthratio stats.fulfilled_needs stats.total_needs 100 %}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </span>
+                                    <span class="progress-label">Complete</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Actions Section -->
+    <div class="row">
+        <div class="col s12">
+            <div class="project-actions-card card">
+                <div class="card-content">
+                    <div class="action-buttons">
+                        {% if user.is_authenticated and project.user_can_contribute %}
+                        <a href="{% url 'need:create_need_for_project' project.id %}" class="btn waves-effect waves-light">
+                            <i class="material-icons left">add</i>Create New Need
+                        </a>
+                        {% endif %}
+                        
+                        <a href="/{{ project.id }}/" class="btn-flat waves-effect">
+                            <i class="material-icons left">arrow_back</i>Back to Project
+                        </a>
+                        
+                        <a href="{% url 'task:project_tasks' project.id %}" class="btn-flat waves-effect">
+                            <i class="material-icons left">assignment</i>View Tasks
+                        </a>
+
+                        <a href="/{{ project.id }}/plans/" class="btn-flat waves-effect">
+                            <i class="material-icons left">timeline</i>View Plans
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Skills Section (if project has skills) -->
+    {% if project.skills.exists %}
+    <div class="row">
+        <div class="col s12">
+            <div class="project-skills-card card">
+                <div class="card-content">
+                    <h5 class="card-title">
+                        <i class="material-icons left">label</i>Project Skills
+                    </h5>
+                    <div class="project-skills-container">
+                        {% for skill in project.skills.all %}
+                        <a href="{% url 'need:skill_needs' skill.name|lower %}" class="chip project-skill-chip">
+                            {{ skill.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters Section -->
+    <div class="row">
+        <div class="col s12">
+            <div class="project-filters-panel card">
+                <div class="card-content">
+                    <div class="filter-row">
+                        <!-- Search -->
+                        <div class="input-field search-field">
+                            <i class="material-icons prefix">search</i>
+                            <input type="text" id="project-need-search" placeholder="Search within {{ project.name }} needs...">
+                            <label for="project-need-search">Search Needs</label>
+                        </div>
+                        
+                        <!-- Status Filter -->
+                        <div class="filter-group">
+                            <label class="filter-group-label">Status</label>
+                            <div class="status-filters">
+                                <p><label><input type="checkbox" class="project-status-filter" value="pending" checked><span>Pending</span></label></p>
+                                <p><label><input type="checkbox" class="project-status-filter" value="in_progress" checked><span>In Progress</span></label></p>
+                                <p><label><input type="checkbox" class="project-status-filter" value="fulfilled"><span>Fulfilled</span></label></p>
+                                <p><label><input type="checkbox" class="project-status-filter" value="canceled"><span>Canceled</span></label></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Priority Range Filter -->
+                        <div class="filter-group">
+                            <label class="filter-group-label">Priority</label>
+                            <div class="priority-filters">
+                                <p><label><input type="checkbox" class="project-priority-filter" value="high" checked><span>High (75-100%)</span></label></p>
+                                <p><label><input type="checkbox" class="project-priority-filter" value="medium" checked><span>Medium (50-74%)</span></label></p>
+                                <p><label><input type="checkbox" class="project-priority-filter" value="low" checked><span>Low (25-49%)</span></label></p>
+                                <p><label><input type="checkbox" class="project-priority-filter" value="minimal" checked><span>Minimal (0-24%)</span></label></p>
+                            </div>
+                        </div>
+
+                        <!-- Skills Filter -->
+                        <div class="filter-group">
+                            <label class="filter-group-label">Required Skills</label>
+                            <div class="chips chips-autocomplete" id="project-skills-filter"></div>
+                            <div class="skill-filter-logic">
+                                <p><label><input name="project-skill-logic" type="radio" value="any" checked><span>Any selected skill</span></label></p>
+                                <p><label><input name="project-skill-logic" type="radio" value="all"><span>All selected skills</span></label></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Sort -->
+                        <div class="input-field">
+                            <select id="project-sort-select">
+                                <option value="-created_date">Newest First</option>
+                                <option value="created_date">Oldest First</option>
+                                <option value="-priority">Priority (High to Low)</option>
+                                <option value="priority">Priority (Low to High)</option>
+                                <option value="deadline">Deadline (Nearest)</option>
+                                <option value="name">Name (A-Z)</option>
+                                <option value="status">Status</option>
+                            </select>
+                            <label>Sort By</label>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button id="clear-project-filters" class="btn-flat waves-effect">
+                            <i class="material-icons left">clear</i>Clear Filters
+                        </button>
+                        <button id="apply-project-filters" class="btn waves-effect waves-light">
+                            <i class="material-icons left">filter_list</i>Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row">
+        <div class="col s12">
+            <div class="results-summary">
+                <span id="project-results-count">Showing {{ needs|length }} needs</span>
+                <div class="results-actions right">
+                    {% if user.is_authenticated and project.user_can_contribute %}
+                    <a href="{% url 'need:create_need_for_project' project.id %}" class="btn waves-effect waves-light">
+                        <i class="material-icons left">add</i>Add Need
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="project-loading-indicator" class="center-align hide">
+        <div class="preloader-wrapper active">
+            <div class="spinner-layer spinner-custom">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+        </div>
+        <p>Loading {{ project.name }} needs...</p>
+    </div>
+
+    <!-- Needs Container -->
+    <div class="row" id="project-needs-container">
+        {% for need in needs %}
+            <div class="col s12 m6 l4 need-card-wrapper" data-need-id="{{ need.id }}" data-priority="{{ need.priority }}" data-status="{{ need.status }}">
+                <div class="card need-card {{ need.priority_class }} hoverable">
+                    <div class="card-content">
+                        <div class="need-header">
+                            <div class="need-title-row">
+                                <span class="card-title truncate">
+                                    <a href="{% url 'need:need' need.id %}" class="need-title-link">{{ need.name }}</a>
+                                </span>
+                                <div class="need-badges">
+                                    <span class="badge priority-badge {{ need.priority_class }}" data-badge-caption="{{ need.priority }}%">{{ need.priority }}</span>
+                                    <span class="badge status-badge {{ need.status_class }}" data-badge-caption="{{ need.get_status_display }}"></span>
+                                    {% if need.deadline and need.deadline < timezone.now %}
+                                    <span class="badge overdue-badge" data-badge-caption="Overdue">!</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="progress-container">
+                                <div class="progress">
+                                    <div class="determinate" style="width: {{ need.progress }}%"></div>
+                                </div>
+                                <span class="progress-text">{{ need.progress }}% Complete</span>
+                            </div>
+                        </div>
+
+                        <div class="need-meta">
+                            <div class="meta-item">
+                                <i class="material-icons tiny">account_circle</i>
+                                <a href="/u/{{ need.created_by.id }}" class="creator-link">{{ need.created_by.username }}</a>
+                            </div>
+                            <div class="meta-item">
+                                <i class="material-icons tiny">access_time</i>
+                                <span class="created-time">{{ need.created_date|naturaltime }}</span>
+                            </div>
+                            {% if need.deadline %}
+                            <div class="meta-item deadline-item {% if need.deadline < timezone.now %}overdue{% endif %}">
+                                <i class="material-icons tiny">event</i>
+                                <span class="deadline">{{ need.deadline|naturalday }}</span>
+                                {% with days_remaining=need.deadline|timeuntil %}
+                                    <span class="days-remaining">({{ days_remaining }})</span>
+                                {% endwith %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="need-description">
+                            <p class="description-text">
+                                {% if need.desc %}
+                                    {{ need.desc|truncatewords:15|linebreaks }}
+                                {% else %}
+                                    <em class="no-description">No description provided</em>
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div class="skills-section">
+                            <div class="skills-container">
+                                {% for need_skill in need.required_skills.all %}
+                                    <a href="{% url 'need:skill_needs' need_skill.name|lower %}" class="chip skill-chip">{{ need_skill.name }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Cost & Work Type Info -->
+                        <div class="need-info-row">
+                            {% if need.cost_estimate %}
+                            <div class="info-item">
+                                <i class="material-icons tiny">attach_money</i>
+                                <span>${{ need.cost_estimate|floatformat:0 }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if need.is_remote %}
+                            <div class="info-item remote-work">
+                                <i class="material-icons tiny">laptop</i>
+                                <span>Remote</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if need.is_stationary %}
+                            <div class="info-item stationary-work">
+                                <i class="material-icons tiny">location_on</i>
+                                <span>On-site</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="card-action need-actions">
+                        <a href="{% url 'need:need' need.id %}" class="btn-flat waves-effect action-btn">
+                            <i class="material-icons left">visibility</i>View
+                        </a>
+                        
+                        {% if user == need.created_by %}
+                        <a href="{% url 'need:edit_need' need.id %}" class="btn-flat waves-effect action-btn">
+                            <i class="material-icons left">edit</i>Edit
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'submissions:create_submission_for_content' 'need' need.id %}" class="btn-flat waves-effect action-btn apply-btn">
+                            <i class="material-icons left">assignment</i>Apply
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col s12">
+                <div class="empty-state center-align">
+                    <i class="material-icons large">lightbulb_outline</i>
+                    <h5>No needs in {{ project.name }}</h5>
+                    <p>This project doesn't have any needs yet.</p>
+                    {% if user.is_authenticated and project.user_can_contribute %}
+                    <a href="{% url 'need:create_need_for_project' project.id %}" class="btn waves-effect waves-light">
+                        <i class="material-icons left">add</i>Create First Need
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if needs.has_other_pages %}
+    <div class="row">
+        <div class="col s12 center-align">
+            <ul class="pagination">
+                {% if needs.has_previous %}
+                    <li class="waves-effect"><a href="?page=1"><i class="material-icons">first_page</i></a></li>
+                    <li class="waves-effect"><a href="?page={{ needs.previous_page_number }}"><i class="material-icons">chevron_left</i></a></li>
+                {% endif %}
+                
+                {% for num in needs.paginator.page_range %}
+                    {% if needs.number == num %}
+                        <li class="active"><a href="#!">{{ num }}</a></li>
+                    {% elif num > needs.number|add:'-3' and num < needs.number|add:'3' %}
+                        <li class="waves-effect"><a href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if needs.has_next %}
+                    <li class="waves-effect"><a href="?page={{ needs.next_page_number }}"><i class="material-icons">chevron_right</i></a></li>
+                    <li class="waves-effect"><a href="?page={{ needs.paginator.num_pages }}"><i class="material-icons">last_page</i></a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Project Needs Page Styles */
+.project-header-card {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 30px;
+}
+
+.project-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+}
+
+.breadcrumb-nav {
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.breadcrumb-link {
+    color: var(--text2ndary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.breadcrumb-link:hover {
+    color: var(--highlight);
+}
+
+.breadcrumb-separator {
+    color: var(--highlightmenu);
+    margin: 0 10px;
+}
+
+.current-page {
+    color: var(--highlight);
+}
+
+.project-title {
+    color: var(--text);
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.project-icon {
+    color: var(--highlight);
+    font-size: 2.5rem;
+}
+
+.project-name {
+    color: var(--highlight);
+    font-weight: 600;
+}
+
+.project-description {
+    color: var(--text2ndary);
+    margin-bottom: 20px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.project-stats {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--highlight);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text2ndary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.project-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--confirm) 0deg {% widthratio stats.fulfilled_needs stats.total_needs 360 %}deg, 
+        var(--bg-color2) {% widthratio stats.fulfilled_needs stats.total_needs 360 %}deg 360deg
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.progress-circle::before {
+    content: '';
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--bg-light);
+    position: absolute;
+}
+
+.circle-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.percentage {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--highlight);
+    line-height: 1;
+}
+
+.progress-label {
+    font-size: 12px;
+    color: var(--text2ndary);
+    text-transform: uppercase;
+}
+
+.project-actions-card {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.project-skills-card {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.project-skills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.project-skill-chip {
+    background-color: var(--bg-color2);
+    color: var(--text);
+    border: 1px solid var(--highlightmenu);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.project-skill-chip:hover {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+    text-decoration: none;
+}
+
+.project-filters-panel {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.search-field {
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-field input {
+    color: var(--text);
+    border-bottom: 1px solid var(--highlightmenu);
+}
+
+.search-field input:focus {
+    border-bottom: 2px solid var(--highlight);
+    box-shadow: 0 1px 0 0 var(--highlight);
+}
+
+.search-field .prefix {
+    color: var(--highlight);
+}
+
+.filter-group {
+    min-width: 150px;
+}
+
+.filter-group-label {
+    color: var(--highlight);
+    font-weight: 500;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.status-filters, .priority-filters {
+    display: flex;
+    gap: 15px;
+}
+
+.status-filters p, .priority-filters p {
+    margin: 0;
+}
+
+.status-filters input[type="checkbox"] + span,
+.priority-filters input[type="checkbox"] + span {
+    color: var(--text);
+    font-size: 13px;
+}
+
+.status-filters input[type="checkbox"]:checked + span,
+.priority-filters input[type="checkbox"]:checked + span {
+    color: var(--highlight);
+}
+
+.skill-filter-logic p {
+    margin: 5px 0;
+}
+
+.skill-filter-logic input[type="radio"] + span {
+    color: var(--text2ndary);
+    font-size: 12px;
+}
+
+.skill-filter-logic input[type="radio"]:checked + span {
+    color: var(--highlight);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.empty-state {
+    padding: 60px 20px;
+    color: var(--text2ndary);
+}
+
+.empty-state .material-icons {
+    font-size: 72px;
+    color: var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.empty-state h5 {
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+/* Results Summary */
+.results-summary {
+    background: var(--bg-light);
+    padding: 15px 20px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#project-results-count {
+    color: var(--text2ndary);
+    font-size: 14px;
+}
+
+/* Need Info Row Styles */
+.need-info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 10px;
+    font-size: 12px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text2ndary);
+}
+
+.info-item .material-icons {
+    font-size: 14px;
+}
+
+.remote-work {
+    color: var(--information);
+}
+
+.stationary-work {
+    color: var(--warning);
+}
+
+/* Pagination styles */
+.pagination li a {
+    color: var(--text);
+    background-color: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+}
+
+.pagination li.active a {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+}
+
+.pagination li:hover a {
+    background-color: var(--highlightmenu);
+}
+
+/* Skills chips in filter */
+.chips {
+    border-bottom: 1px solid var(--highlightmenu);
+}
+
+.chips .chip {
+    background-color: var(--bg-color2);
+    color: var(--text);
+    border: 1px solid var(--highlightmenu);
+}
+
+.chips .chip:hover {
+    background-color: var(--highlightmenu);
+}
+
+.chips .chip .close {
+    color: var(--text2ndary);
+}
+
+.chips .chip .close:hover {
+    color: var(--danger);
+}
+
+/* Loading Indicator */
+.spinner-custom {
+    border-color: var(--highlight);
+}
+
+/* Responsive adjustments */
+@media only screen and (max-width: 992px) {
+    .project-header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .project-stats {
+        justify-content: center;
+    }
+    
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-field {
+        min-width: auto;
+    }
+    
+    .status-filters, .priority-filters {
+        flex-wrap: wrap;
+    }
+
+    .action-buttons {
+        justify-content: center;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    .project-stats {
+        gap: 20px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .progress-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .progress-circle::before {
+        width: 75px;
+        height: 75px;
+    }
+    
+    .percentage {
+        font-size: 1.2rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .action-buttons .btn,
+    .action-buttons .btn-flat {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+
+<script>
+// Initialize project-specific need management
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.Dropdown.init(document.querySelectorAll('.dropdown-trigger'));
+    
+    // Initialize skills filter for project needs
+    const skillsFilter = document.getElementById('project-skills-filter');
+    if (skillsFilter) {
+        M.Chips.init(skillsFilter, {
+            placeholder: 'Add skill tags...',
+            secondaryPlaceholder: 'Enter skill name',
+            // You can extend this with autocomplete functionality
+        });
+    }
+    
+    // You can extend this with project-specific AJAX functionality
+    // Similar to the main need management, but filtered by project
+});
+</script>
+{% endblock %}

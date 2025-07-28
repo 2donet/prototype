@@ -1,0 +1,628 @@
+<!-- Need Card Component Template -->
+<div class="col s12 m6 l4 need-card-wrapper" data-need-id="{{ need.id }}" data-priority="{{ need.priority }}" data-status="{{ need.status }}" data-created="{{ need.created_date|date:'c' }}">
+    <div class="card need-card {{ need.priority_class }} hoverable">
+        <!-- Card Header with Priority and Status -->
+        <div class="card-content">
+            <div class="need-header">
+                <div class="need-title-row">
+                    <span class="card-title truncate">
+                        <a href="{% url 'need:need' need.id %}" class="need-title-link">{{ need.name }}</a>
+                    </span>
+                    <div class="need-badges">
+                        <!-- Priority Badge -->
+                        <span class="badge priority-badge {{ need.priority_class }}" data-badge-caption="{{ need.priority }}%">{{ need.priority }}</span>
+                        
+                        <!-- Status Badge -->
+                        <span class="badge status-badge {{ need.status_class }}" data-badge-caption="{{ need.get_status_display }}"></span>
+                        
+                        {% if need.deadline and need.deadline < timezone.now %}
+                        <span class="badge overdue-badge" data-badge-caption="Overdue">!</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress">
+                        <div class="determinate" style="width: {{ need.progress }}%"></div>
+                    </div>
+                    <span class="progress-text">{{ need.progress }}% Complete</span>
+                </div>
+            </div>
+
+            <!-- Need Meta Info -->
+            <div class="need-meta">
+                <div class="meta-item">
+                    <i class="material-icons tiny">account_circle</i>
+                    <a href="/u/{{ need.created_by.id }}" class="creator-link">{{ need.created_by.username }}</a>
+                </div>
+                <div class="meta-item">
+                    <i class="material-icons tiny">access_time</i>
+                    <span class="created-time" title="{{ need.created_date }}">{{ need.created_date|naturaltime }}</span>
+                </div>
+                {% if need.deadline %}
+                <div class="meta-item deadline-item {% if need.deadline < timezone.now %}overdue{% endif %}">
+                    <i class="material-icons tiny">event</i>
+                    <span class="deadline">{{ need.deadline|naturalday }}</span>
+                    {% if need.deadline %}
+                        {% now "c" as now %}
+                        {% with days_remaining=need.deadline|timeuntil %}
+                            <span class="days-remaining">({{ days_remaining }})</span>
+                        {% endwith %}
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Need Description -->
+            <div class="need-description">
+                <p class="description-text">
+                    {% if need.desc %}
+                        {{ need.desc|truncatewords:20|linebreaks }}
+                    {% else %}
+                        <em class="no-description">No description provided</em>
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Project Association -->
+            {% if need.to_project %}
+            <div class="project-association">
+                <div class="chip project-chip">
+                    <i class="material-icons tiny">folder</i>
+                    <a href="/{{ need.to_project.id }}" class="project-link">{{ need.to_project.name }}</a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Required Skills Section -->
+            <div class="skills-section">
+                {% if need.required_skills.all %}
+                    <div class="skills-container">
+                        {% for skill in need.required_skills.all %}
+                            <a href="{% url 'need:skill_needs' skill.name|lower %}" class="chip skill-chip">
+                                {{ skill.name }}
+                            </a>
+                        {% endfor %}
+                        {% if need.required_skills.count > 3 %}
+                            <span class="skill-more">+{{ need.required_skills.count|add:"-3" }} more</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="no-skills">
+                        <i class="material-icons tiny">label_outline</i>
+                        <span>No skills specified</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Cost & Work Type Info -->
+            <div class="need-info-row">
+                {% if need.cost_estimate %}
+                <div class="info-item">
+                    <i class="material-icons tiny">attach_money</i>
+                    <span>${{ need.cost_estimate|floatformat:0 }}</span>
+                </div>
+                {% endif %}
+                
+                {% if need.is_remote %}
+                <div class="info-item remote-work">
+                    <i class="material-icons tiny">laptop</i>
+                    <span>Remote</span>
+                </div>
+                {% endif %}
+                
+                {% if need.is_stationary %}
+                <div class="info-item stationary-work">
+                    <i class="material-icons tiny">location_on</i>
+                    <span>On-site</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Time Tracking (if available) -->
+            {% if need.estimated_time or need.actual_time %}
+            <div class="time-tracking">
+                {% if need.estimated_time %}
+                <div class="time-item">
+                    <i class="material-icons tiny">schedule</i>
+                    <span>Est: {{ need.estimated_time }}</span>
+                </div>
+                {% endif %}
+                {% if need.actual_time %}
+                <div class="time-item">
+                    <i class="material-icons tiny">timer</i>
+                    <span>Logged: {{ need.actual_time }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Card Actions -->
+        <div class="card-action need-actions">
+            <a href="{% url 'need:need' need.id %}" class="btn-flat waves-effect action-btn">
+                <i class="material-icons left">visibility</i>View
+            </a>
+            
+            {% if user == need.created_by %}
+            <a href="{% url 'need:edit_need' need.id %}" class="btn-flat waves-effect action-btn">
+                <i class="material-icons left">edit</i>Edit
+            </a>
+            {% endif %}
+            
+            <a href="{% url 'submissions:create_submission_for_content' 'need' need.id %}" class="btn-flat waves-effect action-btn apply-btn">
+                <i class="material-icons left">assignment</i>Apply
+            </a>
+            
+            <!-- Quick Actions Dropdown -->
+            <a class="dropdown-trigger btn-flat waves-effect action-btn right" href="#!" data-target="need-actions-{{ need.id }}">
+                <i class="material-icons">more_vert</i>
+            </a>
+            
+            <!-- Dropdown Content -->
+            <ul id="need-actions-{{ need.id }}" class="dropdown-content">
+                <li><a href="{% url 'submissions:submission_list' 'need' need.id %}"><i class="material-icons">assignment</i>View Submissions</a></li>
+                {% if user == need.created_by %}
+                <li><a href="#!" class="quick-status-update" data-need-id="{{ need.id }}" data-status="fulfilled">
+                    <i class="material-icons">check_circle</i>Mark Fulfilled
+                </a></li>
+                <li><a href="{% url 'need:log_time' need.id %}">
+                    <i class="material-icons">access_time</i>Log Time
+                </a></li>
+                <li class="divider"></li>
+                <li><a href="#!" class="delete-need" data-need-id="{{ need.id }}">
+                    <i class="material-icons red-text">delete</i>Delete
+                </a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Need Card Component Styles */
+.need-card-wrapper {
+    margin-bottom: 20px;
+}
+
+.need-card {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.need-card:hover {
+    border-color: var(--highlight);
+    box-shadow: 0 4px 12px rgba(229, 193, 41, 0.2);
+    transform: translateY(-2px);
+}
+
+.need-card .card-content {
+    flex: 1;
+    padding: 20px;
+}
+
+/* Need Header */
+.need-header {
+    margin-bottom: 15px;
+}
+
+.need-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.need-title-link {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1.1em;
+}
+
+.need-title-link:hover {
+    color: var(--highlight);
+}
+
+.need-badges {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+/* Priority Badges */
+.priority-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 12px;
+}
+
+.priority-badge.priority-critical {
+    background-color: var(--danger);
+    color: white;
+}
+
+.priority-badge.priority-high {
+    background-color: var(--risk);
+    color: white;
+}
+
+.priority-badge.priority-medium {
+    background-color: var(--warning);
+    color: var(--bg-color);
+}
+
+.priority-badge.priority-low {
+    background-color: var(--information);
+    color: white;
+}
+
+/* Status Badges */
+.status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 12px;
+}
+
+.status-badge.status-pending {
+    background-color: var(--bg-color3);
+    color: var(--text2ndary);
+}
+
+.status-badge.status-progress {
+    background-color: var(--information);
+    color: white;
+}
+
+.status-badge.status-complete {
+    background-color: var(--confirm);
+    color: var(--bg-color);
+}
+
+.status-badge.status-canceled {
+    background-color: var(--danger);
+    color: white;
+}
+
+.overdue-badge {
+    background-color: var(--danger);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+/* Progress Bar */
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.progress {
+    background-color: var(--bg-color2);
+    border-radius: 2px;
+    flex: 1;
+    height: 4px;
+}
+
+.progress .determinate {
+    background-color: var(--highlight);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: var(--text2ndary);
+    min-width: 70px;
+}
+
+/* Need Meta */
+.need-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 12px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text2ndary);
+}
+
+.meta-item .material-icons {
+    font-size: 14px;
+}
+
+.creator-link {
+    color: var(--highlight);
+    text-decoration: none;
+}
+
+.creator-link:hover {
+    text-decoration: underline;
+}
+
+.deadline-item.overdue {
+    color: var(--danger);
+}
+
+.deadline-item.overdue .material-icons {
+    color: var(--danger);
+}
+
+/* Need Description */
+.need-description {
+    margin-bottom: 15px;
+}
+
+.description-text {
+    color: var(--text2ndary);
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.no-description {
+    color: var(--highlightmenu);
+    font-style: italic;
+}
+
+/* Project Association */
+.project-association {
+    margin-bottom: 15px;
+}
+
+.project-chip {
+    background-color: var(--bg-color2);
+    color: var(--text);
+    border: 1px solid var(--highlightmenu);
+    font-size: 12px;
+}
+
+.project-chip .material-icons {
+    color: var(--highlight);
+}
+
+.project-link {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.project-link:hover {
+    color: var(--highlight);
+}
+
+/* Skills Section */
+.skills-section {
+    margin-bottom: 15px;
+}
+
+.skills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-height: 50px;
+    overflow: hidden;
+}
+
+.skill-chip {
+    background-color: var(--bg-color2);
+    color: var(--text2ndary);
+    border: 1px solid var(--highlightmenu);
+    font-size: 11px;
+    padding: 2px 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.skill-chip:hover {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+    text-decoration: none;
+}
+
+.skill-more {
+    font-size: 11px;
+    color: var(--text2ndary);
+    align-self: center;
+}
+
+.no-skills {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--highlightmenu);
+    font-size: 12px;
+}
+
+/* Need Info Row */
+.need-info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 10px;
+    font-size: 12px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text2ndary);
+}
+
+.info-item .material-icons {
+    font-size: 14px;
+}
+
+.remote-work {
+    color: var(--information);
+}
+
+.stationary-work {
+    color: var(--warning);
+}
+
+/* Time Tracking */
+.time-tracking {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    font-size: 12px;
+}
+
+.time-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text2ndary);
+}
+
+.time-item .material-icons {
+    font-size: 14px;
+    color: var(--highlight);
+}
+
+/* Card Actions */
+.need-actions {
+    background-color: var(--bg-color2);
+    border-top: 1px solid var(--highlightmenu);
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.action-btn {
+    color: var(--text2ndary);
+    font-size: 12px;
+    padding: 5px 10px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    color: var(--highlight);
+    background-color: var(--bg-color3);
+}
+
+.action-btn .material-icons {
+    font-size: 16px;
+}
+
+.apply-btn:hover {
+    color: var(--confirm);
+}
+
+/* Dropdown Menu */
+.dropdown-content {
+    background-color: var(--bgpopup);
+    border: 1px solid var(--highlightmenu);
+}
+
+.dropdown-content li > a {
+    color: var(--text);
+}
+
+.dropdown-content li > a:hover {
+    background-color: var(--highlightmenu);
+    color: var(--highlight);
+}
+
+.dropdown-content .divider {
+    background-color: var(--highlightmenu);
+}
+
+/* Compact View Styles */
+.view-compact .need-card-wrapper {
+    margin-bottom: 10px;
+}
+
+.view-compact .need-card {
+    border-radius: 4px;
+}
+
+.view-compact .card-content {
+    padding: 15px;
+}
+
+.view-compact .need-header {
+    margin-bottom: 10px;
+}
+
+.view-compact .need-description {
+    margin-bottom: 10px;
+}
+
+.view-compact .description-text {
+    font-size: 13px;
+}
+
+.view-compact .skills-container {
+    max-height: 25px;
+}
+
+.view-compact .need-actions {
+    padding: 10px 15px;
+}
+
+/* Animation for new cards */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.need-card-wrapper.new-card {
+    animation: slideInUp 0.3s ease-out;
+}
+
+/* Pulse animation for overdue */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Responsive adjustments */
+@media only screen and (max-width: 600px) {
+    .need-title-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .need-badges {
+        align-self: flex-start;
+    }
+    
+    .need-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .need-actions {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .action-btn {
+        flex: 1;
+        text-align: center;
+        justify-content: center;
+    }
+}
+</style>

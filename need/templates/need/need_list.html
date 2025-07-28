@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %}Enhanced Need Management | 2do.net{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row">
+        <div class="col s12">
+            <div class="section">
+                <h4 class="header-title">
+                    <i class="material-icons left">lightbulb_outline</i>
+                    Need Management
+                    <span class="need-count badge" data-badge-caption="needs">{{ total_needs }}</span>
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Controls Row -->
+    <div class="row">
+        <div class="col s12">
+            <div class="search-controls-panel">
+                <!-- Search Bar -->
+                <div class="input-field search-field">
+                    <i class="material-icons prefix">search</i>
+                    <input type="text" id="need-search" placeholder="Search needs, descriptions, skills...">
+                    <label for="need-search">Search Needs</label>
+                </div>
+                
+                <!-- Filter Toggle Button -->
+                <button id="filter-toggle" class="btn waves-effect filter-toggle-btn">
+                    <i class="material-icons left">filter_list</i>Filters
+                    <span class="active-filters-count hide">0</span>
+                </button>
+                
+                <!-- Sort Controls -->
+                <div class="sort-controls">
+                    <div class="input-field">
+                        <select id="sort-select">
+                            <option value="-created_date">Newest First</option>
+                            <option value="created_date">Oldest First</option>
+                            <option value="-priority">Priority (High to Low)</option>
+                            <option value="priority">Priority (Low to High)</option>
+                            <option value="deadline">Deadline (Nearest)</option>
+                            <option value="-deadline">Deadline (Furthest)</option>
+                            <option value="name">Name (A-Z)</option>
+                            <option value="-name">Name (Z-A)</option>
+                            <option value="status">Status</option>
+                        </select>
+                        <label>Sort By</label>
+                    </div>
+                </div>
+                
+                <!-- View Options -->
+                <div class="view-options">
+                    <div class="btn-group">
+                        <button class="btn-flat view-btn active" data-view="cards">
+                            <i class="material-icons">view_module</i>
+                        </button>
+                        <button class="btn-flat view-btn" data-view="compact">
+                            <i class="material-icons">view_list</i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Panel (Collapsible) -->
+    <div class="row">
+        <div class="col s12">
+            <div id="filters-panel" class="card filters-panel hide">
+                <div class="card-content">
+                    <div class="row">
+                        <!-- Project Filter -->
+                        <div class="col s12 m6 l3">
+                            <div class="input-field">
+                                <select multiple id="project-filter">
+                                    <option value="">All Projects</option>
+                                    {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label>Filter by Project</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Filter -->
+                        <div class="col s12 m6 l3">
+                            <div class="filter-group">
+                                <label class="filter-group-label">Status</label>
+                                <p><label><input type="checkbox" class="status-filter" value="pending" checked><span>Pending</span></label></p>
+                                <p><label><input type="checkbox" class="status-filter" value="in_progress" checked><span>In Progress</span></label></p>
+                                <p><label><input type="checkbox" class="status-filter" value="fulfilled"><span>Fulfilled</span></label></p>
+                                <p><label><input type="checkbox" class="status-filter" value="canceled"><span>Canceled</span></label></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Priority Filter -->
+                        <div class="col s12 m6 l3">
+                            <div class="filter-group">
+                                <label class="filter-group-label">Priority Range</label>
+                                <p><label><input type="checkbox" class="priority-filter" value="high" checked><span>High (75-100%)</span></label></p>
+                                <p><label><input type="checkbox" class="priority-filter" value="medium" checked><span>Medium (50-74%)</span></label></p>
+                                <p><label><input type="checkbox" class="priority-filter" value="low" checked><span>Low (25-49%)</span></label></p>
+                                <p><label><input type="checkbox" class="priority-filter" value="minimal" checked><span>Minimal (0-24%)</span></label></p>
+                            </div>
+                        </div>
+
+                        <!-- Skills Filter -->
+                        <div class="col s12 m6 l3">
+                            <div class="filter-group">
+                                <label class="filter-group-label">Required Skills</label>
+                                <div class="chips chips-autocomplete" id="skills-filter"></div>
+                                <div class="skill-filter-logic">
+                                    <p><label><input name="skill-logic" type="radio" value="any" checked><span>Any selected skill</span></label></p>
+                                    <p><label><input name="skill-logic" type="radio" value="all"><span>All selected skills</span></label></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Date Range Filters -->
+                    <div class="row">
+                        <div class="col s12 m6">
+                            <div class="input-field">
+                                <input type="date" id="created-after">
+                                <label for="created-after" class="active">Created After</label>
+                            </div>
+                        </div>
+                        <div class="col s12 m6">
+                            <div class="input-field">
+                                <input type="date" id="deadline-before">
+                                <label for="deadline-before" class="active">Deadline Before</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Work Type Filters -->
+                    <div class="row">
+                        <div class="col s12">
+                            <div class="filter-group">
+                                <label class="filter-group-label">Work Type</label>
+                                <p><label><input type="checkbox" class="work-type-filter" value="all" checked><span>All Types</span></label></p>
+                                <p><label><input type="checkbox" class="work-type-filter" value="remote"><span>Remote Work Only</span></label></p>
+                                <p><label><input type="checkbox" class="work-type-filter" value="stationary"><span>On-Site Work Only</span></label></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Actions -->
+                    <div class="row">
+                        <div class="col s12">
+                            <button id="clear-filters" class="btn-flat waves-effect">
+                                <i class="material-icons left">clear</i>Clear All Filters
+                            </button>
+                            <button id="apply-filters" class="btn waves-effect waves-light">
+                                <i class="material-icons left">filter_list</i>Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row">
+        <div class="col s12">
+            <div class="results-summary">
+                <span id="results-count">Loading needs...</span>
+                <div class="results-actions right">
+                    <a href="{% url 'project:index' %}" class="btn-flat waves-effect">
+                        <i class="material-icons left">add</i>Create Need (via Project)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="center-align hide">
+        <div class="preloader-wrapper active">
+            <div class="spinner-layer spinner-custom">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+        </div>
+        <p>Loading needs...</p>
+    </div>
+
+    <!-- Needs Container -->
+    <div class="row" id="needs-container">
+        <!-- Needs will be loaded here dynamically -->
+    </div>
+
+    <!-- Pagination -->
+    <div class="row">
+        <div class="col s12 center-align">
+            <div id="pagination-container">
+                <!-- Pagination will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="center-align hide">
+        <div class="empty-state-content">
+            <i class="material-icons large">lightbulb_outline</i>
+            <h5>No needs found</h5>
+            <p>Try adjusting your search criteria or filters</p>
+            <a href="{% url 'project:index' %}" class="btn waves-effect waves-light">
+                <i class="material-icons left">add</i>Create First Need
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<div class="fixed-action-btn">
+    <a class="btn-floating btn-large pulse" href="{% url 'project:index' %}">
+        <i class="large material-icons">add</i>
+    </a>
+</div>
+
+<style>
+/* Enhanced Need Management Styles with Custom Dark Theme */
+:root {
+    --highlight: #e5c129;
+    --text: #ffffff;
+    --highlightdark: #3B4139;
+    --bg-color: #141622;
+    --bg-light: #1d1e2d;
+    --bg-color2: #1f2234;
+    --bg-color3: #30344a;
+    --confirm: #5ce65c;
+    --danger: #ff2c2c;
+    --warning: #db9200;
+    --bg-menu: #222434;
+    --information: #305cde;
+    --risk: #FC6C85;
+    --text2ndary: #d1d1d1;
+    --bgpopup: #222434;
+    --highlight-dark: #d5d370;
+    --highlightmenu: #4B4E5F;
+    --status-red-dark: rgb(170, 21, 63);
+    --status-yellow: rgb(232, 186, 78);
+    --status-pink: rgb(198, 43, 174);
+    --status-purple: rgb(105, 31, 138);
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text);
+}
+
+.header-title {
+    color: var(--text);
+    margin-bottom: 20px;
+}
+
+.header-title .material-icons {
+    color: var(--highlight);
+}
+
+.need-count {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+}
+
+/* Search and Controls Panel */
+.search-controls-panel {
+    background: var(--bg-light);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.search-field {
+    flex: 1;
+    min-width: 300px;
+    margin: 0;
+}
+
+.search-field input {
+    color: var(--text);
+    border-bottom: 1px solid var(--highlightmenu);
+}
+
+.search-field input:focus {
+    border-bottom: 2px solid var(--highlight);
+    box-shadow: 0 1px 0 0 var(--highlight);
+}
+
+.search-field .prefix {
+    color: var(--highlight);
+}
+
+.filter-toggle-btn {
+    background-color: var(--bg-color2);
+    color: var(--text);
+    position: relative;
+}
+
+.filter-toggle-btn:hover {
+    background-color: var(--highlightmenu);
+}
+
+.active-filters-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--highlight);
+    color: var(--bg-color);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sort-controls .input-field {
+    margin: 0;
+    width: 200px;
+}
+
+.sort-controls select {
+    color: var(--text);
+}
+
+.view-options .btn-group {
+    display: flex;
+    border: 1px solid var(--highlightmenu);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.view-btn {
+    color: var(--text2ndary);
+    background: var(--bg-color2);
+    border: none;
+    border-radius: 0;
+    margin: 0;
+}
+
+.view-btn.active {
+    background: var(--highlight);
+    color: var(--bg-color);
+}
+
+.view-btn:hover {
+    background: var(--highlightmenu);
+}
+
+/* Filters Panel */
+.filters-panel {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+}
+
+.filters-panel .card-content {
+    padding: 30px;
+}
+
+.filter-group {
+    margin-bottom: 20px;
+}
+
+.filter-group-label {
+    color: var(--highlight);
+    font-weight: 500;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.filter-group input[type="checkbox"] + span {
+    color: var(--text);
+}
+
+.filter-group input[type="checkbox"]:checked + span {
+    color: var(--highlight);
+}
+
+.filter-group input[type="radio"] + span {
+    color: var(--text2ndary);
+}
+
+.filter-group input[type="radio"]:checked + span {
+    color: var(--highlight);
+}
+
+/* Skills Filter Chips */
+.chips {
+    border-bottom: 1px solid var(--highlightmenu);
+}
+
+.chips .chip {
+    background-color: var(--bg-color2);
+    color: var(--text);
+    border: 1px solid var(--highlightmenu);
+}
+
+.chips .chip:hover {
+    background-color: var(--highlightmenu);
+}
+
+.chips .chip .close {
+    color: var(--text2ndary);
+}
+
+.chips .chip .close:hover {
+    color: var(--danger);
+}
+
+/* Results Summary */
+.results-summary {
+    background: var(--bg-light);
+    padding: 15px 20px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#results-count {
+    color: var(--text2ndary);
+    font-size: 14px;
+}
+
+/* Loading Indicator */
+.spinner-custom {
+    border-color: var(--highlight);
+}
+
+/* Need Cards Styles - Will be defined in need card component */
+.need-card {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.need-card:hover {
+    border-color: var(--highlight);
+    box-shadow: 0 4px 12px rgba(229, 193, 41, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Priority indicators */
+.priority-critical { border-left: 4px solid var(--danger); }
+.priority-high { border-left: 4px solid var(--risk); }
+.priority-medium { border-left: 4px solid var(--warning); }
+.priority-low { border-left: 4px solid var(--information); }
+
+/* Status indicators */
+.status-pending { background: var(--bg-color2); }
+.status-progress { background: var(--information); }
+.status-complete { background: var(--confirm); }
+.status-canceled { background: var(--danger); }
+
+/* Empty State */
+.empty-state-content {
+    padding: 60px 20px;
+    color: var(--text2ndary);
+}
+
+.empty-state-content .material-icons {
+    font-size: 72px;
+    color: var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.empty-state-content h5 {
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+/* Floating Action Button */
+.fixed-action-btn .btn-floating {
+    background-color: var(--highlight);
+}
+
+.fixed-action-btn .btn-floating:hover {
+    background-color: var(--highlight-dark);
+}
+
+/* Responsive adjustments */
+@media only screen and (max-width: 992px) {
+    .search-controls-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-field {
+        min-width: auto;
+        margin-bottom: 15px;
+    }
+    
+    .sort-controls,
+    .view-options {
+        justify-content: center;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    .filters-panel .card-content {
+        padding: 20px 15px;
+    }
+    
+    .results-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+
+/* Hide class for dynamic show/hide */
+.hide {
+    display: none !important;
+}
+</style>
+
+<script src="{% static 'js/need_management.js' %}"></script>
+{% endblock %}
