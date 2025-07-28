@@ -1,108 +1,1034 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container">
     <div class="row">
         <div class="col s12">
-            <h4>{% if form.instance.pk %}Edit{% else %}Create{% endif %} Task</h4>
+            <div class="task-form-header">
+                <h4 class="form-title">
+                    <i class="material-icons left">{% if form.instance.pk %}edit{% else %}add{% endif %}</i>
+                    {% if form.instance.pk %}Edit Task{% else %}Create New Task{% endif %}
+                </h4>
+                <div class="form-breadcrumb">
+                    <a href="{% url 'task:task_list' %}" class="breadcrumb-link">Tasks</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="current-form">{% if form.instance.pk %}Edit{% else %}Create{% endif %}</span>
+                </div>
+            </div>
             
-            <form method="post">
-                {% csrf_token %}
-                
-                <!-- Name Field -->
-                <div class="input-field">
-                    {{ form.name }}
-                    <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-                    {% if form.name.errors %}
-                        <div class="red-text">
-                            {{ form.name.errors }}
+            <div class="card task-form-card">
+                <div class="card-content">
+                    <form method="post" id="task-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Task Name -->
+                            <div class="col s12">
+                                <div class="input-field">
+                                    {{ form.name }}
+                                    <label for="{{ form.name.id_for_label }}" class="{% if form.name.value %}active{% endif %}">{{ form.name.label }}</label>
+                                    {% if form.name.help_text %}
+                                        <span class="helper-text">{{ form.name.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.name.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Description Field -->
-                <div class="input-field">
-                    {{ form.desc }}
-                    <label for="{{ form.desc.id_for_label }}">{{ form.desc.label }}</label>
-                    {% if form.desc.errors %}
-                        <div class="red-text">
-                            {{ form.desc.errors }}
+                        
+                        <div class="row">
+                            <!-- Priority and Status -->
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    {{ form.priority }}
+                                    <label>{{ form.priority.label }}</label>
+                                    {% if form.priority.help_text %}
+                                        <span class="helper-text">{{ form.priority.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.priority.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.priority.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    {{ form.status }}
+                                    <label>{{ form.status.label }}</label>
+                                    {% if form.status.help_text %}
+                                        <span class="helper-text">{{ form.status.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.status.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.status.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Priority Field -->
-                <div class="input-field">
-                    {{ form.priority }}
-                    <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
-                    {% if form.priority.errors %}
-                        <div class="red-text">
-                            {{ form.priority.errors }}
+                        
+                        <!-- Description -->
+                        <div class="row">
+                            <div class="col s12">
+                                <div class="input-field">
+                                    {{ form.desc }}
+                                    <label for="{{ form.desc.id_for_label }}" class="{% if form.desc.value %}active{% endif %}">{{ form.desc.label }}</label>
+                                    {% if form.desc.help_text %}
+                                        <span class="helper-text">{{ form.desc.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.desc.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.desc.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Project Field -->
-                <div class="input-field">
-                    {{ form.to_project }}
-                    <label>{{ form.to_project.label }}</label>
-                    {% if form.to_project.errors %}
-                        <div class="red-text">
-                            {{ form.to_project.errors }}
+                        
+                        <div class="row">
+                            <!-- Due Date -->
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    {{ form.due_date }}
+                                    <label for="{{ form.due_date.id_for_label }}" class="{% if form.due_date.value %}active{% endif %}">{{ form.due_date.label }}</label>
+                                    {% if form.due_date.help_text %}
+                                        <span class="helper-text">{{ form.due_date.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.due_date.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.due_date.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Parent Task Field -->
-                <div class="input-field">
-                    {{ form.to_task }}
-                    <label>{{ form.to_task.label }}</label>
-                    {% if form.to_task.errors %}
-                        <div class="red-text">
-                            {{ form.to_task.errors }}
+                        
+                        <div class="row">
+                            <!-- Time Estimates -->
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    {{ form.estimated_hours }}
+                                    <label for="{{ form.estimated_hours.id_for_label }}" class="{% if form.estimated_hours.value %}active{% endif %}">{{ form.estimated_hours.label }}</label>
+                                    {% if form.estimated_hours.help_text %}
+                                        <span class="helper-text">{{ form.estimated_hours.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.estimated_hours.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.estimated_hours.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    {{ form.actual_hours }}
+                                    <label for="{{ form.actual_hours.id_for_label }}" class="{% if form.actual_hours.value %}active{% endif %}">{{ form.actual_hours.label }}</label>
+                                    {% if form.actual_hours.help_text %}
+                                        <span class="helper-text">{{ form.actual_hours.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.actual_hours.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.actual_hours.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Skills Field -->
-                <div class="input-field">
-                    <select multiple name="{{ form.skills.name }}" id="{{ form.skills.id_for_label }}">
-                        {% for value, label in form.skills.field.choices %}
-                            <option value="{{ value }}" {% if value in form.skills.value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                    <label>{{ form.skills.label }}</label>
-                    {% if form.skills.errors %}
-                        <div class="red-text">
-                            {{ form.skills.errors }}
+                        
+                        <div class="row">
+                            <!-- Project Association -->
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    {{ form.to_project }}
+                                    <label>{{ form.to_project.label }}</label>
+                                    {% if form.to_project.help_text %}
+                                        <span class="helper-text">{{ form.to_project.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.to_project.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.to_project.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Parent Task -->
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    {{ form.to_task }}
+                                    <label>{{ form.to_task.label }}</label>
+                                    {% if form.to_task.help_text %}
+                                        <span class="helper-text">{{ form.to_task.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.to_task.errors %}
+                                        <div class="red-text">
+                                            {% for error in form.to_task.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
+                        
+                        <!-- Skills Section -->
+                        <div class="row">
+                            <div class="col s12">
+                                <div class="skills-section-card">
+                                    <h6 class="skills-section-title">
+                                        <i class="material-icons left">label</i>Required Skills
+                                    </h6>
+                                    <p class="skills-description">Enter the skills required to complete this task (maximum 20)</p>
+                                    
+                                    <!-- Debug info for development -->
+                                    {% if form.instance.pk %}
+                                    <div class="debug-info" style="background: var(--bg-color3); padding: 10px; margin: 10px 0; border-radius: 4px;">
+                                        <small>Debug: Current skills in DB: 
+                                        {% for skill in form.instance.skills.all %}
+                                            "{{ skill.name }}"{% if not forloop.last %}, {% endif %}
+                                        {% empty %}
+                                            None
+                                        {% endfor %}
+                                        </small><br>
+                                        <small>Form initial value: "{{ form.skills_input.initial|default:'Empty' }}"</small><br>
+                                        <small>Hidden input ID: {{ form.skills_input.id_for_label }}</small>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Hidden input for form submission -->
+                                    {{ form.skills_input }}
+                                    
+                                    <!-- Manual skills display for existing task -->
+                                    {% if form.instance.pk and form.instance.skills.exists %}
+                                    <div class="current-skills-display">
+                                        <label>Current Skills:</label>
+                                        <div class="current-skills-chips">
+                                            {% for skill in form.instance.skills.all %}
+                                            <span class="chip" data-skill="{{ skill.name }}">
+                                                {{ skill.name }}
+                                                <i class="material-icons close">close</i>
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Chips input for skills -->
+                                    <div class="input-field">
+                                        <div class="chips chips-autocomplete" id="skills-input"></div>
+                                        <label>Enter skills and press Enter</label>
+                                        {% if form.skills_input.help_text %}
+                                            <span class="helper-text">{{ form.skills_input.help_text }}</span>
+                                        {% endif %}
+                                        {% if form.skills_input.errors %}
+                                            <div class="red-text">
+                                                {% for error in form.skills_input.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <blockquote>
+                                        <i>Write each skill/tag, and press enter e.g.:</i>
+                                        <code>Python</code> press <kbd>enter</kbd> 
+                                        <code>Django</code> press <kbd>enter</kbd>
+                                        <code>JavaScript</code> press <kbd>enter</kbd>
+                                    </blockquote>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Comment Settings -->
+                        <div class="row">
+                            <div class="col s12">
+                                <div class="comment-settings-card">
+                                    <h6 class="comment-settings-title">
+                                        <i class="material-icons left">comment</i>Comment Settings
+                                    </h6>
+                                    
+                                    <div class="comment-options">
+                                        <p>
+                                            <label>
+                                                {{ form.allow_anonymous_comments }}
+                                                <span>{{ form.allow_anonymous_comments.label }}</span>
+                                            </label>
+                                        </p>
+                                        
+                                        <p>
+                                            <label>
+                                                {{ form.require_comment_approval }}
+                                                <span>{{ form.require_comment_approval.label }}</span>
+                                            </label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="form-actions section">
+                            <button type="submit" class="btn-large waves-effect waves-light" id="submit-btn">
+                                <i class="material-icons left">{% if form.instance.pk %}save{% else %}add{% endif %}</i>
+                                {% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}
+                            </button>
+                            
+                            <a href="{% if form.instance.pk %}{% url 'task:task_detail' form.instance.pk %}{% else %}{% url 'task:task_list' %}{% endif %}" 
+                               class="btn-large waves-effect waves-light grey">
+                                <i class="material-icons left">cancel</i>Cancel
+                            </a>
+                            
+                            {% if form.instance.pk %}
+                            <a href="{% url 'task:task_detail' form.instance.pk %}" 
+                               class="btn-flat waves-effect right">
+                                <i class="material-icons left">visibility</i>View Task
+                            </a>
+                            {% endif %}
+                        </div>
+                    </form>
                 </div>
-                
-                <!-- Form Actions -->
-                <div class="section">
-                    <button type="submit" class="btn waves-effect waves-light">
-                        {% if form.instance.pk %}Update{% else %}Create{% endif %} Task
-                        <i class="material-icons right">send</i>
-                    </button>
-                    <a href="{% if form.instance.pk %}{% url 'task:task_detail' form.instance.pk %}{% else %}{% url 'task:task_list' %}{% endif %}" 
-                       class="btn waves-effect waves-light grey">
-                        Cancel
-                        <i class="material-icons right">cancel</i>
-                    </a>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Task Form Styles with Dark Theme */
+.task-form-header {
+    margin-bottom: 30px;
+}
+
+.form-title {
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.form-title .material-icons {
+    color: var(--highlight);
+}
+
+.form-breadcrumb {
+    font-size: 14px;
+}
+
+.breadcrumb-link {
+    color: var(--text2ndary);
+    text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+    color: var(--highlight);
+}
+
+.breadcrumb-separator {
+    color: var(--highlightmenu);
+    margin: 0 10px;
+}
+
+.current-form {
+    color: var(--highlight);
+}
+
+.task-form-card {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+}
+
+.task-form-card .card-content {
+    padding: 30px;
+}
+
+/* Form field styles */
+.input-field label {
+    color: var(--text2ndary);
+}
+
+.input-field label.active {
+    color: var(--highlight);
+}
+
+.input-field input[type=text]:focus + label,
+.input-field input[type=email]:focus + label,
+.input-field input[type=password]:focus + label,
+.input-field input[type=number]:focus + label,
+.input-field input[type=datetime-local]:focus + label,
+.input-field textarea:focus + label {
+    color: var(--highlight);
+}
+
+.input-field input,
+.input-field textarea {
+    color: var(--text);
+    border-bottom: 1px solid var(--highlightmenu);
+}
+
+.input-field input:focus,
+.input-field textarea:focus {
+    border-bottom: 2px solid var(--highlight);
+    box-shadow: 0 1px 0 0 var(--highlight);
+}
+
+.input-field .helper-text {
+    color: var(--text2ndary);
+    font-size: 12px;
+}
+
+/* Select dropdowns */
+.dropdown-content {
+    background-color: var(--bgpopup);
+    border: 1px solid var(--highlightmenu);
+}
+
+.dropdown-content li > a {
+    color: var(--text);
+}
+
+.dropdown-content li > a:hover {
+    background-color: var(--highlightmenu);
+}
+
+.dropdown-content li.selected {
+    background-color: var(--highlight);
+}
+
+.dropdown-content li.selected > a {
+    color: var(--bg-color);
+}
+
+/* Skills section */
+.skills-section-card {
+    background: var(--bg-color2);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.skills-section-title {
+    color: var(--highlight);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.skills-description {
+    color: var(--text2ndary);
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+/* Comment settings */
+.comment-settings-card {
+    background: var(--bg-color2);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.comment-settings-title {
+    color: var(--highlight);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.comment-options p {
+    margin-bottom: 15px;
+}
+
+.comment-options label {
+    color: var(--text);
+    font-size: 14px;
+}
+
+/* Checkbox styles */
+[type="checkbox"].filled-in:checked + span:not(.lever):after {
+    border: 2px solid var(--highlight);
+    background-color: var(--highlight);
+}
+
+/* Form actions */
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--highlightmenu);
+}
+
+.form-actions .btn-large {
+    padding: 0 30px;
+    height: 48px;
+    line-height: 48px;
+}
+
+.form-actions .btn-large:first-child {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+}
+
+.form-actions .btn-large:first-child:hover {
+    background-color: var(--highlight-dark);
+}
+
+/* Error messages */
+.red-text {
+    color: var(--danger) !important;
+}
+
+.red-text small {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+/* Debug info styling */
+.debug-info {
+    background: var(--bg-color3) !important;
+    color: var(--text2ndary);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+    border-left: 3px solid var(--warning);
+    font-family: monospace;
+    font-size: 11px;
+}
+
+/* Current skills display */
+.current-skills-display {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: var(--bg-color2);
+    border-radius: 4px;
+    border: 1px solid var(--highlightmenu);
+}
+
+.current-skills-display label {
+    color: var(--highlight);
+    font-size: 12px;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.current-skills-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.current-skills-chips .chip {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.current-skills-chips .chip:hover {
+    background-color: var(--highlight-dark);
+}
+
+.current-skills-chips .chip .close {
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.current-skills-chips .chip .close:hover {
+    color: var(--danger);
+}
+
+/* Chips input styling for skills */
+.chips {
+    border-bottom: 1px solid var(--highlightmenu);
+    min-height: 45px;
+    padding-bottom: 5px;
+}
+
+.chips .chip {
+    background-color: var(--bg-color2);
+    color: var(--text);
+    border: 1px solid var(--highlightmenu);
+    transition: all 0.2s ease;
+    margin: 2px;
+}
+
+.chips .chip:hover {
+    background-color: var(--highlightmenu);
+}
+
+.chips .chip .close {
+    color: var(--text2ndary);
+    margin-left: 8px;
+}
+
+.chips .chip .close:hover {
+    color: var(--danger);
+}
+
+.chips input {
+    color: var(--text) !important;
+    background: transparent !important;
+}
+
+.chips .input {
+    color: var(--text);
+}
+
+.chips:focus-within {
+    border-bottom: 2px solid var(--highlight);
+}
+
+/* Skills section card improvements */
+.skills-section-card blockquote {
+    border-left: 5px solid var(--highlight);
+    padding-left: 15px;
+    margin: 15px 0;
+}
+
+.skills-section-card code {
+    background: var(--bg-color3);
+    color: var(--highlight);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.skills-section-card kbd {
+    background: var(--highlightmenu);
+    color: var(--text);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    border: 1px solid var(--highlight);
+}
+
+/* Responsive adjustments */
+@media only screen and (max-width: 600px) {
+    .task-form-card .card-content {
+        padding: 20px 15px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .form-actions .btn-large {
+        margin-bottom: 10px;
+    }
+    
+    .form-actions .btn-flat {
+        align-self: center;
+    }
+}
+</style>
 {% endblock %}
 
-{% block javascript %}
+{% block extra_js %}
+
 <script>
-    // Initialize Materialize select elements
     document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Task Form Script Loading...');
+    
+    // Check if Materialize is properly loaded
+    if (typeof M === 'undefined') {
+        console.error('❌ Materialize CSS library not loaded!');
+        alert('Error: Materialize CSS library not loaded. Please check your template.');
+        return;
+    }
+    
+    console.log('✅ Materialize loaded, proceeding with initialization');
+    
+    // Initialize Materialize components with proper error handling
+    try {
+        // Initialize select elements
         var selects = document.querySelectorAll('select');
-        M.FormSelect.init(selects);
+        if (selects.length > 0) {
+            M.FormSelect.init(selects);
+            console.log(`✅ Initialized ${selects.length} select elements`);
+        }
+        
+        // Initialize textareas - FIXED VERSION
+        var textareas = document.querySelectorAll('textarea');
+        if (textareas.length > 0) {
+            // Use forEach to call on each textarea individually
+            textareas.forEach(function(textarea) {
+                try {
+                    M.textareaAutoResize(textarea);
+                } catch (textareaError) {
+                    console.warn('⚠️ TextareaAutoResize failed for element:', textarea, textareaError);
+                    // Continue without breaking the whole script
+                }
+            });
+            console.log(`✅ Initialized ${textareas.length} textarea elements`);
+        }
+        
+    } catch (materializeError) {
+        console.error('❌ Materialize component initialization failed:', materializeError);
+        // Continue with skills initialization even if Materialize components fail
+    }
+    
+    // Skills functionality with enhanced error handling
+    console.log('🔧 Initializing skills functionality...');
+    
+    const skillsInput = document.getElementById('skills-input');
+    const skillsHiddenInput = document.getElementById('{{ form.skills_input.id_for_label }}');
+    
+    console.log('=== SKILLS INITIALIZATION DEBUG ===');
+    console.log('Skills input element:', skillsInput);
+    console.log('Hidden input element:', skillsHiddenInput);
+    console.log('Hidden input ID:', '{{ form.skills_input.id_for_label }}');
+    
+    if (!skillsInput) {
+        console.error('❌ Skills input element (#skills-input) not found!');
+        return;
+    }
+    
+    if (!skillsHiddenInput) {
+        console.error('❌ Hidden input element not found!');
+        return;
+    }
+    
+    console.log('Hidden input initial value:', skillsHiddenInput.value);
+    console.log('Form initial value:', '{{ form.skills_input.initial|default:"EMPTY" }}');
+    
+    // Get existing skills with multiple fallback methods
+    let existingSkills = [];
+    
+    // Method 1: From hidden input current value
+    if (skillsHiddenInput.value && skillsHiddenInput.value.trim() !== '') {
+        try {
+            const parsed = JSON.parse(skillsHiddenInput.value);
+            if (Array.isArray(parsed)) {
+                existingSkills = parsed;
+                console.log('✅ Got skills from hidden input value:', existingSkills);
+            }
+        } catch (e) {
+            console.log('⚠️ Failed to parse hidden input value as JSON:', e);
+        }
+    }
+    
+    // Method 2: From Django template (fallback)
+    if (existingSkills.length === 0) {
+        {% if form.instance.pk and form.instance.skills.exists %}
+        existingSkills = [
+            {% for skill in form.instance.skills.all %}
+            "{{ skill.name|escapejs }}"{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        console.log('✅ Got skills from Django template:', existingSkills);
+        
+        // Set the hidden input with these skills
+        skillsHiddenInput.value = JSON.stringify(existingSkills);
+        console.log('✅ Set hidden input to:', skillsHiddenInput.value);
+        {% else %}
+        console.log('ℹ️ No existing skills found in Django template');
+        {% endif %}
+    }
+    
+    // Ensure it's an array
+    if (!Array.isArray(existingSkills)) {
+        console.log('⚠️ existingSkills is not an array, resetting to empty array');
+        existingSkills = [];
+    }
+    
+    console.log('📋 Final existing skills for chips:', existingSkills);
+    
+    // Convert to chips format
+    const chipsData = existingSkills.map(skill => ({ tag: skill }));
+    console.log('🔧 Chips data prepared:', chipsData);
+    
+    // Initialize chips with comprehensive error handling
+    let chipsInstance = null;
+    
+    try {
+        // Check if M.Chips is available
+        if (!M.Chips) {
+            throw new Error('M.Chips is not available in Materialize library');
+        }
+        
+        chipsInstance = M.Chips.init(skillsInput, {
+            placeholder: 'Enter a skill',
+            secondaryPlaceholder: '+Skill',
+            data: chipsData,
+            onChipAdd: function() {
+                console.log('📝 Chip added, updating hidden input');
+                updateSkillsInput();
+            },
+            onChipDelete: function() {
+                console.log('🗑️ Chip deleted, updating hidden input');
+                updateSkillsInput();
+            }
+        });
+        
+        console.log('✅ Chips initialized successfully!');
+        console.log('📊 Chips instance:', chipsInstance);
+        console.log('📊 Initial chips data:', chipsInstance.chipsData);
+        console.log('📊 Expected vs Actual chips:', {
+            expected: chipsData.length,
+            actual: chipsInstance.chipsData.length
+        });
+        
+    } catch (chipsError) {
+        console.error('❌ Failed to initialize chips:', chipsError);
+        console.log('🔄 Falling back to simple input method');
+        
+        // Fallback: Show simple text input
+        setupSimpleFallback();
+        return;
+    }
+    
+    // Function to update hidden input with chips data
+    function updateSkillsInput() {
+        try {
+            const chips = M.Chips.getInstance(skillsInput);
+            if (chips && chips.chipsData) {
+                const skillNames = chips.chipsData.map(chip => chip.tag);
+                const skillsJson = JSON.stringify(skillNames);
+                skillsHiddenInput.value = skillsJson;
+                console.log('💾 Updated hidden input to:', skillsJson);
+                return skillNames;
+            } else {
+                console.log('⚠️ No chips instance or chipsData available for update');
+                return [];
+            }
+        } catch (updateError) {
+            console.error('❌ Error updating skills input:', updateError);
+            return [];
+        }
+    }
+    
+    // Simple fallback function
+    function setupSimpleFallback() {
+        console.log('🔄 Setting up simple fallback input');
+        
+        // Create a simple text input as fallback
+        const fallbackContainer = document.createElement('div');
+        fallbackContainer.innerHTML = `
+            <div style="background: #ffecb3; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                <strong>⚠️ Chips input failed - using fallback method</strong>
+                <br><small>Enter skills separated by commas (e.g., Python, Django, JavaScript)</small>
+            </div>
+            <div class="input-field">
+                <input type="text" id="fallback-skills-input" value="${existingSkills.join(', ')}" placeholder="Enter skills separated by commas">
+                <label for="fallback-skills-input" class="active">Skills (comma-separated)</label>
+            </div>
+        `;
+        
+        // Insert fallback after the chips input
+        skillsInput.parentNode.insertBefore(fallbackContainer, skillsInput.nextSibling);
+        
+        // Hide the original chips input
+        skillsInput.style.display = 'none';
+        
+        // Setup fallback input handler
+        const fallbackInput = document.getElementById('fallback-skills-input');
+        if (fallbackInput) {
+            fallbackInput.addEventListener('input', function() {
+                const skills = this.value.split(',').map(s => s.trim()).filter(s => s);
+                skillsHiddenInput.value = JSON.stringify(skills);
+                console.log('💾 Fallback input updated hidden field:', skills);
+            });
+            
+            // Trigger initial update
+            fallbackInput.dispatchEvent(new Event('input'));
+        }
+    }
+    
+    // Initial update to ensure hidden input is set
+    setTimeout(() => {
+        console.log('🔄 Running initial skills update...');
+        const result = updateSkillsInput();
+        console.log('📊 Initial update result:', result);
+    }, 200);
+    
+    // Handle manual chip removal for existing skills display
+    const manualChips = document.querySelectorAll('.current-skills-chips .chip .close');
+    manualChips.forEach(closeBtn => {
+        closeBtn.addEventListener('click', function() {
+            const skillName = this.parentElement.dataset.skill;
+            console.log('🗑️ Removing skill from manual display:', skillName);
+            this.parentElement.remove();
+            
+            // Also remove from chips if present
+            if (chipsInstance) {
+                try {
+                    const chips = M.Chips.getInstance(skillsInput);
+                    if (chips && chips.chipsData) {
+                        const chipIndex = chips.chipsData.findIndex(chip => chip.tag === skillName);
+                        if (chipIndex > -1) {
+                            chips.deleteChip(chipIndex);
+                            console.log('✅ Removed from chips as well');
+                        }
+                    }
+                } catch (e) {
+                    console.log('⚠️ Could not remove from chips:', e);
+                }
+            }
+            updateSkillsInput();
+        });
     });
+    
+    // Form validation and submission
+    const form = document.getElementById('task-form');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    if (form) {
+        console.log('✅ Form found, attaching submit listener');
+        
+        form.addEventListener('submit', function(e) {
+            console.log('=== 📤 FORM SUBMISSION DEBUG ===');
+            
+            let finalSkills = [];
+            
+            // CRITICAL: Update skills input before submission
+            if (skillsInput && skillsHiddenInput) {
+                // Try to get from chips first
+                if (chipsInstance) {
+                    try {
+                        const chips = M.Chips.getInstance(skillsInput);
+                        if (chips && chips.chipsData) {
+                            const skillNames = chips.chipsData.map(chip => chip.tag);
+                            const skillsJson = JSON.stringify(skillNames);
+                            
+                            console.log('📝 FORM SUBMIT: Using chips data');
+                            console.log('  - Chips data:', chips.chipsData);
+                            console.log('  - Skill names:', skillNames);
+                            console.log('  - JSON string:', skillsJson);
+                            
+                            skillsHiddenInput.value = skillsJson;
+                            finalSkills = skillNames;
+                        }
+                    } catch (chipsError) {
+                        console.log('⚠️ FORM SUBMIT: Chips error, trying fallback');
+                    }
+                }
+                
+                // Fallback: try to get from simple input
+                if (finalSkills.length === 0) {
+                    const fallbackInput = document.getElementById('fallback-skills-input');
+                    if (fallbackInput && fallbackInput.value.trim()) {
+                        finalSkills = fallbackInput.value.split(',').map(s => s.trim()).filter(s => s);
+                        skillsHiddenInput.value = JSON.stringify(finalSkills);
+                        console.log('📝 FORM SUBMIT: Using fallback input:', finalSkills);
+                    }
+                }
+                
+                // Final fallback: try manual chips display
+                if (finalSkills.length === 0) {
+                    const manualChips = document.querySelectorAll('.current-skills-chips .chip[data-skill]');
+                    if (manualChips.length > 0) {
+                        finalSkills = Array.from(manualChips).map(chip => chip.dataset.skill);
+                        skillsHiddenInput.value = JSON.stringify(finalSkills);
+                        console.log('📝 FORM SUBMIT: Using manual skills display:', finalSkills);
+                    }
+                }
+                
+                console.log('📊 FORM SUBMIT: Final validation:');
+                console.log('  - Hidden input name:', skillsHiddenInput.name);
+                console.log('  - Hidden input value:', skillsHiddenInput.value);
+                console.log('  - Skills count:', finalSkills.length);
+                console.log('  - Skills:', finalSkills);
+                
+                // Validate skills count
+                if (finalSkills.length > 20) {
+                    e.preventDefault();
+                    console.log('❌ FORM SUBMIT: Blocked - too many skills');
+                    
+                    if (typeof M !== 'undefined' && M.toast) {
+                        M.toast({
+                            html: '<i class="material-icons left">error</i>Maximum 20 skills allowed',
+                            classes: 'red darken-2'
+                        });
+                    } else {
+                        alert('Maximum 20 skills allowed');
+                    }
+                    
+                    // Reset button
+                    submitBtn.innerHTML = '<i class="material-icons left">{% if form.instance.pk %}save{% else %}add{% endif %}</i>{% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}';
+                    submitBtn.disabled = false;
+                    return;
+                }
+                
+            } else {
+                console.log('⚠️ FORM SUBMIT: Skills input elements not found');
+            }
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Saving...';
+            submitBtn.disabled = true;
+            
+            // Basic client-side validation
+            const nameField = document.getElementById('{{ form.name.id_for_label }}');
+            if (nameField && !nameField.value.trim()) {
+                e.preventDefault();
+                console.log('❌ FORM SUBMIT: Blocked - task name required');
+                
+                if (typeof M !== 'undefined' && M.toast) {
+                    M.toast({
+                        html: '<i class="material-icons left">error</i>Task name is required',
+                        classes: 'red darken-2'
+                    });
+                } else {
+                    alert('Task name is required');
+                }
+                
+                submitBtn.innerHTML = '<i class="material-icons left">{% if form.instance.pk %}save{% else %}add{% endif %}</i>{% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}';
+                submitBtn.disabled = false;
+                return;
+            }
+            
+            console.log('✅ FORM SUBMIT: All validations passed, submitting...');
+        });
+    } else {
+        console.error('❌ Form element not found!');
+    }
+    
+    // Auto-update form labels for pre-filled values
+    try {
+        if (M.updateTextFields) {
+            M.updateTextFields();
+            console.log('✅ Updated text field labels');
+        }
+    } catch (labelError) {
+        console.log('⚠️ Could not update text field labels:', labelError);
+    }
+    
+    console.log('🎉 Task form initialization complete!');
+});
 </script>
 {% endblock %}

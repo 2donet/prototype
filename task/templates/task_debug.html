@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h4>Task Skills Debug</h4>
+    
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Debug Information</span>
+                    
+                    <h5>Form Fields:</h5>
+                    <ul>
+                        {% for field in form %}
+                        <li><strong>{{ field.name }}</strong>: {{ field.value|default:"None" }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    {% if form.instance.pk %}
+                    <h5>Current Task Skills ({{ form.instance.skills.count }} total):</h5>
+                    <ul>
+                        {% for skill in form.instance.skills.all %}
+                        <li>{{ skill.name }} (ID: {{ skill.id }})</li>
+                        {% empty %}
+                        <li>No skills found</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h5>Skills Input Field Value:</h5>
+                    <p><code>{{ form.skills_input.value|default:"Empty" }}</code></p>
+                    {% endif %}
+                    
+                    <h5>Form Errors:</h5>
+                    {% if form.errors %}
+                        {{ form.errors }}
+                    {% else %}
+                        <p>No form errors</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

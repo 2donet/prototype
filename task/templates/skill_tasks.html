@@ -1,0 +1,675 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %}Tasks requiring {{ skill.name }} | 2do.net{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Skill Header Section -->
+    <div class="row">
+        <div class="col s12">
+            <div class="skill-header-card card">
+                <div class="card-content">
+                    <div class="skill-header-content">
+                        <div class="skill-info">
+                            <div class="breadcrumb-nav">
+                                <a href="{% url 'task:enhanced_task_list' %}" class="breadcrumb-link">
+                                    <i class="material-icons left">arrow_back</i>All Tasks
+                                </a>
+                                <span class="breadcrumb-separator">/</span>
+                                <span class="current-page">{{ skill.name }} Skills</span>
+                            </div>
+                            
+                            <h3 class="skill-title">
+                                <i class="material-icons large skill-icon">label</i>
+                                Tasks requiring <span class="skill-name">{{ skill.name }}</span>
+                            </h3>
+                            
+                            <div class="skill-stats">
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ stats.total_tasks }}</div>
+                                    <div class="stat-label">Total Tasks</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ stats.completed_tasks }}</div>
+                                    <div class="stat-label">Completed</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ stats.in_progress_tasks }}</div>
+                                    <div class="stat-label">In Progress</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{{ stats.todo_tasks }}</div>
+                                    <div class="stat-label">To Do</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Circular -->
+                        <div class="skill-progress">
+                            <div class="progress-circle">
+                                <div class="circle-content">
+                                    <span class="percentage">
+                                        {% if stats.total_tasks > 0 %}
+                                            {{ stats.completed_tasks|floatformat:0 }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </span>
+                                    <span class="progress-label">Complete</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Skills Section -->
+    {% if related_skills %}
+    <div class="row">
+        <div class="col s12">
+            <div class="related-skills-card card">
+                <div class="card-content">
+                    <h5 class="card-title">
+                        <i class="material-icons left">link</i>Related Skills
+                    </h5>
+                    <div class="related-skills-container">
+                        {% for related_skill in related_skills %}
+                        <a href="{% url 'skill_detail' related_skill.name|lower %}" class="chip related-skill-chip">
+                            {{ related_skill.name }}
+                            <span class="skill-count">({{ related_skill.task_count }})</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters Section (Similar to main task list but simplified) -->
+    <div class="row">
+        <div class="col s12">
+            <div class="skill-filters-panel card">
+                <div class="card-content">
+                    <div class="filter-row">
+                        <!-- Search -->
+                        <div class="input-field search-field">
+                            <i class="material-icons prefix">search</i>
+                            <input type="text" id="skill-task-search" placeholder="Search within {{ skill.name }} tasks...">
+                            <label for="skill-task-search">Search Tasks</label>
+                        </div>
+                        
+                        <!-- Status Filter -->
+                        <div class="filter-group">
+                            <label class="filter-group-label">Status</label>
+                            <div class="status-filters">
+                                <p><label><input type="checkbox" class="skill-status-filter" value="todo" checked><span>To Do</span></label></p>
+                                <p><label><input type="checkbox" class="skill-status-filter" value="in_progress" checked><span>In Progress</span></label></p>
+                                <p><label><input type="checkbox" class="skill-status-filter" value="review" checked><span>Under Review</span></label></p>
+                                <p><label><input type="checkbox" class="skill-status-filter" value="completed"><span>Completed</span></label></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Project Filter -->
+                        <div class="input-field">
+                            <select multiple id="skill-project-filter">
+                                <option value="">All Projects</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <label>Filter by Project</label>
+                        </div>
+                        
+                        <!-- Sort -->
+                        <div class="input-field">
+                            <select id="skill-sort-select">
+                                <option value="-created_at">Newest First</option>
+                                <option value="created_at">Oldest First</option>
+                                <option value="-priority">Priority (High to Low)</option>
+                                <option value="priority">Priority (Low to High)</option>
+                                <option value="due_date">Due Date (Nearest)</option>
+                                <option value="name">Name (A-Z)</option>
+                                <option value="status">Status</option>
+                            </select>
+                            <label>Sort By</label>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button id="clear-skill-filters" class="btn-flat waves-effect">
+                            <i class="material-icons left">clear</i>Clear Filters
+                        </button>
+                        <button id="apply-skill-filters" class="btn waves-effect waves-light">
+                            <i class="material-icons left">filter_list</i>Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row">
+        <div class="col s12">
+            <div class="results-summary">
+                <span id="skill-results-count">Showing {{ tasks|length }} tasks</span>
+                <div class="results-actions right">
+                    <a href="{% url 'task:task_create' %}?skill={{ skill.name }}" class="btn waves-effect waves-light">
+                        <i class="material-icons left">add</i>Create Task with {{ skill.name }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="skill-loading-indicator" class="center-align hide">
+        <div class="preloader-wrapper active">
+            <div class="spinner-layer spinner-custom">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+        </div>
+        <p>Loading {{ skill.name }} tasks...</p>
+    </div>
+
+    <!-- Tasks Container -->
+    <div class="row" id="skill-tasks-container">
+        {% for task in tasks %}
+            <div class="col s12 m6 l4 task-card-wrapper" data-task-id="{{ task.id }}" data-priority="{{ task.priority }}" data-status="{{ task.status }}">
+                <div class="card task-card {{ task.priority_class }} hoverable">
+                    <div class="card-content">
+                        <div class="task-header">
+                            <div class="task-title-row">
+                                <span class="card-title truncate">
+                                    <a href="{% url 'task:task_detail' task.id %}" class="task-title-link">{{ task.name }}</a>
+                                </span>
+                                <div class="task-badges">
+                                    <span class="badge priority-badge {{ task.priority_class }}" data-badge-caption="{{ task.priority_display }}">{{ task.priority }}</span>
+                                    <span class="badge status-badge {{ task.status_class }}" data-badge-caption="{{ task.get_status_display }}"></span>
+                                    {% if task.is_overdue %}
+                                    <span class="badge overdue-badge" data-badge-caption="Overdue">!</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="progress-container">
+                                <div class="progress">
+                                    <div class="determinate" style="width: {{ task.get_progress_percentage }}%"></div>
+                                </div>
+                                <span class="progress-text">{{ task.get_progress_percentage }}%</span>
+                            </div>
+                        </div>
+
+                        <div class="task-meta">
+                            <div class="meta-item">
+                                <i class="material-icons tiny">account_circle</i>
+                                <a href="/u/{{ task.created_by.id }}" class="creator-link">{{ task.created_by.username }}</a>
+                            </div>
+                            <div class="meta-item">
+                                <i class="material-icons tiny">access_time</i>
+                                <span class="created-time">{{ task.created_at|naturaltime }}</span>
+                            </div>
+                            {% if task.due_date %}
+                            <div class="meta-item due-date-item {% if task.is_overdue %}overdue{% endif %}">
+                                <i class="material-icons tiny">event</i>
+                                <span class="due-date">{{ task.due_date|naturalday }}</span>
+                                {% if task.days_until_due != None %}
+                                    <span class="days-remaining">({{ task.days_until_due }} days)</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="task-description">
+                            <p class="description-text">
+                                {% if task.desc %}
+                                    {{ task.desc|truncatewords:15|linebreaks }}
+                                {% else %}
+                                    <em class="no-description">No description provided</em>
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        {% if task.to_project %}
+                        <div class="project-association">
+                            <div class="chip project-chip">
+                                <i class="material-icons tiny">folder</i>
+                                <a href="/{{ task.to_project.id }}" class="project-link">{{ task.to_project.name }}</a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="skills-section">
+                            <div class="skills-container">
+                                {% for task_skill in task.skills.all %}
+                                    {% if task_skill.name == skill.name %}
+                                        <span class="chip skill-chip highlighted-skill">{{ task_skill.name }}</span>
+                                    {% else %}
+                                        <a href="{% url 'skill_detail' task_skill.name|lower %}" class="chip skill-chip">{{ task_skill.name }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-action task-actions">
+                        <a href="{% url 'task:task_detail' task.id %}" class="btn-flat waves-effect action-btn">
+                            <i class="material-icons left">visibility</i>View
+                        </a>
+                        
+                        {% if user == task.created_by %}
+                        <a href="{% url 'task:task_update' task.id %}" class="btn-flat waves-effect action-btn">
+                            <i class="material-icons left">edit</i>Edit
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'submissions:create_submission_for_content' 'task' task.id %}" class="btn-flat waves-effect action-btn apply-btn">
+                            <i class="material-icons left">assignment</i>Apply
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col s12">
+                <div class="empty-state center-align">
+                    <i class="material-icons large">assignment</i>
+                    <h5>No {{ skill.name }} tasks found</h5>
+                    <p>There are currently no tasks that require the {{ skill.name }} skill.</p>
+                    <a href="{% url 'task:task_create' %}?skill={{ skill.name }}" class="btn waves-effect waves-light">
+                        <i class="material-icons left">add</i>Create a {{ skill.name }} Task
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if tasks.has_other_pages %}
+    <div class="row">
+        <div class="col s12 center-align">
+            <ul class="pagination">
+                {% if tasks.has_previous %}
+                    <li class="waves-effect"><a href="?page=1"><i class="material-icons">first_page</i></a></li>
+                    <li class="waves-effect"><a href="?page={{ tasks.previous_page_number }}"><i class="material-icons">chevron_left</i></a></li>
+                {% endif %}
+                
+                {% for num in tasks.paginator.page_range %}
+                    {% if tasks.number == num %}
+                        <li class="active"><a href="#!">{{ num }}</a></li>
+                    {% elif num > tasks.number|add:'-3' and num < tasks.number|add:'3' %}
+                        <li class="waves-effect"><a href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if tasks.has_next %}
+                    <li class="waves-effect"><a href="?page={{ tasks.next_page_number }}"><i class="material-icons">chevron_right</i></a></li>
+                    <li class="waves-effect"><a href="?page={{ tasks.paginator.num_pages }}"><i class="material-icons">last_page</i></a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Skill Tasks Page Styles */
+.skill-header-card {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 30px;
+}
+
+.skill-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+}
+
+.breadcrumb-nav {
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.breadcrumb-link {
+    color: var(--text2ndary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.breadcrumb-link:hover {
+    color: var(--highlight);
+}
+
+.breadcrumb-separator {
+    color: var(--highlightmenu);
+    margin: 0 10px;
+}
+
+.current-page {
+    color: var(--highlight);
+}
+
+.skill-title {
+    color: var(--text);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.skill-icon {
+    color: var(--highlight);
+    font-size: 2.5rem;
+}
+
+.skill-name {
+    color: var(--highlight);
+    font-weight: 600;
+}
+
+.skill-stats {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--highlight);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text2ndary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.skill-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--confirm) 0deg {{ stats.completed_tasks|floatformat:0 }}%, 
+        var(--bg-color2) {{ stats.completed_tasks|floatformat:0 }}% 360deg
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.progress-circle::before {
+    content: '';
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--bg-light);
+    position: absolute;
+}
+
+.circle-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.percentage {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--highlight);
+    line-height: 1;
+}
+
+.progress-label {
+    font-size: 12px;
+    color: var(--text2ndary);
+    text-transform: uppercase;
+}
+
+.related-skills-card {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.related-skills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.related-skill-chip {
+    background-color: var(--bg-color2);
+    color: var(--text);
+    border: 1px solid var(--highlightmenu);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.related-skill-chip:hover {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+    text-decoration: none;
+}
+
+.skill-count {
+    color: var(--text2ndary);
+    font-size: 11px;
+    margin-left: 5px;
+}
+
+.skill-filters-panel {
+    background: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.search-field {
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-field input {
+    color: var(--text);
+    border-bottom: 1px solid var(--highlightmenu);
+}
+
+.search-field input:focus {
+    border-bottom: 2px solid var(--highlight);
+    box-shadow: 0 1px 0 0 var(--highlight);
+}
+
+.search-field .prefix {
+    color: var(--highlight);
+}
+
+.filter-group {
+    min-width: 150px;
+}
+
+.filter-group-label {
+    color: var(--highlight);
+    font-weight: 500;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.status-filters {
+    display: flex;
+    gap: 15px;
+}
+
+.status-filters p {
+    margin: 0;
+}
+
+.status-filters input[type="checkbox"] + span {
+    color: var(--text);
+    font-size: 13px;
+}
+
+.status-filters input[type="checkbox"]:checked + span {
+    color: var(--highlight);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.highlighted-skill {
+    background-color: var(--highlight) !important;
+    color: var(--bg-color) !important;
+    font-weight: 600;
+    position: relative;
+}
+
+.highlighted-skill::after {
+    content: '★';
+    position: absolute;
+    right: -5px;
+    top: -5px;
+    font-size: 12px;
+    color: var(--highlight);
+    background: var(--bg-color);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state {
+    padding: 60px 20px;
+    color: var(--text2ndary);
+}
+
+.empty-state .material-icons {
+    font-size: 72px;
+    color: var(--highlightmenu);
+    margin-bottom: 20px;
+}
+
+.empty-state h5 {
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+/* Pagination styles */
+.pagination li a {
+    color: var(--text);
+    background-color: var(--bg-light);
+    border: 1px solid var(--highlightmenu);
+}
+
+.pagination li.active a {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+}
+
+.pagination li:hover a {
+    background-color: var(--highlightmenu);
+}
+
+/* Responsive adjustments */
+@media only screen and (max-width: 992px) {
+    .skill-header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .skill-stats {
+        justify-content: center;
+    }
+    
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-field {
+        min-width: auto;
+    }
+    
+    .status-filters {
+        flex-wrap: wrap;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    .skill-stats {
+        gap: 20px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .progress-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .progress-circle::before {
+        width: 75px;
+        height: 75px;
+    }
+    
+    .percentage {
+        font-size: 1.2rem;
+    }
+}
+</style>
+
+<script>
+// Initialize skill-specific task management
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.Dropdown.init(document.querySelectorAll('.dropdown-trigger'));
+    
+    // You can extend this with skill-specific AJAX functionality
+    // Similar to the main task management, but filtered by skill
+});
+</script>
+{% endblock %}

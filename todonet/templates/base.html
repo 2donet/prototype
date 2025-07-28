@@ -5,6 +5,8 @@
 <head>
     <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
     <meta name="csrf-token" content="{{ csrf_token }}">
+        <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+
     <link type="text/css" rel="stylesheet" href="{% static 'css/materialize.css' %}" media="screen,projection"/>
     <link type="text/css" rel="stylesheet" href="{% static 'css/nouislider.css' %}" media="screen,projection"/>
     <link rel="stylesheet" href="{% static 'style.css' %}">
@@ -12,9 +14,11 @@
     <link rel="stylesheet" href="{% static 'navbar.css' %}">
     <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
 
+
 <link rel="shortcut icon" href="{% static 'favicon.ico' %}" />
     <script src="{% static 'js/actionsmenu.js' %}"></script>
     <script>
+      
     // Pass Django variables to JavaScript
     window.userAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
     window.userId = {{ request.user.id|default:"null" }};
@@ -32,7 +36,6 @@
     {% endif %}
 </script>
     <script src="{% static 'js/main.js' %}"></script>
-    <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/materialize.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/nouislider.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/wNumb.js' %}"></script>
@@ -80,11 +83,6 @@ updateUnreadCount();
         });
       </script>  
       <script src="{% static 'js/comment-rating.js' %}"></script>    
-          {% block extra_js %}
-    <!-- Additional JavaScript will be inserted here -->
-    {% endblock %}
-    {% comment %} nie wykorzystywany w tej template {% endcomment %}
-
     
     <title>{% block title %}2do.net{% endblock %}</title>
     {% block extra_css %}
@@ -127,6 +125,7 @@ updateUnreadCount();
             {% endif %}
 
             <li><a class="dropdown-trigger" href="#!" data-target="dropdown-add-nav">Add</a></li>
+            <li><a href="/t/all">tasks</a></li>
           </ul>
         </div>
       </nav>
@@ -211,7 +210,9 @@ updateUnreadCount();
     </div>
 {% include "footer.html" %}
 
-
+<!-- JavaScript blocks should be placed before closing body tag -->
+{% block extra_js %}
+{% endblock %}
 
 </body>
 
