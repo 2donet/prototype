@@ -253,16 +253,22 @@ class TaskForm(forms.ModelForm):
         to_project = cleaned_data.get('to_project')
         to_task = cleaned_data.get('to_task')
         
+        print(f"DEBUG: to_project={to_project}, type={type(to_project)}")  # Debug line
+        
         # If parent task is selected, ensure it belongs to the same project
-        if to_task and to_project:
+        if to_task and to_project:  # Only if both are truthy
             if to_task.to_project and to_task.to_project != to_project:
                 raise forms.ValidationError({
                     'to_task': 'Parent task must belong to the same project.'
                 })
         
-        # If parent task is selected but no project, inherit project from parent
-        if to_task and not to_project:
-            cleaned_data['to_project'] = to_task.to_project
+        # More precise check for empty to_project
+        if to_task and (to_project is None or to_project == ''):
+            if to_task.main_project:
+                cleaned_data['main_project'] = to_task.main_project
+                # Explicitly set to_project to None
+                cleaned_data['to_project'] = None
+                print(f"DEBUG: Inherited main_project={to_task.main_project}")  # Debug line
         
         return cleaned_data
 

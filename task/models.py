@@ -64,7 +64,13 @@ class Task(models.Model):
         default=False,
         help_text="Require comments to be approved by moderators before being visible"
     )
-
+    def save(self, *args, **kwargs):
+        # If we have a parent task but no project, inherit main_project
+        if self.to_task and not self.to_project:
+            if self.to_task.main_project:
+                self.main_project = self.to_task.main_project
+        
+        super().save(*args, **kwargs)
     class Meta:
         ordering = ['-created_at']
         indexes = [
