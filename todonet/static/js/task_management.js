@@ -1,5 +1,5 @@
 /**
- * Enhanced Task Management System - Main JavaScript File
+ * Enhanced Task Management System - Main JavaScript File (COMPLETELY FIXED)
  * Handles search, filtering, sorting, and AJAX updates
  */
 
@@ -21,8 +21,9 @@ class TaskManager {
         };
         this.currentView = 'cards';
         this.isLoading = false;
-        this.hasNextPage = true;  // Track if there are more pages
-        this.totalPages = 0;      // Track total pages
+        this.hasNextPage = true;
+        this.totalPages = 0;
+        this.skillsInstance = null;
         
         this.init();
     }
@@ -95,7 +96,15 @@ class TaskManager {
             });
         }
 
-        // Infinite scroll / Load more functionality
+        // Bind load more button (when dynamically created)
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'load-more-btn') {
+                e.preventDefault();
+                this.loadMoreTasks();
+            }
+        });
+
+        // Infinite scroll
         this.bindScrollEvents();
     }
 
@@ -103,7 +112,6 @@ class TaskManager {
         // Project filter
         const projectFilter = document.getElementById('project-filter');
         if (projectFilter) {
-            // Materialize select change event
             projectFilter.addEventListener('change', () => {
                 this.updateProjectFilters();
             });
@@ -146,30 +154,41 @@ class TaskManager {
         skillLogicRadios.forEach(radio => {
             radio.addEventListener('change', (e) => {
                 this.currentFilters.skill_logic = e.target.value;
+                console.log('Skill logic changed to:', e.target.value);
             });
         });
     }
 
     bindScrollEvents() {
-        // Implement infinite scroll or load more button
+        let scrollTimeout = null;
+        
         window.addEventListener('scroll', () => {
-            if (this.isLoading) return;
-            
-            const scrollPosition = window.innerHeight + window.scrollY;
-            const documentHeight = document.documentElement.offsetHeight;
-            
-            if (scrollPosition >= documentHeight - 1000) {
-                this.loadMoreTasks();
+            // Debounce scroll events to prevent excessive firing
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
             }
+            
+            scrollTimeout = setTimeout(() => {
+                if (this.isLoading || !this.hasNextPage) return;
+                
+                const scrollPosition = window.innerHeight + window.scrollY;
+                const documentHeight = document.documentElement.offsetHeight;
+                
+                // Only trigger when very close to bottom and there are more pages
+                if (scrollPosition >= documentHeight - 200) {
+                    console.log('Scroll triggered load more');
+                    this.loadMoreTasks();
+                }
+            }, 100); // 100ms debounce
         });
     }
 
-    initializeComponents() {
+    async initializeComponents() {
         // Initialize Materialize components
         this.initializeMaterialize();
         
         // Initialize skills chips
-        this.initializeSkillsFilter();
+        await this.initializeSkillsFilter();
         
         // Update URL state
         this.updateUrlState();
@@ -192,25 +211,100 @@ class TaskManager {
         M.Tooltip.init(tooltips);
     }
 
-    initializeSkillsFilter() {
+    async initializeSkillsFilter() {
         const skillsFilter = document.getElementById('skills-filter');
-        if (skillsFilter) {
-            // Initialize chips for skills filter
-            M.Chips.init(skillsFilter, {
+        if (!skillsFilter) {
+            console.log('Skills filter element not found');
+            return;
+        }
+
+        try {
+            console.log('Initializing skills filter...');
+            
+            // Fetch autocomplete data
+            const autocompleteData = await this.getSkillsAutocompleteData();
+            console.log('Fetched autocomplete data:', Object.keys(autocompleteData).length, 'skills');
+            
+            // Initialize chips with autocomplete
+            this.skillsInstance = M.Chips.init(skillsFilter, {
                 placeholder: 'Add skill tags...',
                 secondaryPlaceholder: 'Enter skill name',
                 autocompleteOptions: {
-                    data: this.getSkillsAutocompleteData(),
+                    data: autocompleteData,
                     limit: 10,
                     minLength: 1
                 },
-                onChipAdd: () => {
-                    this.updateSkillsFilter();
+                onChipAdd: (element, chip) => {
+                    console.log('Chip added:', chip.tag);
+                    // Add small delay to ensure chips data is updated
+                    setTimeout(() => {
+                        this.updateSkillsFilter();
+                    }, 50);
                 },
-                onChipDelete: () => {
-                    this.updateSkillsFilter();
+                onChipDelete: (element, chip) => {
+                    console.log('Chip deleted:', chip.tag);
+                    // Add small delay to ensure chips data is updated
+                    setTimeout(() => {
+                        this.updateSkillsFilter();
+                    }, 50);
                 }
             });
+            
+            console.log('Skills chips initialized successfully');
+            
+        } catch (error) {
+            console.error('Error initializing skills filter:', error);
+            
+            // Fallback initialization without autocomplete
+            this.skillsInstance = M.Chips.init(skillsFilter, {
+                placeholder: 'Add skill tags...',
+                secondaryPlaceholder: 'Enter skill name',
+                onChipAdd: (element, chip) => {
+                    console.log('Chip added (fallback):', chip.tag);
+                    setTimeout(() => {
+                        this.updateSkillsFilter();
+                    }, 50);
+                },
+                onChipDelete: (element, chip) => {
+                    console.log('Chip deleted (fallback):', chip.tag);
+                    setTimeout(() => {
+                        this.updateSkillsFilter();
+                    }, 50);
+                }
+            });
+        }
+    }
+
+    async getSkillsAutocompleteData() {
+        try {
+            console.log('Fetching skills autocomplete data from /t/api/skills/autocomplete/');
+            
+            const response = await fetch('/t/api/skills/autocomplete/', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Autocomplete API response:', data);
+            
+            const autocompleteData = {};
+            
+            if (data.skills && Array.isArray(data.skills)) {
+                data.skills.forEach(skill => {
+                    autocompleteData[skill.name] = null; // Materialize format
+                });
+            }
+            
+            return autocompleteData;
+        } catch (error) {
+            console.error('Error fetching skills autocomplete data:', error);
+            return {};
         }
     }
 
@@ -224,7 +318,11 @@ class TaskManager {
             const params = new URLSearchParams({
                 page: this.currentPage,
                 per_page: this.tasksPerPage,
-                ...this.currentFilters
+                search: this.currentFilters.search,
+                skill_logic: this.currentFilters.skill_logic,
+                created_after: this.currentFilters.created_after,
+                due_before: this.currentFilters.due_before,
+                sort: this.currentFilters.sort
             });
 
             // Convert arrays to comma-separated strings
@@ -233,6 +331,7 @@ class TaskManager {
             }
             if (this.currentFilters.skills.length > 0) {
                 params.set('skills', this.currentFilters.skills.join(','));
+                console.log('Sending skills filter:', this.currentFilters.skills);
             }
             if (this.currentFilters.statuses.length > 0) {
                 params.set('statuses', this.currentFilters.statuses.join(','));
@@ -240,6 +339,8 @@ class TaskManager {
             if (this.currentFilters.priorities.length > 0) {
                 params.set('priorities', this.currentFilters.priorities.join(','));
             }
+
+            console.log('Loading tasks with params:', params.toString());
 
             const response = await fetch(`/t/api/search/?${params}`, {
                 headers: {
@@ -257,7 +358,6 @@ class TaskManager {
             this.updateResultsCount(data.total_count, data.filtered_count);
             this.updatePagination(data.has_next, data.has_previous, data.current_page, data.total_pages);
             
-            // Update pagination state
             this.hasNextPage = data.has_next;
             this.totalPages = data.total_pages;
             
@@ -292,10 +392,8 @@ class TaskManager {
             container.appendChild(taskCard);
         });
 
-        // Re-initialize Materialize components for new cards
         this.initializeMaterialize();
         
-        // Add animation class for new cards
         if (!append) {
             const cards = container.querySelectorAll('.task-card-wrapper');
             cards.forEach((card, index) => {
@@ -314,14 +412,12 @@ class TaskManager {
         wrapper.setAttribute('data-status', task.status);
         wrapper.setAttribute('data-created', task.created_at);
         
-        // This would typically be rendered server-side, but for dynamic content:
         wrapper.innerHTML = this.getTaskCardHTML(task);
         
         return wrapper;
     }
 
     getTaskCardHTML(task) {
-        // Enhanced task card HTML with proper skills display
         return `
             <div class="card task-card ${task.priority_class} hoverable">
                 <div class="card-content">
@@ -422,40 +518,86 @@ class TaskManager {
             this.currentFilters.projects = selectedOptions
                 .map(option => option.value)
                 .filter(value => value !== '');
+            console.log('Updated project filters:', this.currentFilters.projects);
         }
     }
 
     updateStatusFilters() {
         const statusCheckboxes = document.querySelectorAll('.status-filter:checked');
         this.currentFilters.statuses = Array.from(statusCheckboxes).map(cb => cb.value);
+        console.log('Updated status filters:', this.currentFilters.statuses);
     }
 
     updatePriorityFilters() {
         const priorityCheckboxes = document.querySelectorAll('.priority-filter:checked');
         this.currentFilters.priorities = Array.from(priorityCheckboxes).map(cb => parseInt(cb.value));
+        console.log('Updated priority filters:', this.currentFilters.priorities);
     }
 
     updateSkillsFilter() {
-        const skillsChips = M.Chips.getInstance(document.getElementById('skills-filter'));
-        if (skillsChips) {
-            this.currentFilters.skills = skillsChips.chipsData.map(chip => chip.tag);
+        console.log('updateSkillsFilter called');
+        
+        let skillNames = [];
+        let method = 'none';
+        
+        // Method 1: Use stored instance
+        if (this.skillsInstance && this.skillsInstance.chipsData && this.skillsInstance.chipsData.length > 0) {
+            skillNames = this.skillsInstance.chipsData.map(chip => chip.tag).filter(tag => tag && tag.trim());
+            method = 'stored instance';
+        }
+        
+        // Method 2: Get instance directly if method 1 failed
+        if (skillNames.length === 0) {
+            const skillsFilterElement = document.getElementById('skills-filter');
+            if (skillsFilterElement) {
+                const instance = M.Chips.getInstance(skillsFilterElement);
+                if (instance && instance.chipsData && instance.chipsData.length > 0) {
+                    skillNames = instance.chipsData.map(chip => chip.tag).filter(tag => tag && tag.trim());
+                    method = 'direct instance';
+                    // Update our stored reference
+                    this.skillsInstance = instance;
+                }
+            }
+        }
+        
+        // Method 3: Parse DOM directly as fallback
+        if (skillNames.length === 0) {
+            const skillsFilterElement = document.getElementById('skills-filter');
+            if (skillsFilterElement) {
+                const chipElements = skillsFilterElement.querySelectorAll('.chip:not(.input)');
+                skillNames = Array.from(chipElements).map(chip => {
+                    const text = chip.textContent || '';
+                    // Remove the close button text and clean up
+                    return text.replace(/close\s*$/, '').trim();
+                }).filter(name => name && name !== 'close');
+                
+                if (skillNames.length > 0) {
+                    method = 'DOM parsing';
+                }
+            }
+        }
+        
+        // Always update the filter, even if empty (user might have deleted all chips)
+        this.currentFilters.skills = skillNames;
+        console.log(`Updated skills filter (${method}):`, skillNames);
+        
+        // Also log the raw chips data for debugging
+        if (this.skillsInstance && this.skillsInstance.chipsData) {
+            console.log('Raw chips data:', this.skillsInstance.chipsData);
         }
     }
 
     changeView(viewType) {
         this.currentView = viewType;
         
-        // Update button states
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.classList.remove('active');
         });
         document.querySelector(`[data-view="${viewType}"]`).classList.add('active');
         
-        // Apply view class to container
         const container = document.getElementById('tasks-container');
         container.className = `row view-${viewType}`;
         
-        // Adjust card classes based on view
         if (viewType === 'compact') {
             container.querySelectorAll('.task-card-wrapper').forEach(card => {
                 card.className = 'col s12 task-card-wrapper';
@@ -468,7 +610,8 @@ class TaskManager {
     }
 
     clearAllFilters() {
-        // Reset filters to default
+        console.log('Clearing all filters');
+        
         this.currentFilters = {
             search: '',
             projects: [],
@@ -481,7 +624,6 @@ class TaskManager {
             sort: '-created_at'
         };
 
-        // Reset pagination
         this.resetPagination();
 
         // Clear UI elements
@@ -500,12 +642,8 @@ class TaskManager {
         document.getElementById('created-after').value = '';
         document.getElementById('due-before').value = '';
 
-        // Clear skills chips
-        const skillsChips = M.Chips.getInstance(document.getElementById('skills-filter'));
-        if (skillsChips) {
-            skillsChips.chipsData = [];
-            skillsChips._renderChips();
-        }
+        // Clear skills chips - try multiple methods
+        this.clearSkillsChips();
 
         // Reset project select
         const projectSelect = document.getElementById('project-filter');
@@ -515,23 +653,92 @@ class TaskManager {
         }
 
         // Reset skill logic
-        document.querySelector('input[name="skill-logic"][value="any"]').checked = true;
+        const anyRadio = document.querySelector('input[name="skill-logic"][value="any"]');
+        if (anyRadio) anyRadio.checked = true;
 
         this.loadTasks();
     }
 
+    clearSkillsChips() {
+        // Method 1: Use stored instance
+        if (this.skillsInstance) {
+            this.skillsInstance.chipsData = [];
+            this.skillsInstance._renderChips();
+            console.log('Cleared chips using stored instance');
+            return;
+        }
+        
+        // Method 2: Get instance directly
+        const skillsFilterElement = document.getElementById('skills-filter');
+        if (skillsFilterElement) {
+            const instance = M.Chips.getInstance(skillsFilterElement);
+            if (instance) {
+                instance.chipsData = [];
+                instance._renderChips();
+                this.skillsInstance = instance; // Update our reference
+                console.log('Cleared chips using direct instance');
+                return;
+            }
+        }
+        
+        // Method 3: DOM manipulation fallback
+        if (skillsFilterElement) {
+            const existingChips = skillsFilterElement.querySelectorAll('.chip:not(.input)');
+            existingChips.forEach(chip => chip.remove());
+            console.log('Cleared chips using DOM manipulation');
+        }
+    }
+
     applyFilters() {
+        console.log('=== APPLYING FILTERS ===');
+        
+        // Force refresh chips data before applying filters
+        this.refreshChipsData();
+        
+        // Update all filters before applying
+        this.updateProjectFilters();
+        this.updateStatusFilters();
+        this.updatePriorityFilters();
+        this.updateSkillsFilter();
+        
+        // Update skill logic
+        const skillLogicRadio = document.querySelector('input[name="skill-logic"]:checked');
+        if (skillLogicRadio) {
+            this.currentFilters.skill_logic = skillLogicRadio.value;
+        }
+        
+        console.log('Final filters to apply:', this.currentFilters);
+        
         this.resetPagination();
         this.loadTasks();
         this.updateFilterToggleState();
     }
 
+    refreshChipsData() {
+        // Force refresh of chips instance data
+        const skillsFilterElement = document.getElementById('skills-filter');
+        if (skillsFilterElement) {
+            const instance = M.Chips.getInstance(skillsFilterElement);
+            if (instance) {
+                // Update our stored reference
+                this.skillsInstance = instance;
+                console.log('Refreshed chips instance, current data:', instance.chipsData);
+            }
+        }
+    }
+
     loadMoreTasks() {
-        if (this.isLoading || !this.hasNextPage) {
-            console.log('Not loading more tasks:', { isLoading: this.isLoading, hasNextPage: this.hasNextPage });
+        if (this.isLoading) {
+            console.log('Not loading more tasks: already loading');
             return;
         }
         
+        if (!this.hasNextPage) {
+            console.log('Not loading more tasks: no more pages available');
+            return;
+        }
+        
+        console.log(`Loading more tasks - current page: ${this.currentPage}, total pages: ${this.totalPages}`);
         this.currentPage++;
         this.loadTasks(true);
     }
@@ -554,7 +761,6 @@ class TaskManager {
         container.innerHTML = '';
         
         if (hasNext) {
-            // Show Load More button
             const loadMoreBtn = document.createElement('button');
             loadMoreBtn.id = 'load-more-btn';
             loadMoreBtn.className = 'btn waves-effect waves-light';
@@ -566,14 +772,12 @@ class TaskManager {
             
             container.appendChild(wrapper);
         } else if (currentPage > 1) {
-            // Show "no more tasks" message
             const endMessage = document.createElement('p');
             endMessage.className = 'center-align grey-text';
             endMessage.innerHTML = '<i class="material-icons tiny">done_all</i> All tasks loaded';
             container.appendChild(endMessage);
         }
         
-        // Show pagination info if there are multiple pages
         if (totalPages > 1) {
             const paginationInfo = document.createElement('p');
             paginationInfo.className = 'center-align pagination-info';
@@ -586,11 +790,13 @@ class TaskManager {
         const activeFiltersCount = this.getActiveFiltersCount();
         const badge = document.querySelector('.active-filters-count');
         
-        if (activeFiltersCount > 0) {
-            badge.textContent = activeFiltersCount;
-            badge.classList.remove('hide');
-        } else {
-            badge.classList.add('hide');
+        if (badge) {
+            if (activeFiltersCount > 0) {
+                badge.textContent = activeFiltersCount;
+                badge.classList.remove('hide');
+            } else {
+                badge.classList.add('hide');
+            }
         }
     }
 
@@ -599,18 +805,17 @@ class TaskManager {
         if (this.currentFilters.search) count++;
         if (this.currentFilters.projects.length > 0) count++;
         if (this.currentFilters.skills.length > 0) count++;
-        if (this.currentFilters.statuses.length !== 3) count++; // Default is 3 statuses
-        if (this.currentFilters.priorities.length !== 4) count++; // Default is 4 priorities
+        if (this.currentFilters.statuses.length !== 3) count++;
+        if (this.currentFilters.priorities.length !== 4) count++;
         if (this.currentFilters.created_after) count++;
         if (this.currentFilters.due_before) count++;
         return count;
     }
 
     updateUrlState() {
-        // Update browser URL with current filters for bookmarking
         const params = new URLSearchParams();
         Object.entries(this.currentFilters).forEach(([key, value]) => {
-            if (value && value.length > 0) {
+            if (value && (Array.isArray(value) ? value.length > 0 : true)) {
                 if (Array.isArray(value)) {
                     params.set(key, value.join(','));
                 } else {
@@ -623,42 +828,16 @@ class TaskManager {
         window.history.replaceState(null, '', newUrl);
     }
 
-    getSkillsAutocompleteData() {
-        // Fetch skills autocomplete data from API
-        return fetch('/t/api/skills/autocomplete/')
-            .then(response => response.json())
-            .then(data => {
-                const autocompleteData = {};
-                data.skills.forEach(skill => {
-                    autocompleteData[skill.name] = null; // Materialize format
-                });
-                return autocompleteData;
-            })
-            .catch(error => {
-                console.error('Error fetching skills:', error);
-                return {};
-            });
-    }
-
     showLoading() {
         const loading = document.getElementById('loading-indicator');
         if (loading) {
             loading.classList.remove('hide');
         }
         
-        // Show loading state on Load More button
         const loadMoreBtn = document.getElementById('load-more-btn');
         if (loadMoreBtn) {
             loadMoreBtn.disabled = true;
             loadMoreBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Loading...';
-        }
-        
-        // Disable form controls during main loading
-        if (!loadMoreBtn) {
-            const controls = document.querySelectorAll('input, select, button');
-            controls.forEach(control => {
-                control.disabled = true;
-            });
         }
     }
 
@@ -668,22 +847,14 @@ class TaskManager {
             loading.classList.add('hide');
         }
         
-        // Reset Load More button
         const loadMoreBtn = document.getElementById('load-more-btn');
         if (loadMoreBtn) {
             loadMoreBtn.disabled = false;
             loadMoreBtn.innerHTML = '<i class="material-icons left">expand_more</i>Load More Tasks';
         }
-        
-        // Re-enable form controls
-        const controls = document.querySelectorAll('input, select, button');
-        controls.forEach(control => {
-            control.disabled = false;
-        });
     }
 
     showError(message) {
-        // Create toast notification
         M.toast({
             html: `<i class="material-icons left">error</i>${message}`,
             classes: 'red darken-2',
@@ -692,15 +863,14 @@ class TaskManager {
     }
 }
 
-// Initialize task manager when DOM is loaded
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Only initialize on task list pages
     if (document.getElementById('tasks-container')) {
+        console.log('Initializing Task Manager');
         window.taskManager = new TaskManager();
     }
 });
 
-// Export for potential external use
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = TaskManager;
 }

@@ -3838,4 +3838,7 @@ nav ul li a {
             color: var(--bg-color) !important;
 }
 
-
+.project-link {
+    color: var(--bg-color) !important;
+    font-weight: 800;;
+}

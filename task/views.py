@@ -462,17 +462,25 @@ class UpdateTaskView(UpdateView):
 def api_skills_autocomplete(request):
     """
     AJAX endpoint for skills autocomplete in filters.
+    Returns initial skills when no query provided, filtered skills when query exists.
     """
     query = request.GET.get('q', '').strip()
     
-    if len(query) < 2:
-        return JsonResponse({'skills': []})
-    
-    skills = Skill.objects.filter(
-        name__icontains=query
-    ).annotate(
-        task_count=Count('task')
-    ).order_by('-task_count', 'name')[:20]
+    if not query:
+        # Return top skills when no query provided (for initial autocomplete data)
+        skills = Skill.objects.annotate(
+            task_count=Count('task')
+        ).order_by('-task_count', 'name')[:50]  # Get top 50 most used skills
+    else:
+        if len(query) < 2:
+            return JsonResponse({'skills': []})
+        
+        # Filter skills based on query
+        skills = Skill.objects.filter(
+            name__icontains=query
+        ).annotate(
+            task_count=Count('task')
+        ).order_by('-task_count', 'name')[:20]
     
     skills_data = [
         {
@@ -483,7 +491,6 @@ def api_skills_autocomplete(request):
     ]
     
     return JsonResponse({'skills': skills_data})
-
 
 def api_filter_options(request):
     """

@@ -203,20 +203,7 @@
                                     </h6>
                                     <p class="skills-description">Enter the skills required to complete this task (maximum 20)</p>
                                     
-                                    <!-- Debug info for development -->
-                                    {% if form.instance.pk %}
-                                    <div class="debug-info" style="background: var(--bg-color3); padding: 10px; margin: 10px 0; border-radius: 4px;">
-                                        <small>Debug: Current skills in DB: 
-                                        {% for skill in form.instance.skills.all %}
-                                            "{{ skill.name }}"{% if not forloop.last %}, {% endif %}
-                                        {% empty %}
-                                            None
-                                        {% endfor %}
-                                        </small><br>
-                                        <small>Form initial value: "{{ form.skills_input.initial|default:'Empty' }}"</small><br>
-                                        <small>Hidden input ID: {{ form.skills_input.id_for_label }}</small>
-                                    </div>
-                                    {% endif %}
+
                                     
                                     <!-- Hidden input for form submission -->
                                     {{ form.skills_input }}
@@ -509,17 +496,6 @@
     font-size: 12px;
 }
 
-/* Debug info styling */
-.debug-info {
-    background: var(--bg-color3) !important;
-    color: var(--text2ndary);
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 4px;
-    border-left: 3px solid var(--warning);
-    font-family: monospace;
-    font-size: 11px;
-}
 
 /* Current skills display */
 .current-skills-display {

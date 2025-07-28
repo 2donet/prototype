@@ -1,5 +1,5 @@
 /**
- * Enhanced Task Management System - Main JavaScript File
+ * Enhanced Task Management System - Main JavaScript File (FIXED)
  * Handles search, filtering, sorting, and AJAX updates
  */
 
@@ -23,6 +23,7 @@ class TaskManager {
         this.isLoading = false;
         this.hasNextPage = true;  // Track if there are more pages
         this.totalPages = 0;      // Track total pages
+        this.skillsInstance = null; // Store chips instance
         
         this.init();
     }
@@ -164,12 +165,12 @@ class TaskManager {
         });
     }
 
-    initializeComponents() {
+    async initializeComponents() {
         // Initialize Materialize components
         this.initializeMaterialize();
         
         // Initialize skills chips
-        this.initializeSkillsFilter();
+        await this.initializeSkillsFilter();
         
         // Update URL state
         this.updateUrlState();
@@ -192,25 +193,47 @@ class TaskManager {
         M.Tooltip.init(tooltips);
     }
 
-    initializeSkillsFilter() {
+    async initializeSkillsFilter() {
         const skillsFilter = document.getElementById('skills-filter');
         if (skillsFilter) {
-            // Initialize chips for skills filter
-            M.Chips.init(skillsFilter, {
-                placeholder: 'Add skill tags...',
-                secondaryPlaceholder: 'Enter skill name',
-                autocompleteOptions: {
-                    data: this.getSkillsAutocompleteData(),
-                    limit: 10,
-                    minLength: 1
-                },
-                onChipAdd: () => {
-                    this.updateSkillsFilter();
-                },
-                onChipDelete: () => {
-                    this.updateSkillsFilter();
-                }
-            });
+            try {
+                // Fetch skills data first
+                const autocompleteData = await this.getSkillsAutocompleteData();
+                
+                // Initialize chips for skills filter
+                this.skillsInstance = M.Chips.init(skillsFilter, {
+                    placeholder: 'Add skill tags...',
+                    secondaryPlaceholder: 'Enter skill name',
+                    autocompleteOptions: {
+                        data: autocompleteData,
+                        limit: 10,
+                        minLength: 1
+                    },
+                    onChipAdd: () => {
+                        console.log('Chip added, updating skills filter');
+                        this.updateSkillsFilter();
+                    },
+                    onChipDelete: () => {
+                        console.log('Chip deleted, updating skills filter');
+                        this.updateSkillsFilter();
+                    }
+                });
+                
+                console.log('Skills filter initialized with autocomplete data:', Object.keys(autocompleteData).length, 'skills');
+            } catch (error) {
+                console.error('Error initializing skills filter:', error);
+                // Fallback initialization without autocomplete
+                this.skillsInstance = M.Chips.init(skillsFilter, {
+                    placeholder: 'Add skill tags...',
+                    secondaryPlaceholder: 'Enter skill name',
+                    onChipAdd: () => {
+                        this.updateSkillsFilter();
+                    },
+                    onChipDelete: () => {
+                        this.updateSkillsFilter();
+                    }
+                });
+            }
         }
     }
 
@@ -233,6 +256,7 @@ class TaskManager {
             }
             if (this.currentFilters.skills.length > 0) {
                 params.set('skills', this.currentFilters.skills.join(','));
+                console.log('Sending skills filter:', this.currentFilters.skills);
             }
             if (this.currentFilters.statuses.length > 0) {
                 params.set('statuses', this.currentFilters.statuses.join(','));
@@ -240,6 +264,8 @@ class TaskManager {
             if (this.currentFilters.priorities.length > 0) {
                 params.set('priorities', this.currentFilters.priorities.join(','));
             }
+
+            console.log('Loading tasks with params:', params.toString());
 
             const response = await fetch(`/t/api/search/?${params}`, {
                 headers: {
@@ -436,9 +462,25 @@ class TaskManager {
     }
 
     updateSkillsFilter() {
-        const skillsChips = M.Chips.getInstance(document.getElementById('skills-filter'));
-        if (skillsChips) {
-            this.currentFilters.skills = skillsChips.chipsData.map(chip => chip.tag);
+        // Get the chips instance we stored during initialization
+        if (this.skillsInstance && this.skillsInstance.chipsData) {
+            const skillNames = this.skillsInstance.chipsData.map(chip => chip.tag);
+            this.currentFilters.skills = skillNames;
+            console.log('Updated skills filter:', skillNames);
+        } else {
+            console.log('Skills instance not found, trying fallback method');
+            // Fallback method - try to get instance directly
+            const skillsFilterElement = document.getElementById('skills-filter');
+            if (skillsFilterElement) {
+                const instance = M.Chips.getInstance(skillsFilterElement);
+                if (instance && instance.chipsData) {
+                    const skillNames = instance.chipsData.map(chip => chip.tag);
+                    this.currentFilters.skills = skillNames;
+                    console.log('Updated skills filter (fallback):', skillNames);
+                } else {
+                    console.log('Could not get chips instance');
+                }
+            }
         }
     }
 
@@ -501,10 +543,10 @@ class TaskManager {
         document.getElementById('due-before').value = '';
 
         // Clear skills chips
-        const skillsChips = M.Chips.getInstance(document.getElementById('skills-filter'));
-        if (skillsChips) {
-            skillsChips.chipsData = [];
-            skillsChips._renderChips();
+        if (this.skillsInstance) {
+            // Clear chips data
+            this.skillsInstance.chipsData = [];
+            this.skillsInstance._renderChips();
         }
 
         // Reset project select
@@ -521,6 +563,14 @@ class TaskManager {
     }
 
     applyFilters() {
+        // CRITICAL FIX: Update all filters before applying
+        this.updateProjectFilters();
+        this.updateStatusFilters();
+        this.updatePriorityFilters();
+        this.updateSkillsFilter();  // This was missing!
+        
+        console.log('Applying filters:', this.currentFilters);
+        
         this.resetPagination();
         this.loadTasks();
         this.updateFilterToggleState();
@@ -623,21 +673,27 @@ class TaskManager {
         window.history.replaceState(null, '', newUrl);
     }
 
-    getSkillsAutocompleteData() {
-        // Fetch skills autocomplete data from API
-        return fetch('/t/api/skills/autocomplete/')
-            .then(response => response.json())
-            .then(data => {
-                const autocompleteData = {};
+    async getSkillsAutocompleteData() {
+        try {
+            const response = await fetch('/t/api/skills/autocomplete/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const autocompleteData = {};
+            
+            if (data.skills && Array.isArray(data.skills)) {
                 data.skills.forEach(skill => {
                     autocompleteData[skill.name] = null; // Materialize format
                 });
-                return autocompleteData;
-            })
-            .catch(error => {
-                console.error('Error fetching skills:', error);
-                return {};
-            });
+            }
+            
+            return autocompleteData;
+        } catch (error) {
+            console.error('Error fetching skills autocomplete data:', error);
+            return {};
+        }
     }
 
     showLoading() {
