@@ -3,6 +3,16 @@ from . import views
 
 app_name = "need"
 urlpatterns = [
+    # Need listing and browsing
+    path("", views.need_list, name="need_list"),
+    path("project/<int:project_id>/", views.project_needs, name="project_needs"),
+    path("skill/<str:skill_name>/", views.skill_needs, name="skill_needs"),
+    
+    # API endpoints for AJAX functionality
+    path("api/search/", views.need_search_api, name="need_search_api"),
+    path("api/skills/autocomplete/", views.skills_autocomplete_api, name="skills_autocomplete_api"),
+    path("api/quick-update/<int:need_id>/", views.quick_update_need_api, name="quick_update_need_api"),
+    
     # Basic need operations
     path("<int:need_id>/", views.need, name="need"),
     path("<int:need_id>/edit/", views.edit_need, name="edit_need"),

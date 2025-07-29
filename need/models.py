@@ -132,9 +132,14 @@ class Need(models.Model):
         if not self.required_skills.exists():
             return User.objects.none()
 
-        return User.objects.filter(
-            skills__in=self.required_skills.all()
-        ).distinct().order_by('-skill_level')
+        # For now, return active users since User-Skills relationship doesn't exist yet
+        # TODO: Implement User-Skills relationship and update this method
+        return User.objects.filter(is_active=True).order_by('username')
+        
+        # Future implementation when User has skills relationship:
+        # return User.objects.filter(
+        #     user_skills__skill__in=self.required_skills.all()
+        # ).distinct().order_by('-created_date')
     def user_can_view(self, user):
         """Check if user can view this need"""
         if self.visibility == 'public':
