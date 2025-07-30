@@ -48,13 +48,14 @@ tasks:
     </div>
 </div>
 
+<a href="/t/create/?project={{ project.id }}" class="btn btn-primary">New Task</a>
 <div class="needs-new">
 
     {%for task in tasks%}
     <div class="child-card">
 
-        <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown1'>
-            <div class="priority">priority: {{task.priority}}</div>
+        <div class="priority">priority: {{task.priority}}</div>
+        <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown-t-{{task.id}}'>
 
             <img src="{% static 'icons/menu.svg' %}" alt="idea">
         </a>
