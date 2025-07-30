@@ -107,7 +107,7 @@ body {
         <div class="header">
             <h1>🎯 Needs Management</h1>
             <h2>{{ project.name }}</h2>
-            <a href="/n/create/?project={{ project.id }}" class="btn btn-primary">+ Create New Need</a>
+            <a href="/n/create/project/{{ project.id }}" class="btn btn-primary">+ Create New Need</a>
         </div>
     
         {% for need in needs %}

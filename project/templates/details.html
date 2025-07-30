@@ -27,18 +27,24 @@
         </div>
 
             <div class="section">
-                {% if can_moderate %}
-<div class="card">
-    <div class="card-content">
-        <span class="card-title">🛡️ Project Moderation</span>
-        <p>Manage and moderate all aspects of this project.</p>
-        <a href="{% url 'project:moderation_dashboard' content.id %}" class="btn waves-effect waves-light red">
-            <i class="material-icons left">security</i>
-            Moderation Dashboard
-        </a>
-    </div>
-</div>
-{% endif %}
+            {% if can_moderate %}
+            <div class="moderation-alert">
+                <div class="alert-content">
+                    <i class="material-icons" style="color: aliceblue !important;" >security</i>
+                    <div class="alert-text">
+                        <h6>Project Moderation</h6>
+                        <p>Manage and moderate all aspects of this project.</p>
+                    </div>
+                    <a href="{% url 'project:moderation_dashboard' content.id %}" 
+                       class="btn waves-effect waves-light red">
+                        <i class="material-icons left">security</i>
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+
 {% if can_moderate and content|has_pending_connection_requests %}
 <div class="card amber lighten-4" style="margin-bottom: 20px;">
     <div class="card-content">
@@ -64,6 +70,17 @@
 
 
             {% include "components/localizations.html" %}
+            {% if content.desc %}
+            <div class="project-description-card">
+                <h5 class="section-title">
+                    <i class="material-icons left" style="color: aliceblue !important;">description</i>
+                    Project Description
+                </h5>
+                <div class="description-content">
+                    {{ content.desc|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
 </div>
             <br>
 <a href="{% url 'submissions:submission_list' 'project' content.id %}" 
@@ -75,12 +92,12 @@
     <i class="material-icons left">assignment</i>Apply Now
 </a>
 {% include "components/status.html" %}
-<h5>Goal</h5>
-            <p>
-                Creating MVP/Prototype showcasing main idea which is splitting big pieces of work into smaller and smaller parts. 
-            </p>
-            {{content.desc | linebreaks}}
-            
+<p>
+    Creating MVP/Prototype showcasing main idea which is splitting big pieces of work into smaller and smaller parts. 
+</p>
+{{content.desc | linebreaks}}
+
+<h5>Plans</h5>
             {% include "components/plans.html" %}
 
 
@@ -158,9 +175,9 @@
 
 
 </div>
-
+<!-- enhanced subproj -->
 {% include "components/enhanced_subprojects.html" %}
-
+<!-- enh sub -->
 
 
         <br>
@@ -544,6 +561,56 @@ details[open] .user-group-content {
         width: 100%;
         text-align: right;
     }
+}
+
+
+
+
+
+/* Alert Cards */
+.moderation-alert,
+.connection-requests-alert {
+    background: var(--bg-light);
+    border-radius: 8px;
+    border-left: 4px solid var(--danger);
+    margin-bottom: 20px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.connection-requests-alert {
+    border-left-color: var(--warning);
+}
+
+.alert-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+}
+
+.alert-content i {
+    color: var(--danger);
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.connection-requests-alert .alert-content i {
+    color: var(--warning);
+}
+
+.alert-text {
+    flex: 1;
+}
+
+.alert-text h6 {
+    margin: 0 0 5px 0;
+    color: var(--text);
+}
+
+.alert-text p {
+    margin: 0;
+    color: var(--text2ndary);
 }
 </style>
 

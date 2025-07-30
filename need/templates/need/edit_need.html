@@ -10,7 +10,7 @@
     <div class="row">
         <div class="col s12">
             <div class="breadcrumb-nav">
-                {% if mode == 'edit' %}
+                {% if mode == 'edit' and need %}
                     <a href="{% url 'need:need' need.id %}" class="breadcrumb-link">
                         <i class="material-icons left">arrow_back</i>{{ need.name }}
                     </a>
@@ -35,6 +35,22 @@
         </div>
     </div>
 
+    <!-- Display form errors -->
+    {% if form.errors %}
+        <div class="row">
+            <div class="col s12">
+                <div class="card red lighten-4">
+                    <div class="card-content">
+                        <span class="card-title red-text">Please correct the following errors:</span>
+                        {% for field, errors in form.errors.items %}
+                            <p><strong>{{ field|capfirst }}:</strong> {{ errors|join:", " }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Main Form -->
     <form method="post" id="need-form">
         {% csrf_token %}
@@ -49,48 +65,49 @@
                         
                         <div class="row">
                             <div class="input-field col s12">
-                                <input id="name" name="name" type="text" value="{{ need.name|default:'' }}" required maxlength="50">
-                                <label for="name" class="{% if need.name %}active{% endif %}">Need Name *</label>
-                                <span class="helper-text">Short, descriptive name for this need</span>
+                                {{ form.name }}
+                                <label for="{{ form.name.id_for_label }}" class="{% if form.name.value %}active{% endif %}">Need Name *</label>
+                                <span class="helper-text">{{ form.name.help_text|default:"Short, descriptive name for this need" }}</span>
+                                {% if form.name.errors %}
+                                    <span class="helper-text red-text">{{ form.name.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="input-field col s12">
-                                <textarea id="desc" name="desc" class="materialize-textarea">{{ need.desc|default:'' }}</textarea>
-                                <label for="desc" class="{% if need.desc %}active{% endif %}">Description</label>
-                                <span class="helper-text">Detailed description of what needs to be done</span>
+                                {{ form.desc }}
+                                <label for="{{ form.desc.id_for_label }}" class="{% if form.desc.value %}active{% endif %}">Description</label>
+                                <span class="helper-text">{{ form.desc.help_text|default:"Detailed description of what needs to be done" }}</span>
+                                {% if form.desc.errors %}
+                                    <span class="helper-text red-text">{{ form.desc.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="input-field col s6 m4">
-                                <select name="priority" id="priority">
-                                    <option value="0" {% if need.priority == 0 %}selected{% endif %}>Minimal (0-24)</option>
-                                    <option value="25" {% if need.priority == 25 %}selected{% endif %}>Low (25-49)</option>
-                                    <option value="50" {% if need.priority == 50 %}selected{% endif %}>Medium (50-74)</option>
-                                    <option value="75" {% if need.priority == 75 %}selected{% endif %}>High (75-100)</option>
-                                </select>
+                                {{ form.priority }}
                                 <label>Priority Level</label>
+                                {% if form.priority.errors %}
+                                    <span class="helper-text red-text">{{ form.priority.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                             
                             <div class="input-field col s6 m4">
-                                <select name="status" id="status">
-                                    <option value="pending" {% if need.status == 'pending' %}selected{% endif %}>Pending</option>
-                                    <option value="in_progress" {% if need.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                                    <option value="fulfilled" {% if need.status == 'fulfilled' %}selected{% endif %}>Fulfilled</option>
-                                    <option value="canceled" {% if need.status == 'canceled' %}selected{% endif %}>Canceled</option>
-                                </select>
+                                {{ form.status }}
                                 <label>Status</label>
+                                {% if form.status.errors %}
+                                    <span class="helper-text red-text">{{ form.status.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
 
                             <div class="input-field col s12 m4">
-                                <select name="visibility" id="visibility">
-                                    <option value="public" {% if need.visibility == 'public' %}selected{% endif %}>Public</option>
-                                    <option value="members" {% if need.visibility == 'members' %}selected{% endif %}>Project Members Only</option>
-                                    <option value="admins" {% if need.visibility == 'admins' %}selected{% endif %}>Admins Only</option>
-                                </select>
+                                {{ form.visibility }}
                                 <label>Visibility</label>
+                                {% if form.visibility.errors %}
+                                    <span class="helper-text red-text">{{ form.visibility.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -113,28 +130,31 @@
 
                         <div class="row">
                             <div class="input-field col s12 m6">
-                                <select name="skill_level" id="skill_level">
-                                    <option value="" {% if not need.skill_level %}selected{% endif %}>Not Specified</option>
-                                    <option value="beginner" {% if need.skill_level == 'beginner' %}selected{% endif %}>Beginner</option>
-                                    <option value="intermediate" {% if need.skill_level == 'intermediate' %}selected{% endif %}>Intermediate</option>
-                                    <option value="advanced" {% if need.skill_level == 'advanced' %}selected{% endif %}>Advanced</option>
-                                    <option value="expert" {% if need.skill_level == 'expert' %}selected{% endif %}>Expert</option>
-                                </select>
+                                {{ form.skill_level }}
                                 <label>Required Skill Level</label>
+                                {% if form.skill_level.errors %}
+                                    <span class="helper-text red-text">{{ form.skill_level.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
 
                             <div class="input-field col s12 m6">
-                                <input id="estimated_time_hours" name="estimated_time_hours" type="number" min="0" step="0.5" value="">
-                                <label for="estimated_time_hours">Estimated Time (hours)</label>
-                                <span class="helper-text">How long do you estimate this will take?</span>
+                                {{ form.estimated_time_hours }}
+                                <label for="{{ form.estimated_time_hours.id_for_label }}" class="{% if form.estimated_time_hours.value %}active{% endif %}">Estimated Time (hours)</label>
+                                <span class="helper-text">{{ form.estimated_time_hours.help_text }}</span>
+                                {% if form.estimated_time_hours.errors %}
+                                    <span class="helper-text red-text">{{ form.estimated_time_hours.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="input-field col s12">
-                                <textarea id="resources" name="resources" class="materialize-textarea">{{ need.resources|default:'' }}</textarea>
-                                <label for="resources" class="{% if need.resources %}active{% endif %}">Required Resources</label>
+                                {{ form.resources }}
+                                <label for="{{ form.resources.id_for_label }}" class="{% if form.resources.value %}active{% endif %}">Required Resources</label>
                                 <span class="helper-text">List any tools, materials, or resources needed</span>
+                                {% if form.resources.errors %}
+                                    <span class="helper-text red-text">{{ form.resources.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -149,17 +169,21 @@
                         
                         <div class="row">
                             <div class="input-field col s12 m6">
-                                <input id="deadline" name="deadline" type="datetime-local" 
-                                       value="{% if need.deadline %}{{ need.deadline|date:'Y-m-d\TH:i' }}{% endif %}">
-                                <label for="deadline" class="{% if need.deadline %}active{% endif %}">Deadline</label>
+                                {{ form.deadline }}
+                                <label for="{{ form.deadline.id_for_label }}" class="{% if form.deadline.value %}active{% endif %}">Deadline</label>
                                 <span class="helper-text">When does this need to be completed?</span>
+                                {% if form.deadline.errors %}
+                                    <span class="helper-text red-text">{{ form.deadline.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                             
                             <div class="input-field col s12 m6">
-                                <input id="cost_estimate" name="cost_estimate" type="number" step="0.01" min="0" 
-                                       value="{{ need.cost_estimate|default:'' }}">
-                                <label for="cost_estimate" class="{% if need.cost_estimate %}active{% endif %}">Cost Estimate ($)</label>
+                                {{ form.cost_estimate }}
+                                <label for="{{ form.cost_estimate.id_for_label }}" class="{% if form.cost_estimate.value %}active{% endif %}">Cost Estimate ($)</label>
                                 <span class="helper-text">Estimated cost to fulfill this need</span>
+                                {% if form.cost_estimate.errors %}
+                                    <span class="helper-text red-text">{{ form.cost_estimate.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -177,20 +201,20 @@
                                 <p><strong>Work Type Options:</strong></p>
                                 <p>
                                     <label>
-                                        <input type="checkbox" name="is_remote" {% if need.is_remote %}checked{% endif %}>
+                                        {{ form.is_remote }}
                                         <span>Can be done remotely</span>
                                     </label>
                                 </p>
                                 <p>
                                     <label>
-                                        <input type="checkbox" name="is_stationary" {% if need.is_stationary %}checked{% endif %}>
+                                        {{ form.is_stationary }}
                                         <span>Requires on-site presence</span>
                                     </label>
                                 </p>
                             </div>
                         </div>
 
-                        {% if mode == 'edit' and available_needs %}
+                        {% if mode == 'edit' and need and available_needs %}
                         <div class="row">
                             <div class="col s12">
                                 <p><strong>Dependencies:</strong></p>
@@ -219,19 +243,24 @@
                         
                         <div class="row">
                             <div class="input-field col s12">
-                                <input id="documentation_url" name="documentation_url" type="url" 
-                                       value="{{ need.documentation_url|default:'' }}">
-                                <label for="documentation_url" class="{% if need.documentation_url %}active{% endif %}">Documentation URL</label>
+                                {{ form.documentation_url }}
+                                <label for="{{ form.documentation_url.id_for_label }}" class="{% if form.documentation_url.value %}active{% endif %}">Documentation URL</label>
                                 <span class="helper-text">Link to relevant documentation or resources</span>
+                                {% if form.documentation_url.errors %}
+                                    <span class="helper-text red-text">{{ form.documentation_url.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                         </div>
 
                         {% if mode == 'edit' %}
                         <div class="row">
                             <div class="input-field col s12">
-                                <textarea id="completion_notes" name="completion_notes" class="materialize-textarea">{{ need.completion_notes|default:'' }}</textarea>
-                                <label for="completion_notes" class="{% if need.completion_notes %}active{% endif %}">Completion Notes</label>
+                                {{ form.completion_notes }}
+                                <label for="{{ form.completion_notes.id_for_label }}" class="{% if form.completion_notes.value %}active{% endif %}">Completion Notes</label>
                                 <span class="helper-text">Notes about the completion or progress of this need</span>
+                                {% if form.completion_notes.errors %}
+                                    <span class="helper-text red-text">{{ form.completion_notes.errors|join:", " }}</span>
+                                {% endif %}
                             </div>
                         </div>
                         {% endif %}
@@ -241,8 +270,7 @@
 
             <!-- Sidebar -->
             <div class="col s12 l4">
-                <!-- Progress Card (Edit Mode Only) -->
-                {% if mode == 'edit' %}
+                <!-- Progress Card -->
                 <div class="card need-form-sidebar">
                     <div class="card-content">
                         <span class="card-title">
@@ -251,19 +279,21 @@
                         
                         <div class="progress-display">
                             <div class="progress">
-                                <div class="determinate" style="width: {{ need.progress }}%"></div>
+                                <div class="determinate" style="width: {{ form.progress.value|default:0 }}%"></div>
                             </div>
-                            <p class="center-align">{{ need.progress }}% Complete</p>
+                            <p class="center-align">{{ form.progress.value|default:0 }}% Complete</p>
                         </div>
 
                         <div class="input-field">
-                            <input id="progress" name="progress" type="range" min="0" max="100" 
-                                   value="{{ need.progress }}" oninput="updateProgressDisplay(this.value)">
-                            <label for="progress">Progress (%)</label>
+                            {{ form.progress }}
+                            <label for="{{ form.progress.id_for_label }}">Progress (%)</label>
+                            <span class="helper-text">{% if mode == 'create' %}Initial progress (usually 0%){% else %}Current completion progress{% endif %}</span>
+                            {% if form.progress.errors %}
+                                <span class="helper-text red-text">{{ form.progress.errors|join:", " }}</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-                {% endif %}
 
                 <!-- Context Card -->
                 <div class="card need-form-sidebar">
@@ -272,17 +302,25 @@
                             <i class="material-icons left">info_outline</i>Context
                         </span>
                         
-                        {% if project or need.to_project %}
+                        {% if project %}
                         <div class="context-item">
                             <strong>Project:</strong>
                             <div class="chip">
                                 <i class="material-icons tiny">folder</i>
-                                {{ project.name|default:need.to_project.name }}
+                                {{ project.name }}
+                            </div>
+                        </div>
+                        {% elif need and need.to_project %}
+                        <div class="context-item">
+                            <strong>Project:</strong>
+                            <div class="chip">
+                                <i class="material-icons tiny">folder</i>
+                                {{ need.to_project.name }}
                             </div>
                         </div>
                         {% endif %}
 
-                        {% if mode == 'edit' %}
+                        {% if mode == 'edit' and need %}
                         <div class="context-item">
                             <strong>Created:</strong>
                             <p class="grey-text">{{ need.created_date|naturaltime }} by {{ need.created_by.username }}</p>
@@ -311,12 +349,12 @@
                                 {% if mode == 'edit' %}Update Need{% else %}Create Need{% endif %}
                             </button>
                             
-                            <a href="{% if mode == 'edit' %}{% url 'need:need' need.id %}{% elif project %}{% url 'project:project' project.id %}{% else %}{% url 'need:need_list' %}{% endif %}" 
+                            <a href="{% if mode == 'edit' and need %}{% url 'need:need' need.id %}{% elif project %}{% url 'project:project' project.id %}{% else %}{% url 'need:need_list' %}{% endif %}" 
                                class="btn-flat waves-effect full-width center-align">
                                 <i class="material-icons left">cancel</i>Cancel
                             </a>
 
-                            {% if mode == 'edit' %}
+                            {% if mode == 'edit' and need %}
                             <a href="{% url 'need:delete_need' need.id %}" 
                                class="btn red waves-effect full-width center-align"
                                onclick="return confirm('Are you sure you want to delete this need?')">
@@ -396,6 +434,10 @@
 .helper-text {
     color: var(--text2ndary);
     font-size: 0.8em;
+}
+
+.helper-text.red-text {
+    color: var(--danger) !important;
 }
 
 /* Chips styling */
@@ -493,6 +535,12 @@
     color: var(--highlight);
 }
 
+/* Error styling */
+.card.red.lighten-4 {
+    background-color: #ffebee !important;
+    border: 1px solid #ef5350;
+}
+
 /* Responsive adjustments */
 @media only screen and (max-width: 992px) {
     .need-form-card,
@@ -512,26 +560,11 @@ document.addEventListener('DOMContentLoaded', function() {
     M.FormSelect.init(document.querySelectorAll('select'));
     M.updateTextFields();
     
-    // Set estimated time hours value if editing
-    {% if mode == 'edit' and need.estimated_time %}
-    const estimatedTimeInput = document.getElementById('estimated_time_hours');
-    if (estimatedTimeInput) {
-        const totalSeconds = {{ need.estimated_time.total_seconds }};
-        const hours = Math.round((totalSeconds / 3600) * 10) / 10; // Round to 1 decimal
-        estimatedTimeInput.value = hours;
-        // Update label state
-        const label = estimatedTimeInput.nextElementSibling;
-        if (label && label.tagName === 'LABEL') {
-            label.classList.add('active');
-        }
-    }
-    {% endif %}
-    
     // Initialize skills chips with autocomplete
     initializeSkillsChips();
     
     // Initialize dependency chips (edit mode only)
-    {% if mode == 'edit' and available_needs %}
+    {% if mode == 'edit' and need and available_needs %}
     initializeDependencyChips();
     initializeRelatedNeedsChips();
     {% endif %}
@@ -551,7 +584,7 @@ function initializeSkillsChips() {
 
             // Initialize chips with existing skills
             const existingSkills = [
-                {% if need.required_skills.all %}
+                {% if need and need.required_skills.all %}
                     {% for skill in need.required_skills.all %}
                         {tag: '{{ skill.name }}'},
                     {% endfor %}
@@ -574,7 +607,7 @@ function initializeSkillsChips() {
             console.warn('Could not load skills autocomplete:', error);
             // Initialize without autocomplete
             const existingSkills = [
-                {% if need.required_skills.all %}
+                {% if need and need.required_skills.all %}
                     {% for skill in need.required_skills.all %}
                         {tag: '{{ skill.name }}'},
                     {% endfor %}
@@ -590,7 +623,7 @@ function initializeSkillsChips() {
         });
 }
 
-{% if mode == 'edit' and available_needs %}
+{% if mode == 'edit' and need and available_needs %}
 function initializeDependencyChips() {
     const dependencyData = {};
     {% for need_dep in available_needs %}
@@ -598,9 +631,11 @@ function initializeDependencyChips() {
     {% endfor %}
 
     const existingDependencies = [
-        {% for dep in need.depends_on.all %}
-            {tag: '{{ dep.name }}'},
-        {% endfor %}
+        {% if need and need.depends_on.all %}
+            {% for dep in need.depends_on.all %}
+                {tag: '{{ dep.name }}'},
+            {% endfor %}
+        {% endif %}
     ];
 
     const dependenciesElement = document.getElementById('dependencies-input');
@@ -623,9 +658,11 @@ function initializeRelatedNeedsChips() {
     {% endfor %}
 
     const existingRelated = [
-        {% for related in need.related_needs.all %}
-            {tag: '{{ related.name }}'},
-        {% endfor %}
+        {% if need and need.related_needs.all %}
+            {% for related in need.related_needs.all %}
+                {tag: '{{ related.name }}'},
+            {% endfor %}
+        {% endif %}
     ];
 
     const relatedElement = document.getElementById('related-needs-input');
@@ -654,6 +691,14 @@ function updateProgressDisplay(value) {
     }
 }
 
+// Update progress display when range input changes
+const progressInput = document.getElementById('{{ form.progress.id_for_label }}');
+if (progressInput) {
+    progressInput.addEventListener('input', function(e) {
+        updateProgressDisplay(e.target.value);
+    });
+}
+
 // Handle form submission
 document.getElementById('need-form').addEventListener('submit', function(e) {
     // Get skills data
@@ -669,7 +714,7 @@ document.getElementById('need-form').addEventListener('submit', function(e) {
         this.appendChild(input);
     });
 
-    {% if mode == 'edit' and available_needs %}
+    {% if mode == 'edit' and need and available_needs %}
     // Get dependencies data
     const depsInstance = M.Chips.getInstance(document.getElementById('dependencies-input'));
     if (depsInstance) {

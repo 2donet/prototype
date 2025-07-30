@@ -24,6 +24,33 @@ from utils.permissions import (
 from skills.models import Skill
 from user.models import User
 
+from .forms import NeedForm, NeedEditForm
+
+
+def skills_autocomplete_api(request):
+    """API endpoint for skills autocomplete functionality"""
+    try:
+        query = request.GET.get('q', '').strip()
+        
+        if query:
+            # Filter skills by name containing the query (case insensitive)
+            skills = Skill.objects.filter(name__icontains=query).order_by('name')[:20]
+        else:
+            # Return all skills if no query
+            skills = Skill.objects.all().order_by('name')[:100]
+        
+        skills_data = [{'name': skill.name, 'id': skill.id} for skill in skills]
+        
+        return JsonResponse({
+            'success': True,
+            'skills': skills_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
 
 def need_list(request):
     """Enhanced need listing page with filtering, searching, and sorting"""
@@ -303,204 +330,116 @@ def need(request, need_id):
 
 
 @login_required
-def edit_need(request, need_id):
-    """View to edit an existing need"""
-    need = get_object_or_404(Need, pk=need_id)
-    
-    if not need.user_can_edit(request.user):
-        messages.error(request, "You don't have permission to edit this need.")
-        return redirect('need:need', need_id=need.id)
-    
-    parent = need.get_parent()
-    all_skills = Skill.objects.all().order_by('name')
-    
-    if request.method == 'POST':
-        try:
-            form_data = request.POST
-            
-            # Update basic fields
-            need.name = form_data.get('name', need.name).strip()
-            need.desc = form_data.get('desc', need.desc)
-            need.priority = int(form_data.get('priority', need.priority))
-            need.status = form_data.get('status', need.status)
-            need.visibility = form_data.get('visibility', need.visibility)
-            need.documentation_url = form_data.get('documentation_url', '') or None
-            need.is_remote = form_data.get('is_remote') == 'on'
-            need.is_stationary = form_data.get('is_stationary') == 'on'
-            need.skill_level = form_data.get('skill_level', '') or None
-            need.resources = form_data.get('resources', '') or None
-            need.completion_notes = form_data.get('completion_notes', '') or None
-            
-            # Handle progress
-            if form_data.get('progress'):
-                progress = int(form_data.get('progress', need.progress))
-                need.update_progress(progress, request.user, need.completion_notes)
-            
-            # Handle deadline
-            if form_data.get('deadline'):
-                try:
-                    need.deadline = timezone.datetime.fromisoformat(form_data['deadline'].replace('T', ' '))
-                    if timezone.is_naive(need.deadline):
-                        need.deadline = timezone.make_aware(need.deadline)
-                except ValueError:
-                    need.deadline = None
-            else:
-                need.deadline = None
-            
-            # Handle estimated time
-            if form_data.get('estimated_time_hours'):
-                try:
-                    hours = float(form_data.get('estimated_time_hours'))
-                    need.estimated_time = timedelta(hours=hours)
-                except ValueError:
-                    need.estimated_time = None
-            else:
-                need.estimated_time = None
-            
-            # Handle cost estimate
-            if form_data.get('cost_estimate'):
-                try:
-                    need.cost_estimate = float(form_data['cost_estimate'])
-                except ValueError:
-                    need.cost_estimate = None
-            else:
-                need.cost_estimate = None
-            
-            # Save the changes
-            need.save()
-            
-            # Handle skills
-            skill_names = request.POST.getlist('required_skills[]')
-            if skill_names:
-                skills = []
-                for skill_name in skill_names:
-                    skill_name = skill_name.strip()
-                    if skill_name:
-                        skill = Skill.get_or_create_skill(skill_name)
-                        skills.append(skill)
-                need.required_skills.set(skills)
-            else:
-                need.required_skills.clear()
-            
-            # Handle dependencies (by names)
-            dependency_names = request.POST.getlist('depends_on[]')
-            if dependency_names:
-                dependencies = Need.objects.filter(
-                    name__in=dependency_names,
-                    to_project=need.to_project
-                ).exclude(pk=need.pk)
-                need.depends_on.set(dependencies)
-            else:
-                need.depends_on.clear()
-            
-            # Handle related needs (by names)
-            related_names = request.POST.getlist('related_needs[]')
-            if related_names:
-                related_needs = Need.objects.filter(
-                    name__in=related_names,
-                    to_project=need.to_project
-                ).exclude(pk=need.pk)
-                need.related_needs.set(related_needs)
-            else:
-                need.related_needs.clear()
-            
-            messages.success(request, "Need updated successfully.")
-            return redirect('need:need', need_id=need.id)
-            
-        except Exception as e:
-            messages.error(request, f"Error updating need: {str(e)}")
-    
-    context = {
-        'need': need,
-        'parent': parent,
-        'all_skills': all_skills,
-        'available_needs': Need.objects.exclude(pk=need_id).filter(
-            Q(to_project=need.to_project) if need.to_project else Q()
-        ).order_by('name'),
-        'mode': 'edit',
-    }
-    return render(request, "need/edit_need.html", context=context)
-
-
-@login_required
 def create_need_for_project(request, project_id):
     """View to create a new need associated with a project"""
     project = get_object_or_404(Project, pk=project_id)
     
+    # Check permissions
     if not project.user_can_contribute(request.user):
         messages.error(request, "You don't have permission to add needs to this project.")
         return redirect('project:project', project_id=project.id)
     
     if request.method == 'POST':
-        try:
-            form_data = request.POST
-            
-            # Create the need with basic fields
-            need = Need.objects.create(
-                name=form_data['name'].strip(),
-                desc=form_data.get('desc', ''),
-                priority=int(form_data.get('priority', 0)),
-                created_by=request.user,
-                to_project=project,
-                visibility=form_data.get('visibility', 'public'),
-                is_remote=form_data.get('is_remote') == 'on',
-                is_stationary=form_data.get('is_stationary') == 'on',
-                skill_level=form_data.get('skill_level', '') or None,
-                resources=form_data.get('resources', '') or None,
-                documentation_url=form_data.get('documentation_url', '') or None,
-            )
-            
-            # Handle deadline
-            if form_data.get('deadline'):
-                try:
-                    need.deadline = timezone.datetime.fromisoformat(form_data['deadline'].replace('T', ' '))
-                    if timezone.is_naive(need.deadline):
-                        need.deadline = timezone.make_aware(need.deadline)
-                except ValueError:
-                    pass
-            
-            # Handle estimated time
-            if form_data.get('estimated_time_hours'):
-                try:
-                    hours = float(form_data.get('estimated_time_hours'))
-                    need.estimated_time = timedelta(hours=hours)
-                except ValueError:
-                    pass
-            
-            # Handle cost estimate
-            if form_data.get('cost_estimate'):
-                try:
-                    need.cost_estimate = float(form_data['cost_estimate'])
-                except ValueError:
-                    pass
-            
-            need.save()
-            
-            # Handle skills
-            skill_names = request.POST.getlist('required_skills[]')
-            if skill_names:
-                skills = []
-                for skill_name in skill_names:
-                    skill_name = skill_name.strip()
-                    if skill_name:
-                        skill = Skill.get_or_create_skill(skill_name)
-                        skills.append(skill)
-                need.required_skills.set(skills)
-            
-            messages.success(request, f"Need '{need.name}' created successfully.")
-            return redirect('project:project', project_id=project.id)
-            
-        except Exception as e:
-            messages.error(request, f"Error creating need: {str(e)}")
+        form = NeedForm(request.POST, user=request.user, project=project)
+        
+        if form.is_valid():
+            try:
+                need = form.save()
+                
+                # Handle skills from JavaScript chips - maintain old clearing behavior
+                skill_names = request.POST.getlist('required_skills[]')
+                form.save_skills(skill_names)  # This will clear if empty list
+                
+                messages.success(request, f"Need '{need.name}' created successfully.")
+                return redirect('project:project', project_id=project.id)
+                
+            except Exception as e:
+                messages.error(request, f"Error creating need: {str(e)}")
+        else:
+            # Form has validation errors
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = NeedForm(user=request.user, project=project)
     
     context = {
+        'form': form,
         'project': project,
         'all_skills': Skill.objects.all().order_by('name'),
         'mode': 'create',
+        'need': None,
+        'available_needs': None,
+        'parent': None,
     }
+    
     return render(request, 'need/edit_need.html', context=context)
 
 
+@login_required
+def edit_need(request, need_id):
+    """View to edit an existing need"""
+    need = get_object_or_404(Need, pk=need_id)
+    
+    # Check permissions
+    if not need.user_can_edit(request.user):
+        messages.error(request, "You don't have permission to edit this need.")
+        return redirect('need:need', need_id=need.id)
+    
+    # Get parent context like old view
+    parent = need.get_parent() if hasattr(need, 'get_parent') else None
+    
+    # Get available needs with same logic as old view
+    available_needs_query = Q(to_project=need.to_project) if need.to_project else Q()
+    available_needs = Need.objects.exclude(pk=need_id).filter(available_needs_query).order_by('name')
+    
+    if request.method == 'POST':
+        form = NeedEditForm(
+            request.POST, 
+            instance=need,
+            user=request.user,
+            project=need.to_project,
+            available_needs=available_needs
+        )
+        
+        if form.is_valid():
+            try:
+                # Use the progress-aware save method
+                need = form.save_with_progress_update(request.user)
+                
+                # Handle skills - maintain old clearing behavior
+                skill_names = request.POST.getlist('required_skills[]')
+                form.save_skills(skill_names)  # This will clear if empty list
+                
+                # Handle relationships - maintain old clearing behavior
+                depends_on_names = request.POST.getlist('depends_on[]')
+                related_needs_names = request.POST.getlist('related_needs[]')
+                form.save_relationships(depends_on_names, related_needs_names)
+                
+                messages.success(request, f"Need '{need.name}' updated successfully.")
+                return redirect('need:need', need_id=need.id)
+                
+            except Exception as e:
+                messages.error(request, f"Error updating need: {str(e)}")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = NeedEditForm(
+            instance=need,
+            user=request.user,
+            project=need.to_project,
+            available_needs=available_needs
+        )
+    
+    context = {
+        'form': form,
+        'need': need,
+        'project': need.to_project,
+        'parent': parent,  # Add missing parent context
+        'available_needs': available_needs,
+        'all_skills': Skill.objects.all().order_by('name'),
+        'mode': 'edit',
+    }
+    
+    return render(request, 'need/edit_need.html', context=context)
 @login_required
 def log_time(request, need_id):
     """View to log time against a need"""
