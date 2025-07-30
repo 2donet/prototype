@@ -22,6 +22,9 @@ from .views import (
     comment_moderated_history,
 )
 
+# Import the new AJAX filtering views
+from .api_views import filtered_comments_api, filtered_comments_view
+
 app_name = "comments"
 
 urlpatterns = [
@@ -51,4 +54,8 @@ urlpatterns = [
     # New History URLs
     path("<int:comment_id>/history/", comment_history_view, name="comment_history"),
     path("<int:comment_id>/history/moderated/", comment_moderated_history, name="comment_moderated_history"),
+    
+    # New AJAX filtering URLs
+    path("api/filtered/", filtered_comments_api, name="filtered_comments_api"),
+    path("ajax/filtered/", filtered_comments_view, name="filtered_comments_view"),
 ]

@@ -2,6 +2,90 @@
 {% load static %}
 {% load comment_tags %}
 
+<!-- Admin Comment Status Filter - Only shown ONCE at top level -->
+{% if user.is_staff or user.is_superuser or can_moderate %}
+{% if not is_nested_include %}
+<div id="admin-comment-filters" style="margin-bottom: 15px; padding: 12px; background: var(--bg-color2); border-radius: 6px; border-left: 3px solid var(--information);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <span style="color: var(--text); font-weight: 500; display: flex; align-items: center;">
+            <i class="material-icons" style="color: var(--information); margin-right: 8px; font-size: 18px;">filter_list</i>
+            Admin Filters
+        </span>
+        <span id="filter-count" style="color: var(--text2ndary); font-size: 12px;"></span>
+    </div>
+    
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; margin-bottom: 15px;">
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" class="filled-in comment-filter-checkbox" data-status="APPROVED" checked />
+            <span style="color: var(--confirm); margin-left: 6px;">✓ Approved</span>
+        </label>
+        
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" class="filled-in comment-filter-checkbox" data-status="PENDING" checked />
+            <span style="color: var(--warning); margin-left: 6px;">⏳ Pending</span>
+        </label>
+        
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" class="filled-in comment-filter-checkbox" data-status="REJECTED" />
+            <span style="color: var(--danger); margin-left: 6px;">❌ Rejected</span>
+        </label>
+        
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" class="filled-in comment-filter-checkbox" data-status="FLAGGED" />
+            <span style="color: var(--risk); margin-left: 6px;">🚩 Flagged</span>
+        </label>
+        
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" class="filled-in comment-filter-checkbox" data-status="CONTENT_REMOVED" />
+            <span style="color: var(--status-purple); margin-left: 6px;">🗑️ Content Removed</span>
+        </label>
+        
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" class="filled-in comment-filter-checkbox" data-status="AUTHOR_REMOVED" />
+            <span style="color: var(--status-pink); margin-left: 6px;">👤 Author Hidden</span>
+        </label>
+        
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" class="filled-in comment-filter-checkbox" data-status="THREAD_DELETED" />
+            <span style="color: var(--highlightdark); margin-left: 6px;">🗑️ Deleted</span>
+        </label>
+    </div>
+    
+    <!-- Buttons section -->
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" class="btn-small waves-effect waves-light" id="apply-filters-btn" 
+                style="background: var(--information); color: var(--text);">
+            <i class="material-icons left">filter_alt</i>Apply Filters
+        </button>
+        <button type="button" class="btn-small waves-effect waves-light" id="clear-filters-btn" 
+                style="background: var(--danger); color: var(--text);">
+            <i class="material-icons left">clear</i>Clear All
+        </button>
+    </div>
+</div>
+
+<!-- Loading indicator -->
+<div id="comments-loading" style="display: none; text-align: center; padding: 20px; color: var(--text2ndary);">
+    <div class="preloader-wrapper small active">
+        <div class="spinner-layer spinner-blue-only">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div>
+            <div class="gap-patch">
+                <div class="circle"></div>
+            </div>
+            <div class="circle-clipper right">
+                <div class="circle"></div>
+            </div>
+        </div>
+    </div>
+    <p style="margin-top: 10px;">Loading comments...</p>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Comments container - ID only at top level -->
+<div {% if not is_nested_include %}id="comments-container"{% endif %}>
 {% for comment in comments %}
 <!-- Only show approved comments to regular users, all comments to moderators -->
 {% if comment.status == 'APPROVED' or user.is_staff or comment|can_moderate_comment:user %}
@@ -163,10 +247,324 @@
         </div>
         
         <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
-            {% include "comments.html" with comments=comment.replies.all %}
+            {% include "comments.html" with comments=comment.replies.all is_nested_include=True %}
         </div>
     {% endif %}
 
 </div>
 {% endif %}
 {% endfor %}
+</div>
+
+<!-- Context data and JavaScript - ONLY AT TOP LEVEL -->
+{% if user.is_staff or user.is_superuser or can_moderate %}
+{% if not is_nested_include %}
+<script type="application/json" id="comment-context-data">
+{
+    "object_type": "{% if project %}project{% elif task %}task{% elif need %}need{% else %}unknown{% endif %}",
+    "object_id": {% if project %}{{ project.id }}{% elif task %}{{ task.id }}{% elif need %}{{ need.id }}{% else %}null{% endif %},
+    "can_moderate": {% if can_moderate %}true{% else %}false{% endif %}
+}
+</script>
+
+<script>
+// Define helper functions first, outside of any other function
+function getContextData() {
+    try {
+        const contextScript = document.getElementById('comment-context-data');
+        if (contextScript) {
+            const data = JSON.parse(contextScript.textContent);
+            console.log('Parsed context data:', data);
+            return data;
+        } else {
+            console.log('No context script found');
+            return null;
+        }
+    } catch (e) {
+        console.warn('Could not parse context data:', e);
+        return null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, checking for admin comment filtering...');
+    
+    // Debug: Check if we can find the filter checkboxes
+    const filterCheckboxes = document.querySelectorAll('.comment-filter-checkbox');
+    console.log('Found', filterCheckboxes.length, 'filter checkboxes');
+    
+    // More permissive check - initialize if we have filter checkboxes
+    if (filterCheckboxes.length > 0) {
+        console.log('Initializing admin comment filtering...');
+        initializeAdminCommentFiltering();
+    } else {
+        console.log('No filter checkboxes found - skipping initialization');
+    }
+});
+
+function initializeAdminCommentFiltering() {
+    console.log('Starting initializeAdminCommentFiltering...');
+    
+    const filterCheckboxes = document.querySelectorAll('.comment-filter-checkbox');
+    const commentsContainer = document.getElementById('comments-container');
+    const loadingIndicator = document.getElementById('comments-loading');
+    const filterCount = document.getElementById('filter-count');
+    const applyFiltersBtn = document.getElementById('apply-filters-btn');
+    const clearFiltersBtn = document.getElementById('clear-filters-btn');
+    let filtersChanged = false;
+    
+    console.log('Filter elements:', {
+        checkboxes: filterCheckboxes.length,
+        container: !!commentsContainer,
+        loading: !!loadingIndicator,
+        count: !!filterCount,
+        applyBtn: !!applyFiltersBtn,
+        clearBtn: !!clearFiltersBtn
+    });
+    
+    // Get context from current page
+    const currentContext = getCurrentContext();
+    console.log('Current context:', currentContext);
+    
+    // Add change listeners to checkboxes (just for visual feedback, not auto-apply)
+    filterCheckboxes.forEach((checkbox, index) => {
+        console.log('Adding listener to checkbox', index, checkbox.dataset.status);
+        checkbox.addEventListener('change', function() {
+            console.log('Checkbox changed:', checkbox.dataset.status, 'checked:', checkbox.checked);
+            filtersChanged = true;
+            updateApplyButtonState();
+        });
+    });
+    
+    // Add click listener to Apply Filters button
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', function() {
+            console.log('Apply Filters button clicked');
+            fetchFilteredComments();
+            filtersChanged = false;
+            updateApplyButtonState();
+        });
+    }
+    
+    // Add click listener to Clear Filters button
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            console.log('Clear Filters button clicked');
+            filterCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            filtersChanged = true;
+            updateApplyButtonState();
+            
+            // Auto-apply after clearing
+            setTimeout(() => {
+                fetchFilteredComments();
+                filtersChanged = false;
+                updateApplyButtonState();
+            }, 100);
+        });
+    }
+    
+    // Load saved filter state from localStorage
+    loadFilterState();
+    
+    function updateApplyButtonState() {
+        if (applyFiltersBtn) {
+            if (filtersChanged) {
+                applyFiltersBtn.style.background = 'var(--warning)';
+                applyFiltersBtn.innerHTML = '<i class="material-icons left">filter_alt</i>Apply Changes';
+            } else {
+                applyFiltersBtn.style.background = 'var(--information)';
+                applyFiltersBtn.innerHTML = '<i class="material-icons left">filter_alt</i>Apply Filters';
+            }
+        }
+    }
+    
+    function getCurrentContext() {
+        const contextData = getContextData();
+        if (contextData && contextData.object_type && contextData.object_id) {
+            return {
+                object_type: contextData.object_type,
+                object_id: contextData.object_id
+            };
+        }
+        
+        // Fallback to URL parsing
+        const pathParts = window.location.pathname.split('/');
+        console.log('URL path parts:', pathParts);
+        
+        // Handle direct project ID pattern: /123/
+        if (pathParts.length >= 2 && pathParts[1] && !isNaN(pathParts[1])) {
+            return {
+                object_type: 'project',
+                object_id: parseInt(pathParts[1])
+            };
+        }
+        
+        return { object_type: 'project', object_id: null };
+    }
+    
+    function getSelectedStatuses() {
+        const selected = Array.from(filterCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.dataset.status);
+        console.log('Selected statuses:', selected);
+        return selected;
+    }
+    
+    function saveFilterState() {
+        const selectedStatuses = getSelectedStatuses();
+        localStorage.setItem('adminCommentFilters', JSON.stringify(selectedStatuses));
+        console.log('Saved filter state:', selectedStatuses);
+    }
+    
+    function loadFilterState() {
+        try {
+            const saved = localStorage.getItem('adminCommentFilters');
+            if (saved) {
+                const savedStatuses = JSON.parse(saved);
+                console.log('Loading saved filter state:', savedStatuses);
+                filterCheckboxes.forEach(checkbox => {
+                    checkbox.checked = savedStatuses.includes(checkbox.dataset.status);
+                });
+            } else {
+                console.log('No saved filter state found - setting defaults');
+                // Set default filters (APPROVED and PENDING)
+                filterCheckboxes.forEach(checkbox => {
+                    if (checkbox.dataset.status === 'APPROVED' || checkbox.dataset.status === 'PENDING') {
+                        checkbox.checked = true;
+                    }
+                });
+            }
+            filtersChanged = false;
+            updateApplyButtonState();
+        } catch (e) {
+            console.warn('Could not load filter state:', e);
+        }
+    }
+    
+    function showLoading() {
+        console.log('Showing loading indicator');
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        if (commentsContainer) commentsContainer.style.opacity = '0.5';
+        if (applyFiltersBtn) {
+            applyFiltersBtn.disabled = true;
+            applyFiltersBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Loading...';
+        }
+    }
+    
+    function hideLoading() {
+        console.log('Hiding loading indicator');
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+        if (commentsContainer) commentsContainer.style.opacity = '1';
+        if (applyFiltersBtn) {
+            applyFiltersBtn.disabled = false;
+            updateApplyButtonState();
+        }
+    }
+    
+    function fetchFilteredComments() {
+        console.log('fetchFilteredComments called');
+        
+        const selectedStatuses = getSelectedStatuses();
+        
+        if (selectedStatuses.length === 0) {
+            console.log('No filters selected');
+            if (commentsContainer) {
+                commentsContainer.innerHTML = '<p style="color: var(--text2ndary); text-align: center; padding: 20px;">No filters selected - check some boxes and click Apply</p>';
+            }
+            if (filterCount) filterCount.textContent = 'No filters selected';
+            saveFilterState();
+            return;
+        }
+        
+        showLoading();
+        saveFilterState();
+        
+        const requestData = {
+            statuses: selectedStatuses,
+            ...currentContext
+        };
+        
+        console.log('Sending AJAX request with data:', requestData);
+        
+        fetch('/comments/ajax/filtered/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            hideLoading();
+            
+            if (data.success) {
+                if (commentsContainer) {
+                    commentsContainer.innerHTML = data.comments_html;
+                }
+                if (filterCount) {
+                    filterCount.textContent = `${data.filtered_count} of ${data.total_count} comments`;
+                }
+                
+                // Reinitialize MaterializeCSS components
+                if (typeof M !== 'undefined') {
+                    M.Dropdown.init(document.querySelectorAll('.dropdown-trigger'), {
+                        constrainWidth: false,
+                        coverTrigger: false,
+                        alignment: 'right'
+                    });
+                    M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+                }
+                
+                // Reinitialize comment event listeners
+                if (typeof addCommentEventListeners === 'function') {
+                    document.querySelectorAll('.comment').forEach(comment => {
+                        addCommentEventListeners(comment);
+                    });
+                }
+                
+            } else {
+                console.error('API returned error:', data.error);
+                if (commentsContainer) {
+                    commentsContainer.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">Error: ${data.error}</p>`;
+                }
+                if (filterCount) filterCount.textContent = 'Error loading';
+            }
+        })
+        .catch(error => {
+            console.error('AJAX error:', error);
+            hideLoading();
+            if (commentsContainer) {
+                commentsContainer.innerHTML = '<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load comments</p>';
+            }
+            if (filterCount) filterCount.textContent = 'Load failed';
+        });
+    }
+    
+    function getCSRFToken() {
+        const token = document.querySelector('[name=csrfmiddlewaretoken]') || 
+                     document.querySelector('input[name="csrfmiddlewaretoken"]') ||
+                     document.querySelector('meta[name="csrf-token"]');
+        const tokenValue = token ? token.value || token.content : '';
+        console.log('CSRF token found:', !!tokenValue);
+        return tokenValue;
+    }
+    
+    // Initial load with current filter state
+    console.log('Setting up initial load...');
+    setTimeout(() => {
+        console.log('Running initial fetchFilteredComments');
+        fetchFilteredComments();
+        filtersChanged = false;
+        updateApplyButtonState();
+    }, 100);
+}
+</script>
+{% endif %}
+{% endif %}
