@@ -631,7 +631,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     </div>
     <div class="ptab">
-        <ul class="tabs">
+
+
+<!-- Your problems component include -->
+{% include "components/problems.html" with problems=problems can_contribute=can_contribute %}        <ul class="tabs">
             <li class="tab col s3"><a href="#intro">Intro</a></li>
             <li class="tab col s3"><a class="active" href="#tasks">Tasks</a></li>
             <li class="tab col s3"><a href="#needs">Needs</a></li>

@@ -1,0 +1,389 @@
+<!-- problems/templates/components/problems.html -->
+{% load static %}
+{% block problems %}
+
+<div class="row">
+    <div class="col s12">
+        <h5>Problems:</h5>
+    </div>
+    
+    <div class="input-field col s12 m3">
+        <select id="problems-sort">
+            <option value="" disabled>Sort by</option>
+            <option value="-priority" selected>Most urgent</option>
+            <option value="-created_at">Newest</option>
+            <option value="name">Alphabetical</option>
+            <option value="-updated_at">Recently updated</option>
+        </select>
+        <label>Sort by</label>
+    </div>
+
+    <div class="input-field col s12 m4">
+        <select id="problems-status">
+            <option value="" disabled>Filter by status</option>
+            <option value="all" selected>All</option>
+            <option value="open">Open</option>
+            <option value="in_progress">In Progress</option>
+            <option value="pending">Pending</option>
+            <option value="solved">Solved</option>
+            <option value="closed">Closed</option>
+        </select>
+        <label>Status</label>
+    </div>
+    
+    <div class="input-field col s12 m3">
+        <select id="problems-priority">
+            <option value="" disabled>Filter by priority</option>
+            <option value="all" selected>All priorities</option>
+            <option value="4">Critical</option>
+            <option value="3">High</option>
+            <option value="2">Medium</option>
+            <option value="1">Low</option>
+        </select>
+        <label>Priority</label>
+    </div>
+    
+    <div class="input-field col s12 m2">
+        <p>
+            <label>
+                <input type="checkbox" class="filled-in" id="show-unassigned" checked="checked" />
+                <span>Show unassigned</span>
+            </label>
+        </p>
+        <p>
+            <label>
+                <input type="checkbox" class="filled-in" id="show-overdue" checked="checked" />
+                <span>Show overdue</span>
+            </label>
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col s12">
+        {% if can_contribute %}
+        <a href="{% url 'problems:create' %}?project={{ project.id }}" class="btn blue waves-effect waves-light">
+            <i class="material-icons left">bug_report</i>Report New Problem
+        </a>
+        <a href="{% url 'problems:list_for_project' project.id %}" class="btn-flat waves-effect waves-light">
+            <i class="material-icons left">list</i>View All Problems
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="problems-container" id="problems-container">
+    {% for problem in problems %}
+    <div class="child-card problem-card problem-priority-{{ problem.priority }}" data-problem-id="{{ problem.id }}">
+        
+        <div class="problem-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="priority" style="background-color: {{ problem.get_priority_color }};">
+                Priority: {{ problem.get_priority_display }}
+            </div>
+            
+            <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown-p-{{ problem.id }}'>
+                <img src="{% static 'icons/menu.svg' %}" alt="menu">
+            </a>
+        </div>
+
+        <!-- Dropdown Structure -->
+        <ul id='dropdown-p-{{ problem.id }}' class='dropdown-content'>
+            {% if problem.user_can_edit %}
+            <li><a href="{% url 'problems:edit' problem.id %}"><i class="material-icons">edit</i>Edit Problem</a></li>
+            <li class="divider"></li>
+            {% endif %}
+            <li><a href="{% url 'problems:detail' problem.id %}"><i class="material-icons">visibility</i>View Details</a></li>
+            {% if problem.status not in 'solved,closed' and problem.user_can_edit %}
+            <li><a href="#!" class="mark-solved" data-problem-id="{{ problem.id }}"><i class="material-icons">check_circle</i>Mark as Solved</a></li>
+            {% endif %}
+            {% if problem.user_can_edit %}
+            <li class="divider"></li>
+            <li><a href="#!" class="assign-user" data-problem-id="{{ problem.id }}"><i class="material-icons">person_add</i>Assign User</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="child-details">
+            <h5>
+                <a href="{% url 'problems:detail' problem.id %}">{{ problem.name }}</a>
+                <!-- Status badge -->
+                <span class="new badge right" data-badge-caption="{{ problem.get_status_display }}" 
+                      style="background-color: {{ problem.get_status_color }};">
+                    {{ problem.status|title }}
+                </span>
+            </h5>
+            
+            <p class="child-summary grey-text text-darken-1">
+                {{ problem.summary|default:problem.desc|truncatewords:15 }}
+            </p>
+            
+            <!-- Problem meta info -->
+            <div class="problem-meta" style="margin: 10px 0; display: flex; flex-wrap: wrap; gap: 5px;">
+                <div class="chip tiny">
+                    <i class="material-icons tiny">account_circle</i>
+                    {{ problem.created_by.username|default:"Unknown" }}
+                </div>
+                
+                <div class="chip tiny">
+                    <i class="material-icons tiny">access_time</i>
+                    {{ problem.created_at|timesince }} ago
+                </div>
+                
+                {% if problem.due_date %}
+                <div class="chip tiny {% if problem.is_overdue %}red lighten-3{% else %}blue lighten-3{% endif %}">
+                    <i class="material-icons tiny">event</i>
+                    Due: {{ problem.due_date|date:"M d" }}
+                    {% if problem.is_overdue %}<span class="red-text"> (Overdue)</span>{% endif %}
+                </div>
+                {% endif %}
+                
+                {% if problem.get_related_object_type != 'project' %}
+                <div class="chip tiny blue lighten-4">
+                    <i class="material-icons tiny">
+                        {% if problem.to_task %}assignment{% elif problem.to_need %}help_outline{% endif %}
+                    </i>
+                    {{ problem.get_related_object.name }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Assigned users -->
+            {% if problem.assigned_to.all %}
+            <div class="assigned-users" style="margin: 8px 0;">
+                <strong style="font-size: 0.9rem;">Assigned to:</strong>
+                <div style="margin-top: 3px;">
+                    {% for user in problem.assigned_to.all %}
+                    <div class="chip tiny">
+                        {% if user.profile.avatar %}
+                        <img src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                        {% endif %}
+                        {{ user.username }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% elif problem.user_can_edit %}
+            <div class="assigned-users" style="margin: 8px 0;">
+                <span class="grey-text" style="font-size: 0.9rem;">No one assigned</span>
+                <a href="#!" class="btn-small blue assign-user" data-problem-id="{{ problem.id }}" style="margin-left: 10px;">
+                    <i class="material-icons left">person_add</i>Assign
+                </a>
+            </div>
+            {% endif %}
+            
+            <!-- Skills -->
+            {% if problem.skills.all %}
+            <div class="skills-tags" style="margin: 8px 0;">
+                {% for skill in problem.skills.all %}
+                <div class="chip tiny">{{ skill.name }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Quick actions -->
+        <div class="problem-actions" style="margin-top: 10px; text-align: right;">
+            <a href="{% url 'problems:detail' problem.id %}" class="btn-small blue waves-effect">
+                <i class="material-icons left">visibility</i>View
+            </a>
+            {% if problem.user_can_edit and problem.status not in 'solved,closed' %}
+            <a href="#!" class="btn-small green waves-effect mark-solved" data-problem-id="{{ problem.id }}">
+                <i class="material-icons left">check</i>Solve
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="g12note" style="width: 100%; padding: 20px; text-align: center;">
+        <i class="material-icons large grey-text">bug_report</i>
+        <h5>No problems reported</h5>
+        <p class="grey-text">
+            {% if can_contribute %}
+            This project has no reported problems yet. 
+            <a href="{% url 'problems:create' %}?project={{ project.id }}" class="btn blue">
+                <i class="material-icons left">add</i>Report a Problem
+            </a>
+            {% else %}
+            This project has no reported problems yet.
+            {% endif %}
+        </p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.Dropdown.init(document.querySelectorAll('.dropdown-trigger'));
+    
+    // Handle filter changes
+    const sortSelect = document.getElementById('problems-sort');
+    const statusSelect = document.getElementById('problems-status');
+    const prioritySelect = document.getElementById('problems-priority');
+    const showUnassigned = document.getElementById('show-unassigned');
+    const showOverdue = document.getElementById('show-overdue');
+    
+    function applyProblemsFilters() {
+        const filters = {
+            project_id: {{ project.id }},
+            sort: sortSelect.value || '-priority',
+            statuses: statusSelect.value !== 'all' ? [statusSelect.value] : [],
+            priorities: prioritySelect.value !== 'all' ? [prioritySelect.value] : [],
+            show_unassigned: showUnassigned.checked,
+            show_overdue: showOverdue.checked
+        };
+        
+        // Show loading
+        const container = document.getElementById('problems-container');
+        container.style.opacity = '0.5';
+        
+        // Make AJAX request
+        fetch('/api/problems/filtered/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(filters)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                container.innerHTML = data.problems_html;
+                // Reinitialize components
+                M.Dropdown.init(document.querySelectorAll('.dropdown-trigger'));
+                attachProblemEventHandlers();
+            } else {
+                M.toast({html: 'Error loading problems: ' + (data.error || 'Unknown error')});
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            M.toast({html: 'Error loading problems'});
+        })
+        .finally(() => {
+            container.style.opacity = '1';
+        });
+    }
+    
+    // Event listeners for filters
+    if (sortSelect) sortSelect.addEventListener('change', applyProblemsFilters);
+    if (statusSelect) statusSelect.addEventListener('change', applyProblemsFilters);
+    if (prioritySelect) prioritySelect.addEventListener('change', applyProblemsFilters);
+    if (showUnassigned) showUnassigned.addEventListener('change', applyProblemsFilters);
+    if (showOverdue) showOverdue.addEventListener('change', applyProblemsFilters);
+    
+    // Attach event handlers to problem actions
+    attachProblemEventHandlers();
+});
+
+function attachProblemEventHandlers() {
+    // Handle mark as solved
+    document.querySelectorAll('.mark-solved').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const problemId = this.dataset.problemId;
+            
+            if (confirm('Mark this problem as solved?')) {
+                fetch(`/api/problems/${problemId}/update_status/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({status: 'solved'})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        M.toast({html: 'Problem marked as solved!', classes: 'green'});
+                        // Reload the problems section
+                        location.reload();
+                    } else {
+                        M.toast({html: 'Error: ' + data.error, classes: 'red'});
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    M.toast({html: 'Error updating problem', classes: 'red'});
+                });
+            }
+        });
+    });
+    
+    // Handle assign user (redirect to problem detail for now)
+    document.querySelectorAll('.assign-user').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const problemId = this.dataset.problemId;
+            window.location.href = `/problems/${problemId}/#assignment`;
+        });
+    });
+}
+</script>
+
+<style>
+.problems-container {
+    margin-top: 20px;
+}
+
+.problem-card {
+    margin-bottom: 15px;
+    border-left: 4px solid var(--bg-color2);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.problem-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 17px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.15);
+}
+
+.problem-priority-1 { border-left-color: var(--confirm); }
+.problem-priority-2 { border-left-color: var(--warning); }
+.problem-priority-3 { border-left-color: var(--risk); }
+.problem-priority-4 { border-left-color: var(--danger); }
+
+.problem-header {
+    margin-bottom: 10px;
+}
+
+.problem-meta .chip.tiny {
+    font-size: 0.75rem;
+    height: 20px;
+    line-height: 20px;
+    margin: 2px;
+}
+
+.assigned-users .chip.tiny {
+    font-size: 0.8rem;
+    height: 22px;
+    line-height: 22px;
+    margin: 2px;
+}
+
+.skills-tags .chip.tiny {
+    font-size: 0.75rem;
+    height: 18px;
+    line-height: 18px;
+    margin: 1px;
+    background-color: var(--bg-light);
+    color: var(--text);
+}
+
+.problem-actions {
+    border-top: 1px solid var(--bg-light);
+    padding-top: 10px;
+    margin-top: 15px;
+}
+
+.priority {
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+</style>
+
+{% endblock %}

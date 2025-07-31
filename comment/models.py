@@ -51,7 +51,14 @@ class Comment(models.Model):
                                       related_name="comments", db_index=True)
     to_decision = models.ForeignKey("decisions.Decision", blank=True, null=True, on_delete=models.CASCADE,
                                     related_name="comments", db_index=True)
-
+    to_problem = models.ForeignKey(
+    "problems.Problem", 
+    blank=True, 
+    null=True, 
+    on_delete=models.CASCADE, 
+    related_name="comments",
+    db_index=True
+)
     status = models.CharField(
         max_length=26,
         choices=CommentStatus.choices,

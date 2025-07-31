@@ -1,0 +1,501 @@
+<!-- problems/templates/problems/problem_detail.html -->
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Problem: {{ problem.name }} | 2do.net{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Problem Header with Back Button -->
+    <div class="row">
+        <div class="col s12">
+            {% if problem.to_project %}
+            <a href="{% url 'problems:list_for_project' problem.to_project.id %}" class="btn-flat waves-effect">
+                <i class="material-icons left">arrow_back</i>Back to {{ problem.to_project.name }} Problems
+            </a>
+            {% elif problem.to_task %}
+            <a href="{% url 'task:task_detail' problem.to_task.id %}" class="btn-flat waves-effect">
+                <i class="material-icons left">arrow_back</i>Back to {{ problem.to_task.name }}
+            </a>
+            {% elif problem.to_need %}
+            <a href="{% url 'need:need_detail' problem.to_need.id %}" class="btn-flat waves-effect">
+                <i class="material-icons left">arrow_back</i>Back to {{ problem.to_need.name }}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Problem Card -->
+    <div class="row">
+        <div class="col s12">
+            {% if can_edit %}
+            <div class="mb-3">
+                <a href="{% url 'problems:edit' problem.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="material-icons left">edit</i>Edit Problem
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="card hoverable">
+                <div class="card-content">
+                    <div class="card-title-row" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                        <span class="card-title">{{ problem.name }}</span>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <!-- Priority Badge -->
+                            <span class="new badge" data-badge-caption="Priority" 
+                                  style="background-color: {{ problem.get_priority_color }};">
+                                {{ problem.get_priority_display }}
+                            </span>
+                            <!-- Status Badge -->
+                            <span class="new badge" data-badge-caption="Status" 
+                                  style="background-color: {{ problem.get_status_color }};">
+                                {{ problem.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Problem Summary -->
+                    {% if problem.summary %}
+                    <div class="problem-summary">
+                        <h6><strong>Summary</strong></h6>
+                        <p class="flow-text">{{ problem.summary }}</p>
+                    </div>
+                    <div class="divider" style="margin: 15px 0;"></div>
+                    {% endif %}
+                    
+                    <!-- Problem Meta Information -->
+                    <div class="problem-meta" style="display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0;">
+                        <div class="chip">
+                            <i class="material-icons tiny">account_circle</i>
+                            <a href="/u/{{ problem.created_by.id }}">{{ problem.created_by.username }}</a>
+                        </div>
+                        
+                        <div class="chip">
+                            <i class="material-icons tiny">access_time</i>
+                            Created {{ problem.created_at|naturaltime }}
+                        </div>
+                        
+                        {% if problem.updated_at != problem.created_at %}
+                        <div class="chip">
+                            <i class="material-icons tiny">update</i>
+                            Updated {{ problem.updated_at|naturaltime }}
+                        </div>
+                        {% endif %}
+
+                        {% if problem.due_date %}
+                        <div class="chip {% if problem.is_overdue %}red lighten-3{% else %}blue lighten-3{% endif %}">
+                            <i class="material-icons tiny">event</i>
+                            Due: {{ problem.due_date|naturalday }}
+                            {% if problem.is_overdue %}<span class="red-text">(Overdue)</span>{% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if problem.resolved_at %}
+                        <div class="chip green lighten-3">
+                            <i class="material-icons tiny">check_circle</i>
+                            Resolved {{ problem.resolved_at|naturaltime }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="divider" style="margin: 15px 0;"></div>
+                    
+                    <!-- Problem Description -->
+                    <div class="problem-description">
+                        <h6><strong>Description</strong></h6>
+                        <div class="flow-text">
+                            {{ problem.desc|default:"No description provided."|linebreaks }}
+                        </div>
+                    </div>
+
+                    <!-- Resolution (if solved) -->
+                    {% if problem.status == 'solved' and problem.resolution %}
+                    <div class="section">
+                        <h6><strong>Resolution</strong></h6>
+                        <div class="card-panel green lighten-5">
+                            <div class="flow-text">{{ problem.resolution|linebreaks }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Related Object -->
+                    {% if parent_object %}
+                    <div class="section">
+                        <p><strong>Related to:</strong> 
+                            <a href="{% if problem.to_project %}/{{ problem.to_project.id }}{% elif problem.to_task %}{% url 'task:task_detail' problem.to_task.id %}{% elif problem.to_need %}{% url 'need:need_detail' problem.to_need.id %}{% endif %}" 
+                               class="waves-effect waves-teal btn-flat">
+                                <i class="material-icons left">
+                                    {% if problem.to_project %}folder
+                                    {% elif problem.to_task %}assignment
+                                    {% elif problem.to_need %}help_outline
+                                    {% endif %}
+                                </i>{{ parent_object.name }}
+                            </a>
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Skills -->
+                    {% if problem.skills.all %}
+                    <div class="section">
+                        <h6><strong>Related Skills</strong></h6>
+                        <div class="chips" style="border-bottom: none;">
+                            {% for skill in problem.skills.all %}
+                            <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                                {{ skill.name }}
+                            </a>
+                            {% empty %}
+                            <p>No specific skills required for this problem.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Assigned Users -->
+                    <div class="section">
+                        <h6><strong>Assigned Users</strong></h6>
+                        {% if problem.assigned_to.all %}
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            {% for user in problem.assigned_to.all %}
+                            <div class="chip" style="display: flex; align-items: center;">
+                                {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}" style="margin-right: 8px;">
+                                {% endif %}
+                                <a href="/u/{{ user.id }}">{{ user.username }}</a>
+                                {% if can_edit %}
+                                <i class="material-icons tiny close unassign-user" data-user-id="{{ user.id }}" style="cursor: pointer; margin-left: 8px;">close</i>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="grey-text">No one assigned to this problem.</p>
+                        {% endif %}
+                        
+                        {% if can_edit %}
+                        <div style="margin-top: 10px;">
+                            <a href="#assign-modal" class="btn-small blue modal-trigger">
+                                <i class="material-icons left">person_add</i>Assign User
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Problem Actions -->
+                <div class="card-action">
+                    {% if can_edit %}
+                    <a href="{% url 'problems:edit' problem.id %}" class="waves-effect waves-light btn-small blue">
+                        <i class="material-icons left">edit</i>Edit
+                    </a>
+                    
+                    {% if problem.status not in 'solved,closed' %}
+                    <a href="#!" class="waves-effect waves-light btn-small green mark-solved-btn">
+                        <i class="material-icons left">check</i>Mark Solved
+                    </a>
+                    {% endif %}
+                    
+                    {% if problem.status == 'solved' and problem.status != 'closed' %}
+                    <a href="#!" class="waves-effect waves-light btn-small orange reopen-btn">
+                        <i class="material-icons left">refresh</i>Reopen
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                    
+                    <span class="right grey-text">
+                        Problem #{{ problem.id }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Timeline -->
+    {% if activities %}
+    <div class="row">
+        <div class="col s12">
+            <div class="card hoverable">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">timeline</i>Activity Timeline
+                    </span>
+                    
+                    <ul class="collection">
+                        {% for activity in activities %}
+                        <li class="collection-item">
+                            <div>
+                                <strong>{{ activity.get_activity_type_display }}</strong>
+                                <p>{{ activity.desc }}</p>
+                                <span class="secondary-content grey-text">
+                                    {% if activity.user %}by {{ activity.user.username }}{% endif %}
+                                    <br>{{ activity.created_at|naturaltime }}
+                                </span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Comments Section -->
+    {% if can_comment %}
+    <div class="row">
+        <div class="col s12">
+            <div class="card hoverable">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">comment</i>Comments
+                        <span class="badge blue white-text">{{ comments|length }}</span>
+                    </span>
+                    
+                    <div id="comments-container">
+                        {% if comments %}
+                            {% include "comments.html" with comments=comments %}
+                        {% else %}
+                            <div class="center-align" style="padding: 20px;">
+                                <i class="material-icons large grey-text">forum</i>
+                                <p class="grey-text">No comments yet. Be the first to comment!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="divider" style="margin: 20px 0;"></div>
+                    
+                    <h5><i class="material-icons left">add_comment</i>Add a Comment</h5>
+                    <form id="add-comment-form">
+                        {% csrf_token %}
+                        <div class="input-field">
+                            <textarea name="content" id="comment-content" class="materialize-textarea" 
+                                      placeholder="Write your comment here..." required></textarea>
+                            <label for="comment-content">Your Comment</label>
+                        </div>
+                        <input type="hidden" name="to_problem_id" value="{{ problem.id }}">
+                        <button type="submit" class="btn waves-effect waves-light blue">
+                            <i class="material-icons left">send</i>Post Comment
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Assignment Modal -->
+{% if can_edit %}
+<div id="assign-modal" class="modal">
+    <div class="modal-content">
+        <h4>Assign User to Problem</h4>
+        <div class="input-field">
+            <input type="text" id="user-search" placeholder="Search users...">
+            <label for="user-search">Search Users</label>
+        </div>
+        <div id="user-search-results"></div>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Include the comments JavaScript -->
+<script src="{% static 'comment/comments.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.textareaAutoResize($('#comment-content'));
+    M.Modal.init(document.querySelectorAll('.modal'));
+    M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+    
+    // Handle status update buttons
+    const markSolvedBtn = document.querySelector('.mark-solved-btn');
+    if (markSolvedBtn) {
+        markSolvedBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Mark this problem as solved?')) {
+                updateProblemStatus('solved');
+            }
+        });
+    }
+    
+    const reopenBtn = document.querySelector('.reopen-btn');
+    if (reopenBtn) {
+        reopenBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Reopen this problem?')) {
+                updateProblemStatus('reopened');
+            }
+        });
+    }
+    
+    // Handle user unassignment
+    document.querySelectorAll('.unassign-user').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            if (confirm('Unassign this user from the problem?')) {
+                unassignUser(userId);
+            }
+        });
+    });
+    
+    // User search for assignment
+    const userSearch = document.getElementById('user-search');
+    if (userSearch) {
+        let searchTimeout;
+        userSearch.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                document.getElementById('user-search-results').innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchUsers(query);
+            }, 300);
+        });
+    }
+});
+
+function updateProblemStatus(newStatus) {
+    fetch(`/api/problems/{{ problem.id }}/update_status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.error) {
+            M.toast({html: `Problem status updated to ${newStatus}!`, classes: 'green'});
+            location.reload();
+        } else {
+            M.toast({html: 'Error updating status: ' + data.error, classes: 'red'});
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        M.toast({html: 'Error updating problem status', classes: 'red'});
+    });
+}
+
+function unassignUser(userId) {
+    fetch(`{% url 'problems:unassign_user' problem.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `user_id=${userId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            M.toast({html: data.message, classes: 'green'});
+            location.reload();
+        } else {
+            M.toast({html: 'Error unassigning user: ' + data.error, classes: 'red'});
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        M.toast({html: 'Error unassigning user', classes: 'red'});
+    });
+}
+
+function searchUsers(query) {
+    fetch(`/api/problems/users/search/?q=${encodeURIComponent(query)}&project_id={{ problem.to_project.id|default:'' }}`)
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('user-search-results');
+        if (data.results && data.results.length > 0) {
+            resultsDiv.innerHTML = data.results.map(user => 
+                `<div class="collection-item" style="cursor: pointer;" onclick="assignUser(${user.id})">
+                    <img src="${user.avatar_url}" class="circle" style="width: 30px; height: 30px; margin-right: 10px;">
+                    <span>${user.full_name} (@${user.username})</span>
+                </div>`
+            ).join('');
+        } else {
+            resultsDiv.innerHTML = '<p class="grey-text">No users found</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error searching users:', error);
+    });
+}
+
+function assignUser(userId) {
+    fetch(`{% url 'problems:assign_user' problem.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `user_id=${userId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            M.toast({html: data.message, classes: 'green'});
+            M.Modal.getInstance(document.getElementById('assign-modal')).close();
+            location.reload();
+        } else {
+            M.toast({html: 'Error assigning user: ' + data.error, classes: 'red'});
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        M.toast({html: 'Error assigning user', classes: 'red'});
+    });
+}
+</script>
+
+<style>
+.card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.problem-meta {
+    margin: 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.problem-description, .problem-summary {
+    padding: 10px 0;
+}
+
+.chip i.material-icons {
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.unassign-user:hover {
+    color: var(--danger) !important;
+}
+
+#user-search-results .collection-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+}
+
+#user-search-results .collection-item:hover {
+    background-color: var(--bg-light);
+}
+</style>
+{% endblock %}

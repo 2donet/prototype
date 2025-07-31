@@ -1,0 +1,458 @@
+<!-- problems/templates/problems/edit_problem.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Problem: {{ problem.name }} | 2do.net{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row">
+        <div class="col s12">
+            <a href="{% url 'problems:detail' problem.id %}" class="btn-flat waves-effect">
+                <i class="material-icons left">arrow_back</i>Back to Problem
+            </a>
+            <h4>Edit Problem</h4>
+            <p class="grey-text">
+                Editing problem: <strong>{{ problem.name }}</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Problem Details</span>
+                    
+                    <form method="post" id="edit-problem-form">
+                        {% csrf_token %}
+                        
+                        <!-- Problem Name -->
+                        <div class="input-field">
+                            <input type="text" name="name" id="problem-name" class="validate" 
+                                   value="{{ problem.name }}" required maxlength="200">
+                            <label for="problem-name">Problem Title *</label>
+                        </div>
+                        
+                        <!-- Summary -->
+                        <div class="input-field">
+                            <textarea name="summary" id="problem-summary" class="materialize-textarea" 
+                                      maxlength="500">{{ problem.summary|default:'' }}</textarea>
+                            <label for="problem-summary">Brief Summary</label>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="input-field">
+                            <textarea name="desc" id="problem-desc" class="materialize-textarea" 
+                                      required>{{ problem.desc }}</textarea>
+                            <label for="problem-desc">Detailed Description *</label>
+                        </div>
+                        
+                        <!-- Priority and Status Row -->
+                        <div class="row">
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    <select name="priority" id="problem-priority">
+                                        {% for value, label in priority_choices %}
+                                        <option value="{{ value }}" {% if problem.priority == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label>Priority *</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    <select name="status" id="problem-status">
+                                        {% for value, label in status_choices %}
+                                        <option value="{{ value }}" {% if problem.status == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label>Status</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Visibility -->
+                        <div class="input-field">
+                            <select name="visibility" id="problem-visibility">
+                                {% for value, label in visibility_choices %}
+                                <option value="{{ value }}" {% if problem.visibility == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <label>Visibility</label>
+                        </div>
+                        
+                        <!-- Due Date -->
+                        <div class="input-field">
+                            <input type="datetime-local" name="due_date" id="problem-due-date" 
+                                   value="{% if problem.due_date %}{{ problem.due_date|date:'Y-m-d\TH:i' }}{% endif %}">
+                            <label for="problem-due-date">Due Date (Optional)</label>
+                        </div>
+                        
+                        <!-- Resolution (only if solved) -->
+                        {% if problem.status == 'solved' %}
+                        <div class="input-field">
+                            <textarea name="resolution" id="problem-resolution" class="materialize-textarea">{{ problem.resolution|default:'' }}</textarea>
+                            <label for="problem-resolution">Resolution</label>
+                            <span class="helper-text">Describe how this problem was resolved</span>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Skills -->
+                        <div class="input-field">
+                            <input type="text" name="skills" id="problem-skills" class="chips-autocomplete"
+                                   placeholder="Type skills and press Enter">
+                            <label for="problem-skills">Related Skills</label>
+                        </div>
+                        
+                        <!-- Current Assignment -->
+                        <div class="section">
+                            <h6>Assignment</h6>
+                            
+                            {% if problem.assigned_to.all %}
+                            <div class="current-assignments">
+                                <p><strong>Currently assigned to:</strong></p>
+                                <div id="current-assigned-users">
+                                    {% for user in problem.assigned_to.all %}
+                                    <div class="chip" data-user-id="{{ user.id }}">
+                                        {% if user.profile.avatar %}
+                                        <img src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                                        {% endif %}
+                                        {{ user.username }}
+                                        <i class="close material-icons" onclick="unassignUser({{ user.id }})">close</i>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="grey-text">No one currently assigned to this problem.</p>
+                            {% endif %}
+                            
+                            <div class="input-field">
+                                <input type="text" id="user-search" placeholder="Search users to assign...">
+                                <label for="user-search">Add Assignee</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="card-action">
+                    <button type="submit" form="edit-problem-form" class="btn blue waves-effect waves-light">
+                        <i class="material-icons left">save</i>Save Changes
+                    </button>
+                    
+                    <a href="{% url 'problems:detail' problem.id %}" class="btn-flat waves-effect waves-light">
+                        Cancel
+                    </a>
+                    
+                    {% if problem.status != 'solved' %}
+                    <a href="#!" class="btn green waves-effect waves-light right mark-solved-btn">
+                        <i class="material-icons left">check</i>Mark as Solved
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.textareaAutoResize(document.querySelectorAll('.materialize-textarea'));
+    M.CharacterCounter.init(document.querySelectorAll('input[maxlength], textarea[maxlength]'));
+    
+    // Initialize skills chips with existing skills
+    const existingSkills = [
+        {% for skill in problem.skills.all %}
+        {tag: '{{ skill.name }}'},
+        {% endfor %}
+    ];
+    
+    let skillsData = existingSkills;
+    const skillsChips = M.Chips.init(document.querySelector('.chips-autocomplete'), {
+        placeholder: 'Add a skill',
+        secondaryPlaceholder: 'Add another skill',
+        data: existingSkills,
+        onChipAdd: function(e, chip) {
+            skillsData = this.chipsData;
+        },
+        onChipDelete: function(e, chip) {
+            skillsData = this.chipsData;
+        }
+    });
+    
+    // User search functionality
+    const userSearch = document.getElementById('user-search');
+    let searchTimeout;
+    
+    userSearch.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            searchUsers(query);
+        }, 300);
+    });
+    
+    function searchUsers(query) {
+        const projectId = {% if problem.to_project %}{{ problem.to_project.id }}{% else %}null{% endif %};
+        let url = `/api/problems/users/search/?q=${encodeURIComponent(query)}`;
+        if (projectId) {
+            url += `&project_id=${projectId}`;
+        }
+        
+        fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.results && data.results.length > 0) {
+                showUserSuggestions(data.results);
+            }
+        })
+        .catch(error => {
+            console.error('Error searching users:', error);
+        });
+    }
+    
+    function showUserSuggestions(users) {
+        // Filter out already assigned users
+        const currentlyAssigned = Array.from(document.querySelectorAll('#current-assigned-users .chip'))
+            .map(chip => parseInt(chip.dataset.userId));
+        
+        const availableUsers = users.filter(user => !currentlyAssigned.includes(user.id));
+        
+        if (availableUsers.length === 0) {
+            return;
+        }
+        
+        let dropdown = document.getElementById('user-suggestions');
+        if (!dropdown) {
+            dropdown = document.createElement('div');
+            dropdown.id = 'user-suggestions';
+            dropdown.className = 'collection';
+            dropdown.style.cssText = 'position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd;';
+            userSearch.parentNode.appendChild(dropdown);
+        }
+        
+        dropdown.innerHTML = availableUsers.map(user => `
+            <a href="#!" class="collection-item" onclick="assignUser(${user.id}, '${user.username}', '${user.full_name}', '${user.avatar_url}')">
+                <img src="${user.avatar_url}" class="circle" style="width: 30px; height: 30px; margin-right: 10px;">
+                <span>${user.full_name} (@${user.username})</span>
+            </a>
+        `).join('');
+    }
+    
+    window.assignUser = function(userId, username, fullName, avatarUrl) {
+        // Make API call to assign user
+        fetch(`{% url 'problems:assign_user' problem.id %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `user_id=${userId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add chip to UI
+                const container = document.getElementById('current-assigned-users');
+                if (!container) {
+                    // Create container if it doesn't exist
+                    const newContainer = document.createElement('div');
+                    newContainer.id = 'current-assigned-users';
+                    document.querySelector('.current-assignments').appendChild(newContainer);
+                }
+                
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.dataset.userId = userId;
+                chip.innerHTML = `
+                    <img src="${avatarUrl}" alt="${username}">
+                    ${username}
+                    <i class="close material-icons" onclick="unassignUser(${userId})">close</i>
+                `;
+                container.appendChild(chip);
+                
+                M.toast({html: data.message, classes: 'green'});
+                
+                // Clear search
+                userSearch.value = '';
+                document.getElementById('user-suggestions').innerHTML = '';
+            } else {
+                M.toast({html: 'Error: ' + data.error, classes: 'red'});
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            M.toast({html: 'Error assigning user', classes: 'red'});
+        });
+    };
+    
+    window.unassignUser = function(userId) {
+        if (!confirm('Unassign this user from the problem?')) {
+            return;
+        }
+        
+        fetch(`{% url 'problems:unassign_user' problem.id %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `user_id=${userId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove chip from UI
+                const chip = document.querySelector(`#current-assigned-users .chip[data-user-id="${userId}"]`);
+                if (chip) {
+                    chip.remove();
+                }
+                
+                M.toast({html: data.message, classes: 'green'});
+            } else {
+                M.toast({html: 'Error: ' + data.error, classes: 'red'});
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            M.toast({html: 'Error unassigning user', classes: 'red'});
+        });
+    };
+    
+    // Handle status change to show/hide resolution field
+    document.getElementById('problem-status').addEventListener('change', function() {
+        const resolutionField = document.getElementById('problem-resolution');
+        if (this.value === 'solved' && !resolutionField) {
+            // Add resolution field dynamically
+            const fieldHtml = `
+                <div class="input-field" id="resolution-field">
+                    <textarea name="resolution" id="problem-resolution" class="materialize-textarea"></textarea>
+                    <label for="problem-resolution">Resolution</label>
+                    <span class="helper-text">Describe how this problem was resolved</span>
+                </div>
+            `;
+            document.getElementById('problem-visibility').closest('.input-field').insertAdjacentHTML('afterend', fieldHtml);
+            M.textareaAutoResize(document.querySelectorAll('.materialize-textarea'));
+        } else if (this.value !== 'solved' && resolutionField) {
+            document.getElementById('resolution-field').remove();
+        }
+    });
+    
+    // Handle mark as solved button
+    const markSolvedBtn = document.querySelector('.mark-solved-btn');
+    if (markSolvedBtn) {
+        markSolvedBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Change status to solved
+            document.getElementById('problem-status').value = 'solved';
+            M.FormSelect.init(document.querySelectorAll('select'));
+            
+            // Trigger change event to show resolution field
+            document.getElementById('problem-status').dispatchEvent(new Event('change'));
+            
+            M.toast({html: 'Status changed to Solved. Please add resolution details.', classes: 'blue'});
+        });
+    }
+    
+    // Form submission
+    document.getElementById('edit-problem-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Add skills data
+        const skillNames = skillsData.map(chip => chip.tag);
+        formData.set('skills', JSON.stringify(skillNames));
+        
+        // Submit form
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Saving...';
+        submitBtn.disabled = true;
+        
+        fetch(this.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                return response.text();
+            }
+        })
+        .then(html => {
+            if (html) {
+                // If we got HTML back, there were form errors
+                document.body.innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            M.toast({html: 'Error saving changes', classes: 'red'});
+        })
+        .finally(() => {
+            submitBtn.innerHTML = '<i class="material-icons left">save</i>Save Changes';
+            submitBtn.disabled = false;
+        });
+    });
+    
+    // Hide user suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!userSearch.contains(e.target)) {
+            const suggestions = document.getElementById('user-suggestions');
+            if (suggestions) {
+                suggestions.innerHTML = '';
+            }
+        }
+    });
+});
+</script>
+
+<style>
+#current-assigned-users .chip {
+    margin: 5px 5px 5px 0;
+}
+
+#current-assigned-users .chip img {
+    width: 25px;
+    height: 25px;
+    margin-right: 8px;
+}
+
+#user-suggestions .collection-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+}
+
+#user-suggestions .collection-item:hover {
+    background-color: var(--bg-light);
+}
+
+.current-assignments {
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}

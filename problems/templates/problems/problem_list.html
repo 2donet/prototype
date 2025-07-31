@@ -1,0 +1,229 @@
+<!-- problems/templates/problems/problem_list.html -->
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Problems - {{ project.name }} | 2do.net{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header with Back Button -->
+    <div class="row">
+        <div class="col s12">
+            <a href="/{{ project.id }}" class="btn-flat waves-effect">
+                <i class="material-icons left">arrow_back</i>Back to {{ project.name }}
+            </a>
+        </div>
+    </div>
+
+    <!-- Page Title -->
+    <div class="row">
+        <div class="col s12">
+            <h4>Problems - {{ project.name }}</h4>
+            <p class="grey-text">Track and resolve issues for this project</p>
+        </div>
+    </div>
+
+    <!-- Filters and Controls -->
+    <div class="row">
+        <div class="col s12 m3">
+            <div class="input-field">
+                <select id="status-filter">
+                    <option value="all" {% if not current_filters.status %}selected{% endif %}>All Statuses</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <label>Filter by Status</label>
+            </div>
+        </div>
+
+        <div class="col s12 m3">
+            <div class="input-field">
+                <select id="priority-filter">
+                    <option value="all" {% if not current_filters.priority %}selected{% endif %}>All Priorities</option>
+                    {% for value, label in priority_choices %}
+                        <option value="{{ value }}" {% if current_filters.priority == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <label>Filter by Priority</label>
+            </div>
+        </div>
+
+        <div class="col s12 m3">
+            <div class="input-field">
+                <select id="assigned-filter">
+                    <option value="all" {% if not current_filters.assigned %}selected{% endif %}>All Problems</option>
+                    <option value="me" {% if current_filters.assigned == 'me' %}selected{% endif %}>Assigned to Me</option>
+                    <option value="unassigned" {% if current_filters.assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                </select>
+                <label>Filter by Assignment</label>
+            </div>
+        </div>
+
+        <div class="col s12 m3">
+            <div class="input-field">
+                <select id="sort-filter">
+                    <option value="-priority" {% if current_filters.sort == '-priority' %}selected{% endif %}>Highest Priority First</option>
+                    <option value="priority" {% if current_filters.sort == 'priority' %}selected{% endif %}>Lowest Priority First</option>
+                    <option value="-created_at" {% if current_filters.sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                    <option value="created_at" {% if current_filters.sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+                    <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name A-Z</option>
+                    <option value="-name" {% if current_filters.sort == '-name' %}selected{% endif %}>Name Z-A</option>
+                </select>
+                <label>Sort by</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Problem Button -->
+    {% if can_create %}
+    <div class="row">
+        <div class="col s12">
+            <a href="{% url 'problems:create' %}?project={{ project.id }}" class="btn blue waves-effect waves-light">
+                <i class="material-icons left">add</i>New Problem
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Problems List -->
+    <div class="problems-container" id="problems-container">
+        {% include "problems/problems_list_partial.html" with problems=problems project=project can_create=can_create %}
+    </div>
+
+    <!-- Loading indicator -->
+    <div class="center-align" id="loading-indicator" style="display: none;">
+        <div class="preloader-wrapper active">
+            <div class="spinner-layer spinner-blue-only">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.FormSelect.init(document.querySelectorAll('select'));
+    
+    // Filter handling
+    const statusFilter = document.getElementById('status-filter');
+    const priorityFilter = document.getElementById('priority-filter');
+    const assignedFilter = document.getElementById('assigned-filter');
+    const sortFilter = document.getElementById('sort-filter');
+    const problemsContainer = document.getElementById('problems-container');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    function applyFilters() {
+        const filters = {
+            project_id: {{ project.id }},
+            statuses: statusFilter.value !== 'all' ? [statusFilter.value] : [],
+            priorities: priorityFilter.value !== 'all' ? [priorityFilter.value] : [],
+            assigned: assignedFilter.value !== 'all' ? assignedFilter.value : null
+        };
+        
+        // Show loading
+        loadingIndicator.style.display = 'block';
+        problemsContainer.style.opacity = '0.5';
+        
+        // Make AJAX request
+        fetch('/api/problems/filtered/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(filters)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                problemsContainer.innerHTML = data.problems_html;
+                
+                // Reinitialize dropdown triggers and other components
+                M.Dropdown.init(document.querySelectorAll('.dropdown-trigger'));
+                M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+            } else {
+                M.toast({html: 'Error loading problems: ' + (data.error || 'Unknown error')});
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            M.toast({html: 'Error loading problems'});
+        })
+        .finally(() => {
+            loadingIndicator.style.display = 'none';
+            problemsContainer.style.opacity = '1';
+        });
+    }
+    
+    // Add event listeners
+    statusFilter.addEventListener('change', applyFilters);
+    priorityFilter.addEventListener('change', applyFilters);
+    assignedFilter.addEventListener('change', applyFilters);
+    sortFilter.addEventListener('change', function() {
+        // For sorting, we'll just reload the page with the sort parameter
+        const url = new URL(window.location);
+        url.searchParams.set('sort', this.value);
+        window.location = url;
+    });
+    
+    // Initialize tooltips and dropdowns
+    M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+    M.Dropdown.init(document.querySelectorAll('.dropdown-trigger'));
+});
+</script>
+
+<style>
+.problems-container {
+    transition: opacity 0.3s ease;
+}
+
+.problem-card {
+    margin-bottom: 15px;
+    border-left: 4px solid var(--bg-color2);
+    transition: all 0.3s ease;
+}
+
+.problem-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 17px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.15);
+}
+
+.problem-priority-1 { border-left-color: var(--confirm); }
+.problem-priority-2 { border-left-color: var(--warning); }
+.problem-priority-3 { border-left-color: var(--risk); }
+.problem-priority-4 { border-left-color: var(--danger); }
+
+.problem-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.problem-meta .chip {
+    font-size: 0.8rem;
+    height: 24px;
+    line-height: 24px;
+}
+
+.assigned-users {
+    margin-top: 10px;
+}
+
+.assigned-users .chip {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+</style>
+{% endblock %}

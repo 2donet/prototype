@@ -1,0 +1,355 @@
+<!-- problems/templates/problems/create_problem.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Report New Problem | 2do.net{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row">
+        <div class="col s12">
+            <h4>Report a New Problem</h4>
+            <p class="grey-text">
+                Report a problem for 
+                <strong>
+                {% if parent_obj.to_project %}{{ parent_obj.to_project.name }} &raquo; {% endif %}
+                {{ parent_obj.name }}
+                </strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Problem Details</span>
+                    
+                    <form method="post" id="create-problem-form">
+                        {% csrf_token %}
+                        
+                        <!-- Problem Name -->
+                        <div class="input-field">
+                            <input type="text" name="name" id="problem-name" class="validate" 
+                                   value="{{ form_data.name|default:'' }}" required maxlength="200">
+                            <label for="problem-name">Problem Title *</label>
+                            <span class="helper-text">A clear, descriptive title for the problem</span>
+                        </div>
+                        
+                        <!-- Summary -->
+                        <div class="input-field">
+                            <textarea name="summary" id="problem-summary" class="materialize-textarea" 
+                                      maxlength="500">{{ form_data.summary|default:'' }}</textarea>
+                            <label for="problem-summary">Brief Summary</label>
+                            <span class="helper-text">A one-sentence summary of the problem (optional)</span>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="input-field">
+                            <textarea name="desc" id="problem-desc" class="materialize-textarea" 
+                                      required>{{ form_data.desc|default:'' }}</textarea>
+                            <label for="problem-desc">Detailed Description *</label>
+                            <span class="helper-text">
+                                Provide detailed information: steps to reproduce, expected vs actual behavior, 
+                                error messages, impact, etc.
+                            </span>
+                        </div>
+                        
+                        <!-- Priority and Status Row -->
+                        <div class="row">
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    <select name="priority" id="problem-priority">
+                                        {% for value, label in priority_choices %}
+                                        <option value="{{ value }}" {% if form_data.priority == value|stringformat:"s" or value == 2 and not form_data.priority %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label>Priority *</label>
+                                    <span class="helper-text">How urgent is this problem?</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col s12 m6">
+                                <div class="input-field">
+                                    <select name="status" id="problem-status">
+                                        {% for value, label in status_choices %}
+                                        <option value="{{ value }}" {% if form_data.status == value or value == 'open' and not form_data.status %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label>Status</label>
+                                    <span class="helper-text">Current status of the problem</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Visibility -->
+                        <div class="input-field">
+                            <select name="visibility" id="problem-visibility">
+                                {% for value, label in visibility_choices %}
+                                <option value="{{ value }}" {% if form_data.visibility == value or value == 'public' and not form_data.visibility %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <label>Visibility</label>
+                            <span class="helper-text">Who can view this problem?</span>
+                        </div>
+                        
+                        <!-- Skills -->
+                        <div class="input-field">
+                            <input type="text" name="skills" id="problem-skills" class="chips-autocomplete"
+                                   placeholder="Type skills and press Enter">
+                            <label for="problem-skills">Related Skills</label>
+                            <span class="helper-text">Skills related to solving this problem</span>
+                        </div>
+                        
+                        <!-- Assignment Section -->
+                        <div class="section">
+                            <h6>Assignment (Optional)</h6>
+                            <p class="grey-text">You can assign users to work on this problem</p>
+                            
+                            <div class="input-field">
+                                <input type="text" id="user-search" placeholder="Search users to assign...">
+                                <label for="user-search">Search Users</label>
+                            </div>
+                            
+                            <div id="selected-users" class="section">
+                                <h6>Assigned Users:</h6>
+                                <div id="assigned-users-chips"></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="card-action">
+                    <button type="submit" form="create-problem-form" class="btn blue waves-effect waves-light">
+                        <i class="material-icons left">bug_report</i>Report Problem
+                    </button>
+                    
+                    <a href="{% if parent_obj.to_project %}/{{ parent_obj.to_project.id }}{% elif parent_obj.to_project %}{% url 'project:project' parent_obj.to_project.id %}{% else %}/{% endif %}" 
+                       class="btn-flat waves-effect waves-light">
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize components
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.textareaAutoResize(document.querySelectorAll('.materialize-textarea'));
+    M.CharacterCounter.init(document.querySelectorAll('input[maxlength], textarea[maxlength]'));
+    
+    // Skills chips
+    let skillsData = [];
+    const skillsChips = M.Chips.init(document.querySelector('.chips-autocomplete'), {
+        placeholder: 'Add a skill',
+        secondaryPlaceholder: 'Add another skill',
+        onChipAdd: function(e, chip) {
+            skillsData = this.chipsData;
+        },
+        onChipDelete: function(e, chip) {
+            skillsData = this.chipsData;
+        }
+    });
+    
+    // User assignment functionality
+    let assignedUsers = [];
+    const userSearch = document.getElementById('user-search');
+    let searchTimeout;
+    
+    userSearch.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            searchUsers(query);
+        }, 300);
+    });
+    
+    function searchUsers(query) {
+        const projectId = {{ parent_obj.to_project.id|default:parent_obj.id|default:'null' }};
+        let url = `/api/problems/users/search/?q=${encodeURIComponent(query)}`;
+        if (projectId) {
+            url += `&project_id=${projectId}`;
+        }
+        
+        fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.results && data.results.length > 0) {
+                showUserSuggestions(data.results);
+            }
+        })
+        .catch(error => {
+            console.error('Error searching users:', error);
+        });
+    }
+    
+    function showUserSuggestions(users) {
+        // Create or update suggestions dropdown
+        let dropdown = document.getElementById('user-suggestions');
+        if (!dropdown) {
+            dropdown = document.createElement('div');
+            dropdown.id = 'user-suggestions';
+            dropdown.className = 'collection';
+            dropdown.style.cssText = 'position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd;';
+            userSearch.parentNode.appendChild(dropdown);
+        }
+        
+        dropdown.innerHTML = users.map(user => `
+            <a href="#!" class="collection-item" onclick="addAssignedUser(${user.id}, '${user.username}', '${user.full_name}', '${user.avatar_url}')">
+                <img src="${user.avatar_url}" class="circle" style="width: 30px; height: 30px; margin-right: 10px;">
+                <span>${user.full_name} (@${user.username})</span>
+            </a>
+        `).join('');
+    }
+    
+    window.addAssignedUser = function(userId, username, fullName, avatarUrl) {
+        // Check if already assigned
+        if (assignedUsers.find(u => u.id === userId)) {
+            M.toast({html: 'User already assigned'});
+            return;
+        }
+        
+        // Add to assigned users
+        assignedUsers.push({
+            id: userId,
+            username: username,
+            full_name: fullName,
+            avatar_url: avatarUrl
+        });
+        
+        // Update UI
+        updateAssignedUsersDisplay();
+        
+        // Clear search
+        userSearch.value = '';
+        document.getElementById('user-suggestions').innerHTML = '';
+    };
+    
+    function updateAssignedUsersDisplay() {
+        const container = document.getElementById('assigned-users-chips');
+        container.innerHTML = assignedUsers.map(user => `
+            <div class="chip">
+                <img src="${user.avatar_url}" alt="${user.username}">
+                ${user.full_name}
+                <i class="close material-icons" onclick="removeAssignedUser(${user.id})">close</i>
+            </div>
+        `).join('');
+    }
+    
+    window.removeAssignedUser = function(userId) {
+        assignedUsers = assignedUsers.filter(u => u.id !== userId);
+        updateAssignedUsersDisplay();
+    };
+    
+    // Form submission
+    document.getElementById('create-problem-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Add skills data
+        const skillNames = skillsData.map(chip => chip.tag);
+        formData.set('skills', JSON.stringify(skillNames));
+        
+        // Add assigned users
+        const userIds = assignedUsers.map(u => u.id);
+        userIds.forEach(id => {
+            formData.append('assigned_to', id);
+        });
+        
+        // Submit form
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Creating...';
+        submitBtn.disabled = true;
+        
+        fetch(this.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                return response.text();
+            }
+        })
+        .then(html => {
+            if (html) {
+                // If we got HTML back, there were form errors
+                document.body.innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            M.toast({html: 'Error creating problem', classes: 'red'});
+        })
+        .finally(() => {
+            submitBtn.innerHTML = '<i class="material-icons left">bug_report</i>Report Problem';
+            submitBtn.disabled = false;
+        });
+    });
+    
+    // Hide user suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!userSearch.contains(e.target)) {
+            const suggestions = document.getElementById('user-suggestions');
+            if (suggestions) {
+                suggestions.innerHTML = '';
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.chips .chip {
+    display: inline-block;
+    margin: 0 5px 5px 0;
+}
+
+#assigned-users-chips .chip {
+    margin: 5px 5px 5px 0;
+}
+
+#assigned-users-chips .chip img {
+    width: 25px;
+    height: 25px;
+    margin-right: 8px;
+}
+
+#user-suggestions .collection-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+}
+
+#user-suggestions .collection-item:hover {
+    background-color: var(--bg-light);
+}
+
+.input-field .helper-text {
+    font-size: 0.8rem;
+    color: var(--text2ndary);
+}
+</style>
+{% endblock %}

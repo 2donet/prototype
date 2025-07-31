@@ -1,0 +1,213 @@
+<!-- problems/templates/problems/problems_list_partial.html -->
+{% load static %}
+{% load humanize %}
+
+{% for problem in problems %}
+<div class="problem-card card hoverable problem-priority-{{ problem.priority }}">
+    <div class="card-content">
+        <div class="card-title-row" style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <span class="card-title">
+                <a href="{% url 'problems:detail' problem.id %}" style="color: inherit;">{{ problem.name }}</a>
+            </span>
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <!-- Priority Badge -->
+                <span class="new badge" data-badge-caption="Priority {{ problem.priority }}" 
+                      style="background-color: {{ problem.get_priority_color }};">{{ problem.get_priority_display }}</span>
+                
+                <!-- Status Badge -->
+                <span class="new badge" data-badge-caption="{{ problem.get_status_display }}" 
+                      style="background-color: {{ problem.get_status_color }};">{{ problem.status|title }}</span>
+                
+                <!-- Dropdown Menu -->
+                <a class='dropdown-trigger btn-flat' href='#' data-target='dropdown-p-{{ problem.id }}'>
+                    <img src="{% static 'icons/menu.svg' %}" alt="menu">
+                </a>
+            </div>
+        </div>
+
+        <!-- Dropdown Structure -->
+        <ul id='dropdown-p-{{ problem.id }}' class='dropdown-content'>
+            {% if problem.user_can_edit %}
+            <li><a href="{% url 'problems:edit' problem.id %}"><i class="material-icons">edit</i>Edit</a></li>
+            <li class="divider"></li>
+            {% endif %}
+            <li><a href="{% url 'problems:detail' problem.id %}"><i class="material-icons">visibility</i>View Details</a></li>
+            {% if problem.get_related_object %}
+            <li><a href="{% if problem.to_project %}/{{ problem.to_project.id }}{% elif problem.to_task %}{% url 'task:task_detail' problem.to_task.id %}{% elif problem.to_need %}{% url 'need:need_detail' problem.to_need.id %}{% endif %}">
+                <i class="material-icons">launch</i>Go to {{ problem.get_related_object_type|title }}
+            </a></li>
+            {% endif %}
+        </ul>
+
+        <!-- Problem Summary -->
+        {% if problem.summary %}
+        <p class="problem-summary grey-text text-darken-1">{{ problem.summary }}</p>
+        {% endif %}
+
+        <!-- Problem Meta Information -->
+        <div class="problem-meta">
+            <div class="chip">
+                <i class="material-icons tiny">account_circle</i>
+                {{ problem.created_by.username|default:"Unknown" }}
+            </div>
+            
+            <div class="chip">
+                <i class="material-icons tiny">access_time</i>
+                {{ problem.created_at|naturaltime }}
+            </div>
+
+            {% if problem.due_date %}
+            <div class="chip {% if problem.is_overdue %}red lighten-3{% else %}blue lighten-3{% endif %}">
+                <i class="material-icons tiny">event</i>
+                Due: {{ problem.due_date|naturalday }}
+                {% if problem.is_overdue %}<span class="red-text">(Overdue)</span>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if problem.get_related_object %}
+            <div class="chip blue lighten-4">
+                <i class="material-icons tiny">
+                    {% if problem.to_project %}folder{% elif problem.to_task %}assignment{% elif problem.to_need %}help_outline{% endif %}
+                </i>
+                {{ problem.get_related_object.name }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Problem Description Preview -->
+        {% if problem.desc %}
+        <div class="problem-description">
+            <p>{{ problem.desc|truncatewords:20|linebreaks }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Skills -->
+        {% if problem.skills.all %}
+        <div class="skills-section">
+            <strong>Skills:</strong>
+            <div class="chips" style="border-bottom: none; margin-top: 5px;">
+                {% for skill in problem.skills.all %}
+                <div class="chip" style="margin-right: 5px;">{{ skill.name }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Assigned Users -->
+        {% if problem.assigned_to.all %}
+        <div class="assigned-users">
+            <strong>Assigned to:</strong>
+            <div style="margin-top: 5px;">
+                {% for user in problem.assigned_to.all %}
+                <div class="chip">
+                    {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
+                    {% endif %}
+                    {{ user.username }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% elif problem.user_can_edit %}
+        <div class="assigned-users">
+            <span class="grey-text">No one assigned</span>
+            <a href="#!" class="btn-small blue assign-user-btn" data-problem-id="{{ problem.id }}">
+                <i class="material-icons left">person_add</i>Assign
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card-action">
+        <a href="{% url 'problems:detail' problem.id %}" class="waves-effect waves-light btn-small blue">
+            <i class="material-icons left">visibility</i>View
+        </a>
+        
+        {% if problem.user_can_edit %}
+        <a href="{% url 'problems:edit' problem.id %}" class="waves-effect waves-light btn-small orange">
+            <i class="material-icons left">edit</i>Edit
+        </a>
+        
+        {% if problem.status != 'solved' %}
+        <a href="#!" class="waves-effect waves-light btn-small green mark-solved-btn" data-problem-id="{{ problem.id }}">
+            <i class="material-icons left">check</i>Mark Solved
+        </a>
+        {% endif %}
+        {% endif %}
+        
+        <span class="right">
+            <span class="grey-text">Priority {{ problem.priority }}</span>
+        </span>
+    </div>
+</div>
+{% empty %}
+<div class="center-align" style="padding: 40px;">
+    <i class="material-icons large grey-text">warning</i>
+    <h5 class="grey-text">No Problems Found</h5>
+    <p class="grey-text">
+        {% if can_create %}
+        <a href="{% url 'problems:create' %}?project={{ project.id }}" class="btn blue">
+            <i class="material-icons left">add</i>Create First Problem
+        </a>
+        {% else %}
+        No problems match your current filters.
+        {% endif %}
+    </p>
+</div>
+{% endfor %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle quick status updates
+    document.querySelectorAll('.mark-solved-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const problemId = this.dataset.problemId;
+            
+            // Show confirmation
+            if (confirm('Mark this problem as solved?')) {
+                updateProblemStatus(problemId, 'solved');
+            }
+        });
+    });
+    
+    // Handle assignment buttons
+    document.querySelectorAll('.assign-user-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const problemId = this.dataset.problemId;
+            // This would open a modal or redirect to assignment page
+            window.location.href = `/problems/${problemId}/edit/#assignment`;
+        });
+    });
+});
+
+function updateProblemStatus(problemId, newStatus) {
+    fetch(`/api/problems/${problemId}/update_status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success' || !data.error) {
+            M.toast({html: `Problem marked as ${newStatus}!`, classes: 'green'});
+            // Reload the problems list
+            location.reload();
+        } else {
+            M.toast({html: 'Error updating problem: ' + (data.error || 'Unknown error'), classes: 'red'});
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        M.toast({html: 'Error updating problem', classes: 'red'});
+    });
+}
+</script>

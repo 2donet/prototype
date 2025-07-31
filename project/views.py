@@ -22,7 +22,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.core.paginator import Paginator
 import json
-
+from problems.models import Problem 
 from skills.models import Skill
 
 from django.contrib.auth import get_user_model
@@ -359,6 +359,32 @@ def project(request, project_id):
     status=PlanSuggestionStatus.APPROVED
     ).select_related('plan', 'suggested_by', 'plan__created_by').prefetch_related('plan__steps')
     pending_plan_suggestions = []
+    problems = Problem.objects.filter(
+        Q(to_project=project_id) |
+        Q(to_task__to_project=project_id) |
+        Q(to_need__to_project=project_id)
+    ).select_related(
+        'created_by', 'to_task', 'to_need'
+    ).prefetch_related(
+        'assigned_to', 'skills'
+    ).distinct()
+
+    # Filter problems based on user permissions and add edit permissions
+    filtered_problems = []
+    for problem in problems:
+        if problem.can_be_viewed_by(request.user):
+            # Add permission check as attribute for template use
+            problem.user_can_edit = problem.can_be_edited_by(request.user)
+            filtered_problems.append(problem)
+
+    # Sort by priority and creation date
+    filtered_problems.sort(key=lambda x: (-x.priority, -x.created_at.timestamp()))
+
+    # Limit to recent problems for the component (show all in dedicated page)
+    recent_problems = filtered_problems[:10]  # Show only 10 most recent/important
+
+    # Check if user can contribute to this project
+    can_contribute = request.user.is_authenticated and content.user_can_contribute(request.user)
     if can_moderate:
         pending_plan_suggestions = PlanSuggestion.objects.filter(
             Q(content_type=project_ct, object_id=content.id) |
@@ -384,6 +410,9 @@ def project(request, project_id):
         "pending_connection_requests_count": pending_connection_requests_count,
         "project_plans": project_plans,
         "pending_plan_suggestions": pending_plan_suggestions,
+        "problems": recent_problems,  # For the component
+        "total_problems_count": len(filtered_problems),  # For display
+        "can_contribute": can_contribute,  # For template permissions
     }
     return render(request, "details.html", context=context)
 

@@ -23,6 +23,8 @@ urlpatterns = [
 
     path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'favicon.ico', permanent=True)),
     path("messages/", include("messaging.urls")),
+    path("problems/", include("problems.urls")),  # Problems app URLs
+    path('api/', include('problems.api_urls')),
 ]
 
 if settings.DEBUG:
