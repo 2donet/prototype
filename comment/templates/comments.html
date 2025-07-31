@@ -164,8 +164,7 @@
                     <a href="/messages/{{ comment.user.username }}/">✉️ Message</a>
                 </li>
                 <li>
-                    <a href="{% url 'comments:report_comment' comment.id %}" 
-                       onclick="console.log('Report link clicked for comment {{ comment.id }}')">
+                    <a href="{% url 'comments:report_comment' comment.id %}">
                         🚩 Report
                     </a>
                 </li>
@@ -228,23 +227,7 @@
         <button class="reply-btn" data-comment-id="{{ comment.id }}"
             data-controls="reply-form-{{comment.id}}">Reply</button>
             
-        <div class="reply-form-container" data-comment-id="{{ comment.id }}" style="display: none;">
-            <form class="reply-form">
-                {% csrf_token %}
-                <div class="input-field">
-                    <textarea name="content" class="materialize-textarea" required></textarea>
-                    <label>Your reply</label>
-                </div>
-                <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                <input type="hidden" name="to_task_id" value="{{ task.id }}">
-                <button type="submit" class="btn waves-effect waves-light blue">
-                    <i class="material-icons left">send</i>Post Reply
-                </button>
-                <button type="button" class="btn waves-effect waves-light grey cancel-reply">
-                    Cancel
-                </button>
-            </form>
-        </div>
+c
         
         <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
             {% include "comments.html" with comments=comment.replies.all is_nested_include=True %}
@@ -261,8 +244,8 @@
 {% if not is_nested_include %}
 <script type="application/json" id="comment-context-data">
 {
-    "object_type": "{% if project %}project{% elif task %}task{% elif need %}need{% else %}unknown{% endif %}",
-    "object_id": {% if project %}{{ project.id }}{% elif task %}{{ task.id }}{% elif need %}{{ need.id }}{% else %}null{% endif %},
+    "object_type": "{% if project %}project{% elif task %}task{% elif need %}need{% elif problem %}problem{% else %}unknown{% endif %}",
+    "object_id": {% if project %}{{ project.id }}{% elif task %}{{ task.id }}{% elif need %}{{ need.id }}{% elif problem %}{{ problem.id }}{% else %}null{% endif %},
     "can_moderate": {% if can_moderate %}true{% else %}false{% endif %}
 }
 </script>
@@ -274,10 +257,8 @@ function getContextData() {
         const contextScript = document.getElementById('comment-context-data');
         if (contextScript) {
             const data = JSON.parse(contextScript.textContent);
-            console.log('Parsed context data:', data);
             return data;
         } else {
-            console.log('No context script found');
             return null;
         }
     } catch (e) {
@@ -287,23 +268,20 @@ function getContextData() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, checking for admin comment filtering...');
     
     // Debug: Check if we can find the filter checkboxes
     const filterCheckboxes = document.querySelectorAll('.comment-filter-checkbox');
-    console.log('Found', filterCheckboxes.length, 'filter checkboxes');
+
     
     // More permissive check - initialize if we have filter checkboxes
     if (filterCheckboxes.length > 0) {
-        console.log('Initializing admin comment filtering...');
+        
         initializeAdminCommentFiltering();
     } else {
-        console.log('No filter checkboxes found - skipping initialization');
     }
 });
 
 function initializeAdminCommentFiltering() {
-    console.log('Starting initializeAdminCommentFiltering...');
     
     const filterCheckboxes = document.querySelectorAll('.comment-filter-checkbox');
     const commentsContainer = document.getElementById('comments-container');
@@ -313,24 +291,12 @@ function initializeAdminCommentFiltering() {
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
     let filtersChanged = false;
     
-    console.log('Filter elements:', {
-        checkboxes: filterCheckboxes.length,
-        container: !!commentsContainer,
-        loading: !!loadingIndicator,
-        count: !!filterCount,
-        applyBtn: !!applyFiltersBtn,
-        clearBtn: !!clearFiltersBtn
-    });
-    
     // Get context from current page
     const currentContext = getCurrentContext();
-    console.log('Current context:', currentContext);
     
     // Add change listeners to checkboxes (just for visual feedback, not auto-apply)
     filterCheckboxes.forEach((checkbox, index) => {
-        console.log('Adding listener to checkbox', index, checkbox.dataset.status);
         checkbox.addEventListener('change', function() {
-            console.log('Checkbox changed:', checkbox.dataset.status, 'checked:', checkbox.checked);
             filtersChanged = true;
             updateApplyButtonState();
         });
@@ -339,7 +305,6 @@ function initializeAdminCommentFiltering() {
     // Add click listener to Apply Filters button
     if (applyFiltersBtn) {
         applyFiltersBtn.addEventListener('click', function() {
-            console.log('Apply Filters button clicked');
             fetchFilteredComments();
             filtersChanged = false;
             updateApplyButtonState();
@@ -349,7 +314,6 @@ function initializeAdminCommentFiltering() {
     // Add click listener to Clear Filters button
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', function() {
-            console.log('Clear Filters button clicked');
             filterCheckboxes.forEach(checkbox => {
                 checkbox.checked = false;
             });
@@ -391,7 +355,6 @@ function initializeAdminCommentFiltering() {
         
         // Fallback to URL parsing
         const pathParts = window.location.pathname.split('/');
-        console.log('URL path parts:', pathParts);
         
         // Handle direct project ID pattern: /123/
         if (pathParts.length >= 2 && pathParts[1] && !isNaN(pathParts[1])) {
@@ -408,14 +371,12 @@ function initializeAdminCommentFiltering() {
         const selected = Array.from(filterCheckboxes)
             .filter(cb => cb.checked)
             .map(cb => cb.dataset.status);
-        console.log('Selected statuses:', selected);
         return selected;
     }
     
     function saveFilterState() {
         const selectedStatuses = getSelectedStatuses();
         localStorage.setItem('adminCommentFilters', JSON.stringify(selectedStatuses));
-        console.log('Saved filter state:', selectedStatuses);
     }
     
     function loadFilterState() {
@@ -423,12 +384,10 @@ function initializeAdminCommentFiltering() {
             const saved = localStorage.getItem('adminCommentFilters');
             if (saved) {
                 const savedStatuses = JSON.parse(saved);
-                console.log('Loading saved filter state:', savedStatuses);
                 filterCheckboxes.forEach(checkbox => {
                     checkbox.checked = savedStatuses.includes(checkbox.dataset.status);
                 });
             } else {
-                console.log('No saved filter state found - setting defaults');
                 // Set default filters (APPROVED and PENDING)
                 filterCheckboxes.forEach(checkbox => {
                     if (checkbox.dataset.status === 'APPROVED' || checkbox.dataset.status === 'PENDING') {
@@ -444,7 +403,6 @@ function initializeAdminCommentFiltering() {
     }
     
     function showLoading() {
-        console.log('Showing loading indicator');
         if (loadingIndicator) loadingIndicator.style.display = 'block';
         if (commentsContainer) commentsContainer.style.opacity = '0.5';
         if (applyFiltersBtn) {
@@ -454,7 +412,6 @@ function initializeAdminCommentFiltering() {
     }
     
     function hideLoading() {
-        console.log('Hiding loading indicator');
         if (loadingIndicator) loadingIndicator.style.display = 'none';
         if (commentsContainer) commentsContainer.style.opacity = '1';
         if (applyFiltersBtn) {
@@ -464,12 +421,10 @@ function initializeAdminCommentFiltering() {
     }
     
     function fetchFilteredComments() {
-        console.log('fetchFilteredComments called');
         
         const selectedStatuses = getSelectedStatuses();
         
         if (selectedStatuses.length === 0) {
-            console.log('No filters selected');
             if (commentsContainer) {
                 commentsContainer.innerHTML = '<p style="color: var(--text2ndary); text-align: center; padding: 20px;">No filters selected - check some boxes and click Apply</p>';
             }
@@ -486,7 +441,6 @@ function initializeAdminCommentFiltering() {
             ...currentContext
         };
         
-        console.log('Sending AJAX request with data:', requestData);
         
         fetch('/comments/ajax/filtered/', {
             method: 'POST',
@@ -497,11 +451,9 @@ function initializeAdminCommentFiltering() {
             body: JSON.stringify(requestData)
         })
         .then(response => {
-            console.log('Response status:', response.status);
             return response.json();
         })
         .then(data => {
-            console.log('Response data:', data);
             hideLoading();
             
             if (data.success) {
@@ -552,14 +504,11 @@ function initializeAdminCommentFiltering() {
                      document.querySelector('input[name="csrfmiddlewaretoken"]') ||
                      document.querySelector('meta[name="csrf-token"]');
         const tokenValue = token ? token.value || token.content : '';
-        console.log('CSRF token found:', !!tokenValue);
         return tokenValue;
     }
     
     // Initial load with current filter state
-    console.log('Setting up initial load...');
     setTimeout(() => {
-        console.log('Running initial fetchFilteredComments');
         fetchFilteredComments();
         filtersChanged = false;
         updateApplyButtonState();

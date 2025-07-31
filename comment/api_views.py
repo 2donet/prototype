@@ -145,7 +145,6 @@ class CommentVoteViewSet(viewsets.ModelViewSet):
 
 
 
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def filtered_comments_api(request):
@@ -155,19 +154,18 @@ def filtered_comments_api(request):
     """
     if not (request.user.is_staff or request.user.is_superuser):
         return Response({'error': 'Permission denied'}, status=403)
-    
+
     try:
         # Get filter parameters from request body
         data = json.loads(request.body) if request.body else {}
-        
-        # Get the filtering parameters
+
         statuses = data.get('statuses', ['APPROVED', 'PENDING'])
         object_type = data.get('object_type')  # 'project', 'task', 'need', etc.
         object_id = data.get('object_id')
-        
+
         # Build the base queryset
         comments = Comment.objects.select_related('user').prefetch_related('replies__user')
-        
+
         # Filter by object type and ID
         if object_type == 'project' and object_id:
             comments = comments.filter(to_project_id=object_id, parent__isnull=True)
@@ -181,49 +179,75 @@ def filtered_comments_api(request):
             comments = comments.filter(to_membership_id=object_id, parent__isnull=True)
         elif object_type == 'report' and object_id:
             comments = comments.filter(to_report_id=object_id, parent__isnull=True)
+        elif object_type == 'problem' and object_id:
+            comments = comments.filter(
+                to_problem_id=object_id,
+                to_task__isnull=True,
+                to_project__isnull=True,
+                to_need__isnull=True,
+                to_decision__isnull=True,
+                to_membership__isnull=True,
+                to_report__isnull=True,
+                parent__isnull=True
+            )
         else:
-            # Default to no parent comments if no specific object
             comments = comments.filter(parent__isnull=True)
-        
+
         # Apply status filtering
         if statuses:
             comments = comments.filter(status__in=statuses)
-        
-        # Get total count before status filtering for stats
+
+        # Get total count before status filtering
         total_comments = Comment.objects.all()
         if object_type == 'project' and object_id:
             total_comments = total_comments.filter(to_project_id=object_id, parent__isnull=True)
         elif object_type == 'task' and object_id:
             total_comments = total_comments.filter(to_task_id=object_id, parent__isnull=True)
-        # ... (similar filters for other object types)
-        
+        elif object_type == 'need' and object_id:
+            total_comments = total_comments.filter(to_need_id=object_id, parent__isnull=True)
+        elif object_type == 'decision' and object_id:
+            total_comments = total_comments.filter(to_decision_id=object_id, parent__isnull=True)
+        elif object_type == 'membership' and object_id:
+            total_comments = total_comments.filter(to_membership_id=object_id, parent__isnull=True)
+        elif object_type == 'report' and object_id:
+            total_comments = total_comments.filter(to_report_id=object_id, parent__isnull=True)
+        elif object_type == 'problem' and object_id:
+            total_comments = total_comments.filter(
+                to_problem_id=object_id,
+                to_task__isnull=True,
+                to_project__isnull=True,
+                to_need__isnull=True,
+                to_decision__isnull=True,
+                to_membership__isnull=True,
+                to_report__isnull=True,
+                parent__isnull=True
+            )
+
         total_count = total_comments.count()
         filtered_count = comments.count()
-        
-        # Add user vote information for each comment
+
+        # Add user vote info
         if request.user.is_authenticated:
             from .models import CommentVote
             user_votes = {
-                vote.comment_id: vote.vote_type 
+                vote.comment_id: vote.vote_type
                 for vote in CommentVote.objects.filter(
                     user=request.user,
                     comment__in=comments
                 )
             }
-            
-            # Add user_vote to each comment
             for comment in comments:
                 comment.user_vote = user_votes.get(comment.id)
-        
-        # Render the comments using the existing template
+
+        # Prepare rendering context
         context = {
             'comments': comments,
             'user': request.user,
             'object_type': object_type,
-            'is_nested_include': True,  # Prevent admin panel from rendering in AJAX responses
+            'is_nested_include': True,
         }
-        
-        # Add object context if available
+
+        # Include object model context if applicable
         if object_type == 'task' and object_id:
             from task.models import Task
             try:
@@ -236,10 +260,15 @@ def filtered_comments_api(request):
                 context['project'] = Project.objects.get(id=object_id)
             except Project.DoesNotExist:
                 pass
-        
-        # Render comments HTML
+        elif object_type == 'problem' and object_id:
+            from problems.models import Problem
+            try:
+                context['problem'] = Problem.objects.get(id=object_id)
+            except Problem.DoesNotExist:
+                pass
+
         comments_html = render_to_string('comments.html', context, request=request)
-        
+
         return Response({
             'success': True,
             'comments_html': comments_html,
@@ -247,7 +276,7 @@ def filtered_comments_api(request):
             'filtered_count': filtered_count,
             'applied_filters': statuses
         })
-        
+
     except json.JSONDecodeError:
         return Response({'error': 'Invalid JSON'}, status=400)
     except Exception as e:
@@ -274,7 +303,6 @@ def filtered_comments_view(request):
         
         # Build the base queryset
         comments = Comment.objects.select_related('user').prefetch_related('replies__user')
-        
         # Filter by object type and ID
         if object_type == 'project' and object_id:
             comments = comments.filter(to_project_id=object_id, parent__isnull=True)
@@ -282,21 +310,62 @@ def filtered_comments_view(request):
             comments = comments.filter(to_task_id=object_id, parent__isnull=True)
         elif object_type == 'need' and object_id:
             comments = comments.filter(to_need_id=object_id, parent__isnull=True)
+        elif object_type == 'decision' and object_id:
+            comments = comments.filter(to_decision_id=object_id, parent__isnull=True)
+        elif object_type == 'membership' and object_id:
+            comments = comments.filter(to_membership_id=object_id, parent__isnull=True)
+        elif object_type == 'report' and object_id:
+            comments = comments.filter(to_report_id=object_id, parent__isnull=True)
+        # NEW: Handle problem comments
+        elif object_type == 'problem' and object_id:
+            comments = comments.filter(
+                to_problem_id=object_id,
+                to_task__isnull=True,
+                to_project__isnull=True,
+                to_need__isnull=True,
+                to_decision__isnull=True,
+                to_membership__isnull=True,
+                to_report__isnull=True,
+                parent__isnull=True
+            )
         else:
+            # Default to no parent comments if no specific object
             comments = comments.filter(parent__isnull=True)
+
+
+            
         
         # Apply status filtering
         if statuses:
             comments = comments.filter(status__in=statuses)
         
-        total_count = Comment.objects.filter(parent__isnull=True).count()
+        # Get total count before status filtering for stats
+        total_comments = Comment.objects.all()
         if object_type == 'project' and object_id:
-            total_count = Comment.objects.filter(to_project_id=object_id, parent__isnull=True).count()
+            total_comments = total_comments.filter(to_project_id=object_id, parent__isnull=True)
         elif object_type == 'task' and object_id:
-            total_count = Comment.objects.filter(to_task_id=object_id, parent__isnull=True).count()
+            total_comments = total_comments.filter(to_task_id=object_id, parent__isnull=True)
         elif object_type == 'need' and object_id:
-            total_count = Comment.objects.filter(to_need_id=object_id, parent__isnull=True).count()
-        
+            total_comments = total_comments.filter(to_need_id=object_id, parent__isnull=True)
+        # NEW: Include problem comments in total count
+        elif object_type == 'problem' and object_id:
+            total_comments = total_comments.filter(
+                to_problem_id=object_id,
+                to_task__isnull=True,
+                to_project__isnull=True,
+                to_need__isnull=True,
+                to_decision__isnull=True,
+                to_membership__isnull=True,
+                to_report__isnull=True,
+                parent__isnull=True
+            )
+            
+
+
+
+
+        comments = comments
+        total_count = total_comments.count()
         filtered_count = comments.count()
         
         # Add user vote information
@@ -327,89 +396,24 @@ def filtered_comments_view(request):
                 context['task'] = Task.objects.get(id=object_id)
             except Task.DoesNotExist:
                 pass
-        
-        comments_html = render_to_string('comments.html', context, request=request)
-        
-        return JsonResponse({
-            'success': True,
-            'comments_html': comments_html,
-            'total_count': total_count,
-            'filtered_count': filtered_count,
-            'applied_filters': statuses
-        })
-        
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-    """
-    Django view version for non-DRF usage
-    """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
-    try:
-        # Get filter parameters from request body
-        data = json.loads(request.body) if request.body else {}
-        
-        # Get the filtering parameters
-        statuses = data.get('statuses', ['APPROVED', 'PENDING'])
-        object_type = data.get('object_type')
-        object_id = data.get('object_id')
-        
-        # Build the base queryset
-        comments = Comment.objects.select_related('user').prefetch_related('replies__user')
-        
-        # Filter by object type and ID
-        if object_type == 'project' and object_id:
-            comments = comments.filter(to_project_id=object_id, parent__isnull=True)
-        elif object_type == 'task' and object_id:
-            comments = comments.filter(to_task_id=object_id, parent__isnull=True)
-        elif object_type == 'need' and object_id:
-            comments = comments.filter(to_need_id=object_id, parent__isnull=True)
-        else:
-            comments = comments.filter(parent__isnull=True)
-        
-        # Apply status filtering
-        if statuses:
-            comments = comments.filter(status__in=statuses)
-        
-        total_count = Comment.objects.filter(parent__isnull=True).count()
-        if object_type == 'project' and object_id:
-            total_count = Comment.objects.filter(to_project_id=object_id, parent__isnull=True).count()
-        elif object_type == 'task' and object_id:
-            total_count = Comment.objects.filter(to_task_id=object_id, parent__isnull=True).count()
-        elif object_type == 'need' and object_id:
-            total_count = Comment.objects.filter(to_need_id=object_id, parent__isnull=True).count()
-        
-        filtered_count = comments.count()
-        
-        # Add user vote information
-        if request.user.is_authenticated:
-            from .models import CommentVote
-            user_votes = {
-                vote.comment_id: vote.vote_type 
-                for vote in CommentVote.objects.filter(
-                    user=request.user,
-                    comment__in=comments
-                )
-            }
-            
-            for comment in comments:
-                comment.user_vote = user_votes.get(comment.id)
-        
-        # Render the comments
-        context = {
-            'comments': comments,
-            'user': request.user,
-        }
-        
-        # Add specific object context
-        if object_type == 'task' and object_id:
-            from task.models import Task
+        elif object_type == 'project' and object_id:
+            from project.models import Project
             try:
-                context['task'] = Task.objects.get(id=object_id)
-            except Task.DoesNotExist:
+                context['project'] = Project.objects.get(id=object_id)
+            except Project.DoesNotExist:
+                pass
+        elif object_type == 'need' and object_id:
+            from need.models import Need
+            try:
+                context['need'] = Need.objects.get(id=object_id)
+            except Need.DoesNotExist:
+                pass
+        # NEW: Add problem context
+        elif object_type == 'problem' and object_id:
+            from problems.models import Problem
+            try:
+                context['problem'] = Problem.objects.get(id=object_id)
+            except Problem.DoesNotExist:
                 pass
         
         comments_html = render_to_string('comments.html', context, request=request)

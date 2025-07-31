@@ -126,9 +126,13 @@ def comment_list_view(request, object_type, object_id):
         comments = Comment.objects.filter(to_task=object_id, parent__isnull=True).select_related("user").prefetch_related("replies__user")
     elif object_type == "need":
         comments = Comment.objects.filter(to_need=object_id, parent__isnull=True).select_related("user").prefetch_related("replies__user")
+    # NEW: Handle problem comments
+    elif object_type == "problem":
+        comments = Comment.objects.filter(to_problem=object_id, parent__isnull=True).select_related("user").prefetch_related("replies__user")
     else:
         return JsonResponse({"error": "Invalid object type"}, status=400)
     return render(request, "comments.html", {"comments": comments})
+
 
 
 def single_comment_view(request, comment_id):
@@ -228,6 +232,9 @@ def add_comment(request):
     to_project_id = request.POST.get("to_project_id")
     to_task_id = request.POST.get("to_task_id")
     to_need_id = request.POST.get("to_need_id")
+    # NEW: Handle problem comments
+    to_problem_id = request.POST.get("to_problem_id")
+    
     if not content:
         return JsonResponse({
             "status": "error",
@@ -241,6 +248,9 @@ def add_comment(request):
             to_need_id = to_need_id or parent_comment.to_need_id
             to_task_id = to_task_id or parent_comment.to_task_id
             to_project_id = to_project_id or parent_comment.to_project_id
+            # NEW: Inherit problem ID from parent
+            to_problem_id = to_problem_id or parent_comment.to_problem_id
+        
         comment = Comment.objects.create(
             user=request.user if request.user.is_authenticated else None,
             content=content,
@@ -248,6 +258,8 @@ def add_comment(request):
             to_project_id=to_project_id,
             to_task_id=to_task_id,
             to_need_id=to_need_id,
+            # NEW: Set problem relationship
+            to_problem_id=to_problem_id,
             author_name=request.POST.get("author_name") if not request.user.is_authenticated else None,
             author_email=request.POST.get("author_email") if not request.user.is_authenticated else None,
             ip_address=get_client_ip(request),
@@ -268,6 +280,8 @@ def add_comment(request):
                 "to_need_id": comment.to_need_id,
                 "to_project_id": comment.to_project_id,
                 "to_task_id": comment.to_task_id,
+                # NEW: Include problem ID in response
+                "to_problem_id": comment.to_problem_id,
                 "user_vote": None,
             }
         }

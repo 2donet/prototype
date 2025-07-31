@@ -254,7 +254,7 @@
                     
                     <div id="comments-container">
                         {% if comments %}
-                            {% include "comments.html" with comments=comments %}
+                            {% include "comments.html" with comments=comments problem=problem can_moderate=can_moderate %}
                         {% else %}
                             <div class="center-align" style="padding: 20px;">
                                 <i class="material-icons large grey-text">forum</i>

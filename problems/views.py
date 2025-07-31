@@ -119,9 +119,9 @@ def problem_detail(request, problem_id):
         return redirect('project:index')
     
     # Get comments with permission filtering
-    comment_filter = Q(to_problem=problem, parent__isnull=True)
+    comment_filter = Q(to_problem=problem) & Q(parent__isnull=True)
     comment_filter &= ~Q(status=CommentStatus.THREAD_DELETED) & ~Q(status=CommentStatus.REJECTED)
-    
+    comment_filter &= Q(to_task__isnull=True) & Q(to_project__isnull=True) & Q(to_need__isnull=True) 
     # Filter comments based on user permissions
     parent_obj = problem.get_related_object()
     can_moderate = False
@@ -137,8 +137,7 @@ def problem_detail(request, problem_id):
         Prefetch(
             'replies',
             queryset=Comment.objects.filter(
-                Q(status=CommentStatus.APPROVED) if not can_moderate else Q()
-            ).select_related('user', 'user__profile')
+                Q(status=CommentStatus.APPROVED))
         ),
         'votes'
     )

@@ -145,6 +145,11 @@ class Comment(models.Model):
             return self.to_task.to_project.user_can_moderate_comments(user)
         if self.to_need and self.to_need.to_project:
             return self.to_need.to_project.user_can_moderate_comments(user)
+        # NEW: Problem moderation
+        if self.to_problem:
+            parent_obj = self.to_problem.get_related_object()
+            if parent_obj and hasattr(parent_obj, 'user_can_moderate_comments'):
+                return parent_obj.user_can_moderate_comments(user)
         return False
 
     def soft_delete_thread(self, moderator=None, reason=None):

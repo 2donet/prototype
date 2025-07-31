@@ -1,4 +1,4 @@
-console.log('Comments script loaded');
+console.log('Comments script loaded!');
 document.addEventListener('DOMContentLoaded', function() {
     // Helper function to get CSRF token
     function getCSRFToken() {
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Success - add new comment to DOM
                 const commentHtml = createCommentHtml(data.comment);
                 let commentsContainer = document.getElementById('comments-container');
-                
+
                 // If no container exists yet, create one
                 if (!commentsContainer) {
                     // Look for existing comments or create a new container
@@ -274,12 +274,16 @@ document.addEventListener('click', (e) => {
         return container;
     }
 
-   function createCommentHtml(commentData, isReply = false) {
+function createCommentHtml(commentData, isReply = false) {
     // Get CSRF token
     const csrfToken = getCSRFToken();
     
     // Format the time as "just now" for new comments
     const timeDisplay = 'just now';
+    
+    // Get the problem ID from the current page's form
+    const problemIdInput = document.querySelector('input[name="to_problem_id"]');
+    const problemId = problemIdInput ? problemIdInput.value : null;
     
     // Build the HTML matching the structure in comments.html
     return `
@@ -300,8 +304,6 @@ document.addEventListener('click', (e) => {
                             <i>👎</i>
                         </a>
                     </div>
-                    
-
                     
                     <a class='dropdown-trigger btn-flat' href='#' data-target='actions-${commentData.id}'>
                         <img src="/static/icons/menu.svg" alt="actions">
@@ -334,9 +336,7 @@ document.addEventListener('click', (e) => {
                         <label>Your reply</label>
                     </div>
                     <input type="hidden" name="parent_id" value="${commentData.id}">
-                    ${commentData.to_task_id ? `<input type="hidden" name="to_task_id" value="${commentData.to_task_id}">` : ''}
-                    ${commentData.to_project_id ? `<input type="hidden" name="to_project_id" value="${commentData.to_project_id}">` : ''}
-                    ${commentData.to_need_id ? `<input type="hidden" name="to_need_id" value="${commentData.to_need_id}">` : ''}
+                    <input type="hidden" name="to_problem_id" value="${commentData.to_problem_id}">
                     <button type="submit" class="btn waves-effect waves-light blue">
                         <i class="material-icons left">send</i>Post Reply
                     </button>
@@ -350,7 +350,6 @@ document.addEventListener('click', (e) => {
         </div>
     `;
 }
-
     async function loadReplies(commentId, container) {
         try {
             const response = await fetch(`/comments/load-replies/${commentId}/`);
