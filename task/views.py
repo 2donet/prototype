@@ -398,32 +398,41 @@ class CreateTaskView(CreateView):
         """Pre-populate form with URL parameters"""
         initial = super().get_initial()
         
-        # Pre-populate skills from URL parameter
+        # Pre-populate skills from URL parameter (e.g., ?skill=Python)
         skill_param = self.request.GET.get('skill')
         if skill_param:
-            initial['skills_input'] = json.dumps([skill_param])
+            # Format as object for consistency
+            initial['skills_input'] = json.dumps([{'name': skill_param}])
+            print(f"CREATE INIT: Pre-populating with skill: {skill_param}")
         
         return initial
 
     def form_valid(self, form):
         """Handle form submission and skills processing"""
+        print(f"=== CREATE TASK START ===")
+        
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
         
         # Handle skills from chips input
         skills = form.cleaned_data.get('skills_input', [])
-        print(f"DEBUG: Creating task with skills: {skills}")  # Debug line
+        skill_names = [s.name for s in skills]
+        print(f"CREATE: Setting skills: {skill_names}")
         
         if skills:
             self.object.skills.set(skills)
-            print(f"DEBUG: Skills set successfully: {[s.name for s in self.object.skills.all()]}")
+            print(f"CREATE: Skills set successfully: {[s.name for s in self.object.skills.all()]}")
         
-        messages.success(self.request, "Task created successfully!")
+        messages.success(
+            self.request, 
+            f"Task created successfully! Skills: {', '.join(skill_names) if skill_names else 'None'}"
+        )
+        
+        print(f"=== CREATE TASK END ===")
         return response
 
     def get_success_url(self):
         return reverse('task:task_detail', kwargs={'task_id': self.object.id})
-
 
 class UpdateTaskView(UpdateView):
     model = Task
@@ -442,23 +451,45 @@ class UpdateTaskView(UpdateView):
         return super().get_queryset().filter(created_by=self.request.user)
 
     def form_valid(self, form):
-        """Handle form submission and skills processing"""
+        """Handle form submission - trust the form completely for skills"""
+        print(f"\n=== UPDATE TASK {self.object.id} START ===")
+        
+        # Get existing skills for debugging
+        existing_skills = [s.name for s in self.object.skills.all()]
+        print(f"BEFORE UPDATE: Task has skills: {existing_skills}")
+        
+        # Process the form first (this updates all fields except skills)
         response = super().form_valid(form)
         
-        # Handle skills from chips input
-        skills = form.cleaned_data.get('skills_input', [])
+        # Handle skills from form - the form should contain ALL skills the user wants
+        form_skills = form.cleaned_data.get('skills_input', [])
+        form_skill_names = [s.name for s in form_skills]
+        print(f"FORM PROVIDED: {form_skill_names}")
         
-        if skills:
-            # Completely replace existing skills with new ones
-            self.object.skills.set(skills)
+        # Simply set the skills to whatever the form provided
+        # The form initialization ensures it contains ALL existing skills initially
+        # Any additions/removals are reflected in what the form sends back
+        if form_skills is not None:
+            self.object.skills.set(form_skills)
+            print(f"SKILLS SET TO: {[s.name for s in self.object.skills.all()]}")
         else:
-            # Clear skills if none provided
-            self.object.skills.clear()
+            # If form_skills is None (shouldn't happen), don't change skills
+            print("WARNING: form_skills was None, not changing skills")
         
-        messages.success(self.request, "Task updated successfully!")
+        # Verify final result
+        final_skills = [s.name for s in self.object.skills.all()]
+        print(f"FINAL RESULT: {final_skills}")
+        print(f"=== UPDATE TASK {self.object.id} END ===\n")
+        
+        messages.success(
+            self.request, 
+            f"Task updated successfully! Skills: {', '.join(final_skills) if final_skills else 'None'}"
+        )
         return response
+
     def get_success_url(self):
         return reverse('task:task_detail', kwargs={'task_id': self.object.id})
+
 def api_skills_autocomplete(request):
     """
     AJAX endpoint for skills autocomplete in filters.

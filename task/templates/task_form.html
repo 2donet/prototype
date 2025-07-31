@@ -203,30 +203,12 @@
                                     </h6>
                                     <p class="skills-description">Enter the skills required to complete this task (maximum 20)</p>
                                     
-
-                                    
                                     <!-- Hidden input for form submission -->
                                     {{ form.skills_input }}
                                     
-                                    <!-- Manual skills display for existing task -->
-                                    {% if form.instance.pk and form.instance.skills.exists %}
-                                    <div class="current-skills-display">
-                                        <label>Current Skills:</label>
-                                        <div class="current-skills-chips">
-                                            {% for skill in form.instance.skills.all %}
-                                            <span class="chip" data-skill="{{ skill.name }}">
-                                                {{ skill.name }}
-                                                <i class="material-icons close">close</i>
-                                            </span>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                    {% endif %}
-                                    
                                     <!-- Chips input for skills -->
                                     <div class="input-field">
-                                        <div class="chips chips-autocomplete" id="skills-input"></div>
-                                        <label>Enter skills and press Enter</label>
+                                        <div class="chips chips-autocomplete" id="skills-chips"></div>
                                         {% if form.skills_input.help_text %}
                                             <span class="helper-text">{{ form.skills_input.help_text }}</span>
                                         {% endif %}
@@ -240,10 +222,10 @@
                                     </div>
                                     
                                     <blockquote>
-                                        <i>Write each skill/tag, and press enter e.g.:</i>
-                                        <code>Python</code> press <kbd>enter</kbd> 
-                                        <code>Django</code> press <kbd>enter</kbd>
-                                        <code>JavaScript</code> press <kbd>enter</kbd>
+                                        <i>Type each skill and press Enter, e.g.:</i>
+                                        <code>Python</code> press <kbd>Enter</kbd> 
+                                        <code>Django</code> press <kbd>Enter</kbd>
+                                        <code>JavaScript</code> press <kbd>Enter</kbd>
                                     </blockquote>
                                 </div>
                             </div>
@@ -369,7 +351,7 @@
 .input-field input,
 .input-field textarea {
     color: var(--text);
-    border-bottom: 1px solid var(--highlightmenu);
+
 }
 
 .input-field input:focus,
@@ -496,60 +478,8 @@
     font-size: 12px;
 }
 
-
-/* Current skills display */
-.current-skills-display {
-    margin-bottom: 15px;
-    padding: 10px;
-    background: var(--bg-color2);
-    border-radius: 4px;
-    border: 1px solid var(--highlightmenu);
-}
-
-.current-skills-display label {
-    color: var(--highlight);
-    font-size: 12px;
-    font-weight: 500;
-    display: block;
-    margin-bottom: 8px;
-}
-
-.current-skills-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-}
-
-.current-skills-chips .chip {
-    background-color: var(--highlight);
-    color: var(--bg-color);
-    font-size: 12px;
-    padding: 5px 10px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.current-skills-chips .chip:hover {
-    background-color: var(--highlight-dark);
-}
-
-.current-skills-chips .chip .close {
-    font-size: 14px;
-    cursor: pointer;
-    margin-left: 5px;
-}
-
-.current-skills-chips .chip .close:hover {
-    color: var(--danger);
-}
-
 /* Chips input styling for skills */
 .chips {
-    border-bottom: 1px solid var(--highlightmenu);
     min-height: 45px;
     padding-bottom: 5px;
 }
@@ -584,9 +514,7 @@
     color: var(--text);
 }
 
-.chips:focus-within {
-    border-bottom: 2px solid var(--highlight);
-}
+
 
 /* Skills section card improvements */
 .skills-section-card blockquote {
@@ -631,380 +559,683 @@
         align-self: center;
     }
 }
+
+.chips-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bgpopup, white);
+    border: 1px solid var(--highlightmenu, #ccc);
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 0 0 8px 8px;
+}
+
+.autocomplete-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--highlightmenu, #eee);
+    color: var(--text, #333);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover {
+    background-color: var(--highlightmenu, #e0e0e0);
+}
+
+.autocomplete-item.selected {
+    background-color: var(--highlight, #2196f3);
+    color: var(--bg-color, white);
+}
+
+.autocomplete-item .skill-name {
+    font-weight: 500;
+    color: inherit;
+}
+
+.autocomplete-item .task-count {
+    font-size: 12px;
+    color: var(--text2ndary, #666);
+    background: var(--bg-color2, #f5f5f5);
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.autocomplete-item.selected .task-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--bg-color, white);
+}
+
+/* Loading state for autocomplete */
+.autocomplete-loading {
+    padding: 15px;
+    text-align: center;
+    color: var(--text2ndary, #666);
+    font-style: italic;
+}
+
+.autocomplete-no-results {
+    padding: 15px;
+    text-align: center;
+    color: var(--text2ndary, #666);
+    font-style: italic;
+}
+
+/* Enhanced chips container for better autocomplete integration */
+.chips-container {
+    min-height: 45px;
+    padding: 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    transition: border-bottom-color 0.2s ease;
+    border-radius: 4px 4px 0 0;
+}
+
+
+
+/* Enhanced input styling */
+.chips-input {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    color: var(--text) !important;
+    font-size: 14px !important;
+    padding: 8px 4px !important;
+    min-width: 120px;
+    flex: 1;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.chips-input::placeholder {
+    color: var(--text2ndary) !important;
+    opacity: 0.7;
+}
+
+.chips-input:focus {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Custom scrollbar for autocomplete dropdown */
+.autocomplete-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-color2, #f1f1f1);
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: var(--highlightmenu, #ccc);
+    border-radius: 3px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--highlight, #2196f3);
+}
+
+/* Animation for dropdown appearance */
+@keyframes dropdownAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.autocomplete-dropdown[style*="display: block"] {
+    animation: dropdownAppear 0.2s ease-out;
+}
+
+/* Keyboard navigation indicator */
+.autocomplete-item.keyboard-selected {
+    background-color: var(--highlight, #2196f3);
+    color: var(--bg-color, white);
+}
+
+.autocomplete-item.keyboard-selected .task-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--bg-color, white);
+}
+
+/* Highlight matching text in autocomplete */
+.autocomplete-item .highlight {
+    background-color: var(--highlight, #2196f3);
+    color: var(--bg-color, white);
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* Responsive autocomplete */
+@media only screen and (max-width: 600px) {
+    .autocomplete-dropdown {
+        max-height: 150px;
+    }
+    
+    .autocomplete-item {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    .autocomplete-item .task-count {
+        font-size: 11px;
+        min-width: 50px;
+    }
+}
+
+/* Dark theme specific adjustments */
+@media (prefers-color-scheme: dark) {
+    .autocomplete-dropdown {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    
+    .autocomplete-item .task-count {
+        background: var(--bg-color3, #2a2a2a);
+    }
+}
 </style>
 {% endblock %}
 
 {% block extra_js %}
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Task Form Script Loading...');
+<script>// CLEAN SINGLE AUTOCOMPLETE - No conflicts!
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 CLEAN SINGLE Autocomplete Loading...');
     
-    // Check if Materialize is properly loaded
-    if (typeof M === 'undefined') {
-        console.error('❌ Materialize CSS library not loaded!');
-        alert('Error: Materialize CSS library not loaded. Please check your template.');
+    // Prevent multiple initializations
+    if (window.skillsChipsInitialized) {
+        console.log('⚠️ Skills chips already initialized, skipping...');
         return;
     }
+    window.skillsChipsInitialized = true;
     
-    console.log('✅ Materialize loaded, proceeding with initialization');
+    // Wait for other scripts, then initialize
+    setTimeout(function() {
+        initializeCleanSkillsChips();
+    }, 150);
     
-    // Initialize Materialize components with proper error handling
-    try {
-        // Initialize select elements
-        var selects = document.querySelectorAll('select');
-        if (selects.length > 0) {
-            M.FormSelect.init(selects);
-            console.log(`✅ Initialized ${selects.length} select elements`);
+    function initializeCleanSkillsChips() {
+        console.log('=== CLEAN SKILLS CHIPS INITIALIZATION ===');
+        
+        const skillsChipsElement = document.getElementById('skills-chips');
+        const hiddenSkillsInput = document.getElementById('{{ form.skills_input.id_for_label }}');
+        
+        if (!skillsChipsElement || !hiddenSkillsInput) {
+            console.log('❌ Missing required elements');
+            return;
         }
         
-        // Initialize textareas - FIXED VERSION
-        var textareas = document.querySelectorAll('textarea');
-        if (textareas.length > 0) {
-            // Use forEach to call on each textarea individually
-            textareas.forEach(function(textarea) {
-                try {
-                    M.textareaAutoResize(textarea);
-                } catch (textareaError) {
-                    console.warn('⚠️ TextareaAutoResize failed for element:', textarea, textareaError);
-                    // Continue without breaking the whole script
-                }
-            });
-            console.log(`✅ Initialized ${textareas.length} textarea elements`);
-        }
-        
-    } catch (materializeError) {
-        console.error('❌ Materialize component initialization failed:', materializeError);
-        // Continue with skills initialization even if Materialize components fail
-    }
-    
-    // Skills functionality with enhanced error handling
-    console.log('🔧 Initializing skills functionality...');
-    
-    const skillsInput = document.getElementById('skills-input');
-    const skillsHiddenInput = document.getElementById('{{ form.skills_input.id_for_label }}');
-    
-    console.log('=== SKILLS INITIALIZATION DEBUG ===');
-    console.log('Skills input element:', skillsInput);
-    console.log('Hidden input element:', skillsHiddenInput);
-    console.log('Hidden input ID:', '{{ form.skills_input.id_for_label }}');
-    
-    if (!skillsInput) {
-        console.error('❌ Skills input element (#skills-input) not found!');
-        return;
-    }
-    
-    if (!skillsHiddenInput) {
-        console.error('❌ Hidden input element not found!');
-        return;
-    }
-    
-    console.log('Hidden input initial value:', skillsHiddenInput.value);
-    console.log('Form initial value:', '{{ form.skills_input.initial|default:"EMPTY" }}');
-    
-    // Get existing skills with multiple fallback methods
-    let existingSkills = [];
-    
-    // Method 1: From hidden input current value
-    if (skillsHiddenInput.value && skillsHiddenInput.value.trim() !== '') {
+        // COMPLETELY DESTROY any existing Materialize chips
         try {
-            const parsed = JSON.parse(skillsHiddenInput.value);
-            if (Array.isArray(parsed)) {
-                existingSkills = parsed;
-                console.log('✅ Got skills from hidden input value:', existingSkills);
+            const existingInstance = M.Chips.getInstance(skillsChipsElement);
+            if (existingInstance) {
+                console.log('🧹 Destroying existing Materialize chips...');
+                existingInstance.destroy();
             }
         } catch (e) {
-            console.log('⚠️ Failed to parse hidden input value as JSON:', e);
-        }
-    }
-    
-    // Method 2: From Django template (fallback)
-    if (existingSkills.length === 0) {
-        {% if form.instance.pk and form.instance.skills.exists %}
-        existingSkills = [
-            {% for skill in form.instance.skills.all %}
-            "{{ skill.name|escapejs }}"{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ];
-        console.log('✅ Got skills from Django template:', existingSkills);
-        
-        // Set the hidden input with these skills
-        skillsHiddenInput.value = JSON.stringify(existingSkills);
-        console.log('✅ Set hidden input to:', skillsHiddenInput.value);
-        {% else %}
-        console.log('ℹ️ No existing skills found in Django template');
-        {% endif %}
-    }
-    
-    // Ensure it's an array
-    if (!Array.isArray(existingSkills)) {
-        console.log('⚠️ existingSkills is not an array, resetting to empty array');
-        existingSkills = [];
-    }
-    
-    console.log('📋 Final existing skills for chips:', existingSkills);
-    
-    // Convert to chips format
-    const chipsData = existingSkills.map(skill => ({ tag: skill }));
-    console.log('🔧 Chips data prepared:', chipsData);
-    
-    // Initialize chips with comprehensive error handling
-    let chipsInstance = null;
-    
-    try {
-        // Check if M.Chips is available
-        if (!M.Chips) {
-            throw new Error('M.Chips is not available in Materialize library');
+            console.log('No existing Materialize instance to destroy');
         }
         
-        chipsInstance = M.Chips.init(skillsInput, {
-            placeholder: 'Enter a skill',
-            secondaryPlaceholder: '+Skill',
-            data: chipsData,
-            onChipAdd: function() {
-                console.log('📝 Chip added, updating hidden input');
-                updateSkillsInput();
-            },
-            onChipDelete: function() {
-                console.log('🗑️ Chip deleted, updating hidden input');
-                updateSkillsInput();
+        // Parse existing skills
+        let existingSkills = [];
+        if (hiddenSkillsInput.value && hiddenSkillsInput.value.trim() !== '') {
+            try {
+                const parsed = JSON.parse(hiddenSkillsInput.value);
+                if (Array.isArray(parsed)) {
+                    existingSkills = parsed.map(skill => {
+                        return typeof skill === 'string' ? skill : (skill && skill.name ? skill.name : null);
+                    }).filter(skill => skill !== null);
+                }
+                console.log('✅ Extracted skills:', existingSkills);
+            } catch (e) {
+                console.log('❌ Failed to parse skills:', e);
             }
-        });
-        
-        console.log('✅ Chips initialized successfully!');
-        console.log('📊 Chips instance:', chipsInstance);
-        console.log('📊 Initial chips data:', chipsInstance.chipsData);
-        console.log('📊 Expected vs Actual chips:', {
-            expected: chipsData.length,
-            actual: chipsInstance.chipsData.length
-        });
-        
-    } catch (chipsError) {
-        console.error('❌ Failed to initialize chips:', chipsError);
-        console.log('🔄 Falling back to simple input method');
-        
-        // Fallback: Show simple text input
-        setupSimpleFallback();
-        return;
-    }
-    
-    // Function to update hidden input with chips data
-    function updateSkillsInput() {
-        try {
-            const chips = M.Chips.getInstance(skillsInput);
-            if (chips && chips.chipsData) {
-                const skillNames = chips.chipsData.map(chip => chip.tag);
-                const skillsJson = JSON.stringify(skillNames);
-                skillsHiddenInput.value = skillsJson;
-                console.log('💾 Updated hidden input to:', skillsJson);
-                return skillNames;
-            } else {
-                console.log('⚠️ No chips instance or chipsData available for update');
-                return [];
-            }
-        } catch (updateError) {
-            console.error('❌ Error updating skills input:', updateError);
-            return [];
         }
-    }
-    
-    // Simple fallback function
-    function setupSimpleFallback() {
-        console.log('🔄 Setting up simple fallback input');
         
-        // Create a simple text input as fallback
-        const fallbackContainer = document.createElement('div');
-        fallbackContainer.innerHTML = `
-            <div style="background: #ffecb3; padding: 10px; margin: 10px 0; border-radius: 4px;">
-                <strong>⚠️ Chips input failed - using fallback method</strong>
-                <br><small>Enter skills separated by commas (e.g., Python, Django, JavaScript)</small>
-            </div>
-            <div class="input-field">
-                <input type="text" id="fallback-skills-input" value="${existingSkills.join(', ')}" placeholder="Enter skills separated by commas">
-                <label for="fallback-skills-input" class="active">Skills (comma-separated)</label>
-            </div>
+        // COMPLETELY CLEAR and rebuild
+        skillsChipsElement.innerHTML = '';
+        skillsChipsElement.className = 'input-field'; // Reset classes
+        
+        // Create our custom structure
+        const wrapper = document.createElement('div');
+        wrapper.className = 'skills-chips-wrapper';
+        wrapper.style.position = 'relative';
+        
+        const container = document.createElement('div');
+        container.className = 'skills-chips-container';
+        container.style.cssText = `
+            border-bottom: 1px solid var(--highlightmenu, #ccc);
+            min-height: 45px;
+            padding: 8px 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            transition: border-bottom-color 0.2s ease;
         `;
         
-        // Insert fallback after the chips input
-        skillsInput.parentNode.insertBefore(fallbackContainer, skillsInput.nextSibling);
+        // Add existing skills
+        existingSkills.forEach(skillName => {
+            const chip = createSkillChip(skillName);
+            container.appendChild(chip);
+        });
         
-        // Hide the original chips input
-        skillsInput.style.display = 'none';
+        // Create input
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Type skill name...';
+        input.className = 'skills-input';
+        input.style.cssText = `
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text, #333);
+            font-size: 14px;
+            padding: 8px 4px;
+            min-width: 150px;
+            flex: 1;
+        `;
         
-        // Setup fallback input handler
-        const fallbackInput = document.getElementById('fallback-skills-input');
-        if (fallbackInput) {
-            fallbackInput.addEventListener('input', function() {
-                const skills = this.value.split(',').map(s => s.trim()).filter(s => s);
-                skillsHiddenInput.value = JSON.stringify(skills);
-                console.log('💾 Fallback input updated hidden field:', skills);
+        // Create SINGLE autocomplete dropdown
+        const dropdown = document.createElement('div');
+        dropdown.className = 'skills-autocomplete-dropdown';
+        dropdown.style.cssText = `
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bgpopup, white);
+            border: 1px solid var(--highlightmenu, #ccc);
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            border-radius: 0 0 6px 6px;
+        `;
+        
+        let suggestions = [];
+        let selectedIndex = -1;
+        let searchTimeout = null;
+        
+        // Input handlers
+        input.addEventListener('input', function(e) {
+            const query = this.value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length >= 1) {
+                searchTimeout = setTimeout(() => {
+                    fetchSuggestions(query);
+                }, 250);
+            } else {
+                hideDropdown();
+            }
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                
+                if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+                    addSkill(suggestions[selectedIndex].name);
+                } else if (this.value.trim()) {
+                    addSkill(this.value.trim());
+                }
+                
+                this.value = '';
+                hideDropdown();
+                
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (suggestions.length > 0) {
+                    selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
+                    updateSelection();
+                }
+                
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (suggestions.length > 0) {
+                    selectedIndex = Math.max(selectedIndex - 1, -1);
+                    updateSelection();
+                }
+                
+            } else if (e.key === 'Escape') {
+                hideDropdown();
+                this.blur();
+            }
+        });
+        
+        input.addEventListener('focus', function() {
+            if (this.value.trim().length >= 1) {
+                fetchSuggestions(this.value.trim());
+            }
+        });
+        
+        // Container focus styling
+        container.addEventListener('focusin', function() {
+            this.style.borderBottomColor = 'var(--highlight, #2196f3)';
+            this.style.borderBottomWidth = '2px';
+        });
+        
+        container.addEventListener('focusout', function() {
+            setTimeout(() => {
+                if (!this.contains(document.activeElement)) {
+                    this.style.borderBottomColor = 'var(--highlightmenu, #ccc)';
+                    this.style.borderBottomWidth = '1px';
+                    hideDropdown();
+                }
+            }, 100);
+        });
+        
+        // Fetch suggestions
+        function fetchSuggestions(query) {
+            console.log('🔍 Fetching suggestions for:', query);
+            
+            fetch(`/api/skills-autocomplete/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.skills && data.skills.length > 0) {
+                        // Filter out existing skills
+                        const existingNames = getCurrentSkillNames().map(name => name.toLowerCase());
+                        suggestions = data.skills.filter(skill => 
+                            !existingNames.includes(skill.name.toLowerCase())
+                        );
+                        
+                        showDropdown();
+                    } else {
+                        hideDropdown();
+                    }
+                })
+                .catch(error => {
+                    console.log('⚠️ Autocomplete error:', error);
+                    hideDropdown();
+                });
+        }
+        
+        // Show dropdown
+        function showDropdown() {
+            if (suggestions.length === 0) {
+                hideDropdown();
+                return;
+            }
+            
+            dropdown.innerHTML = '';
+            selectedIndex = -1;
+            
+            suggestions.forEach((skill, index) => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-suggestion';
+                item.style.cssText = `
+                    padding: 12px 15px;
+                    cursor: pointer;
+                    border-bottom: 1px solid var(--highlightmenu, #eee);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    transition: background-color 0.2s;
+                `;
+                
+                const name = document.createElement('span');
+                name.textContent = skill.name;
+                name.style.fontWeight = '500';
+                name.style.color = 'var(--text, #333)';
+                
+                const count = document.createElement('span');
+                count.textContent = `${skill.task_count || 0} tasks`;
+                count.style.cssText = `
+                    font-size: 12px;
+                    color: var(--text2ndary, #666);
+                    background: var(--bg-color2, #f5f5f5);
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                `;
+                
+                item.appendChild(name);
+                item.appendChild(count);
+                
+                // Click handler
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addSkill(skill.name);
+                    input.value = '';
+                    hideDropdown();
+                    input.focus();
+                });
+                
+                // Hover handler
+                item.addEventListener('mouseenter', function() {
+                    selectedIndex = index;
+                    updateSelection();
+                });
+                
+                dropdown.appendChild(item);
             });
             
-            // Trigger initial update
-            fallbackInput.dispatchEvent(new Event('input'));
+            dropdown.style.display = 'block';
         }
+        
+        // Hide dropdown
+        function hideDropdown() {
+            dropdown.style.display = 'none';
+            selectedIndex = -1;
+        }
+        
+        // Update selection visual
+        function updateSelection() {
+            const items = dropdown.querySelectorAll('.autocomplete-suggestion');
+            items.forEach((item, index) => {
+                if (index === selectedIndex) {
+                    item.style.backgroundColor = 'var(--highlight, #2196f3)';
+                    item.style.color = 'var(--bg-color, white)';
+                    item.querySelector('span:last-child').style.background = 'rgba(255,255,255,0.2)';
+                    item.querySelector('span:last-child').style.color = 'var(--bg-color, white)';
+                } else {
+                    item.style.backgroundColor = '';
+                    item.style.color = '';
+                    const countSpan = item.querySelector('span:last-child');
+                    countSpan.style.background = 'var(--bg-color2, #f5f5f5)';
+                    countSpan.style.color = 'var(--text2ndary, #666)';
+                }
+            });
+        }
+        
+        // Create skill chip
+        function createSkillChip(skillName) {
+            const chip = document.createElement('div');
+            chip.className = 'skill-chip';
+            chip.style.cssText = `
+                background: var(--bg-color2, #f0f0f0);
+                color: var(--text, #333);
+                border: 1px solid var(--highlightmenu, #ccc);
+                border-radius: 16px;
+                padding: 6px 12px;
+                display: inline-flex;
+                align-items: center;
+                font-size: 13px;
+                gap: 8px;
+                animation: chipAppear 0.3s ease;
+            `;
+            
+            const text = document.createElement('span');
+            text.textContent = skillName;
+            
+            const closeBtn = document.createElement('i');
+            closeBtn.className = 'material-icons';
+            closeBtn.textContent = 'close';
+            closeBtn.style.cssText = `
+                font-size: 16px;
+                cursor: pointer;
+                opacity: 0.7;
+                transition: opacity 0.2s;
+            `;
+            
+            closeBtn.addEventListener('click', function() {
+                chip.remove();
+                updateHiddenInput();
+            });
+            
+            closeBtn.addEventListener('mouseenter', function() {
+                this.style.opacity = '1';
+                this.style.color = 'var(--danger, #f44336)';
+            });
+            
+            closeBtn.addEventListener('mouseleave', function() {
+                this.style.opacity = '0.7';
+                this.style.color = '';
+            });
+            
+            chip.appendChild(text);
+            chip.appendChild(closeBtn);
+            
+            return chip;
+        }
+        
+        // Add skill
+        function addSkill(skillName) {
+            // Check duplicates
+            const existing = getCurrentSkillNames();
+            if (existing.some(name => name.toLowerCase() === skillName.toLowerCase())) {
+                console.log('Skill already exists:', skillName);
+                if (typeof M !== 'undefined' && M.toast) {
+                    M.toast({
+                        html: `<i class="material-icons left">info</i>Skill "${skillName}" already added`,
+                        classes: 'blue'
+                    });
+                }
+                return;
+            }
+            
+            // Check limit
+            if (existing.length >= 20) {
+                if (typeof M !== 'undefined' && M.toast) {
+                    M.toast({
+                        html: '<i class="material-icons left">error</i>Maximum 20 skills allowed',
+                        classes: 'red darken-2'
+                    });
+                }
+                return;
+            }
+            
+            const chip = createSkillChip(skillName);
+            container.insertBefore(chip, input);
+            updateHiddenInput();
+        }
+        
+        // Get current skill names
+        function getCurrentSkillNames() {
+            return Array.from(container.querySelectorAll('.skill-chip span')).map(el => el.textContent.trim());
+        }
+        
+        // Update hidden input
+        function updateHiddenInput() {
+            const skills = getCurrentSkillNames();
+            hiddenSkillsInput.value = JSON.stringify(skills);
+            console.log('Updated skills:', skills);
+        }
+        
+        // Close dropdown on outside click
+        document.addEventListener('click', function(e) {
+            if (!wrapper.contains(e.target)) {
+                hideDropdown();
+            }
+        });
+        
+        // Assemble everything
+        container.appendChild(input);
+        wrapper.appendChild(container);
+        wrapper.appendChild(dropdown);
+        skillsChipsElement.appendChild(wrapper);
+        
+        // Initial update
+        updateHiddenInput();
+        
+        console.log('✅ Clean single autocomplete initialized successfully');
     }
     
-    // Initial update to ensure hidden input is set
-    setTimeout(() => {
-        console.log('🔄 Running initial skills update...');
-        const result = updateSkillsInput();
-        console.log('📊 Initial update result:', result);
-    }, 200);
-    
-    // Handle manual chip removal for existing skills display
-    const manualChips = document.querySelectorAll('.current-skills-chips .chip .close');
-    manualChips.forEach(closeBtn => {
-        closeBtn.addEventListener('click', function() {
-            const skillName = this.parentElement.dataset.skill;
-            console.log('🗑️ Removing skill from manual display:', skillName);
-            this.parentElement.remove();
-            
-            // Also remove from chips if present
-            if (chipsInstance) {
-                try {
-                    const chips = M.Chips.getInstance(skillsInput);
-                    if (chips && chips.chipsData) {
-                        const chipIndex = chips.chipsData.findIndex(chip => chip.tag === skillName);
-                        if (chipIndex > -1) {
-                            chips.deleteChip(chipIndex);
-                            console.log('✅ Removed from chips as well');
-                        }
-                    }
-                } catch (e) {
-                    console.log('⚠️ Could not remove from chips:', e);
-                }
-            }
-            updateSkillsInput();
-        });
-    });
-    
-    // Form validation and submission
+    // Form submission handler
     const form = document.getElementById('task-form');
-    const submitBtn = document.getElementById('submit-btn');
-    
     if (form) {
-        console.log('✅ Form found, attaching submit listener');
-        
         form.addEventListener('submit', function(e) {
-            console.log('=== 📤 FORM SUBMISSION DEBUG ===');
+            const hiddenInput = document.getElementById('{{ form.skills_input.id_for_label }}');
+            const skillCount = document.querySelectorAll('.skill-chip').length;
             
-            let finalSkills = [];
-            
-            // CRITICAL: Update skills input before submission
-            if (skillsInput && skillsHiddenInput) {
-                // Try to get from chips first
-                if (chipsInstance) {
-                    try {
-                        const chips = M.Chips.getInstance(skillsInput);
-                        if (chips && chips.chipsData) {
-                            const skillNames = chips.chipsData.map(chip => chip.tag);
-                            const skillsJson = JSON.stringify(skillNames);
-                            
-                            console.log('📝 FORM SUBMIT: Using chips data');
-                            console.log('  - Chips data:', chips.chipsData);
-                            console.log('  - Skill names:', skillNames);
-                            console.log('  - JSON string:', skillsJson);
-                            
-                            skillsHiddenInput.value = skillsJson;
-                            finalSkills = skillNames;
-                        }
-                    } catch (chipsError) {
-                        console.log('⚠️ FORM SUBMIT: Chips error, trying fallback');
-                    }
+            if (skillCount > 20) {
+                e.preventDefault();
+                if (typeof M !== 'undefined' && M.toast) {
+                    M.toast({
+                        html: '<i class="material-icons left">error</i>Maximum 20 skills allowed',
+                        classes: 'red darken-2'
+                    });
                 }
-                
-                // Fallback: try to get from simple input
-                if (finalSkills.length === 0) {
-                    const fallbackInput = document.getElementById('fallback-skills-input');
-                    if (fallbackInput && fallbackInput.value.trim()) {
-                        finalSkills = fallbackInput.value.split(',').map(s => s.trim()).filter(s => s);
-                        skillsHiddenInput.value = JSON.stringify(finalSkills);
-                        console.log('📝 FORM SUBMIT: Using fallback input:', finalSkills);
-                    }
-                }
-                
-                // Final fallback: try manual chips display
-                if (finalSkills.length === 0) {
-                    const manualChips = document.querySelectorAll('.current-skills-chips .chip[data-skill]');
-                    if (manualChips.length > 0) {
-                        finalSkills = Array.from(manualChips).map(chip => chip.dataset.skill);
-                        skillsHiddenInput.value = JSON.stringify(finalSkills);
-                        console.log('📝 FORM SUBMIT: Using manual skills display:', finalSkills);
-                    }
-                }
-                
-                console.log('📊 FORM SUBMIT: Final validation:');
-                console.log('  - Hidden input name:', skillsHiddenInput.name);
-                console.log('  - Hidden input value:', skillsHiddenInput.value);
-                console.log('  - Skills count:', finalSkills.length);
-                console.log('  - Skills:', finalSkills);
-                
-                // Validate skills count
-                if (finalSkills.length > 20) {
-                    e.preventDefault();
-                    console.log('❌ FORM SUBMIT: Blocked - too many skills');
-                    
-                    if (typeof M !== 'undefined' && M.toast) {
-                        M.toast({
-                            html: '<i class="material-icons left">error</i>Maximum 20 skills allowed',
-                            classes: 'red darken-2'
-                        });
-                    } else {
-                        alert('Maximum 20 skills allowed');
-                    }
-                    
-                    // Reset button
-                    submitBtn.innerHTML = '<i class="material-icons left">{% if form.instance.pk %}save{% else %}add{% endif %}</i>{% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}';
-                    submitBtn.disabled = false;
-                    return;
-                }
-                
-            } else {
-                console.log('⚠️ FORM SUBMIT: Skills input elements not found');
+                return;
             }
             
-            // Show loading state
-            submitBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Saving...';
-            submitBtn.disabled = true;
-            
-            // Basic client-side validation
             const nameField = document.getElementById('{{ form.name.id_for_label }}');
             if (nameField && !nameField.value.trim()) {
                 e.preventDefault();
-                console.log('❌ FORM SUBMIT: Blocked - task name required');
-                
                 if (typeof M !== 'undefined' && M.toast) {
                     M.toast({
                         html: '<i class="material-icons left">error</i>Task name is required',
                         classes: 'red darken-2'
                     });
-                } else {
-                    alert('Task name is required');
                 }
-                
-                submitBtn.innerHTML = '<i class="material-icons left">{% if form.instance.pk %}save{% else %}add{% endif %}</i>{% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}';
-                submitBtn.disabled = false;
                 return;
             }
             
-            console.log('✅ FORM SUBMIT: All validations passed, submitting...');
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Saving...';
+                submitBtn.disabled = true;
+            }
+            
+            console.log('✅ Form submitting with skills:', hiddenInput ? hiddenInput.value : 'none');
         });
-    } else {
-        console.error('❌ Form element not found!');
     }
     
-    // Auto-update form labels for pre-filled values
-    try {
-        if (M.updateTextFields) {
-            M.updateTextFields();
-            console.log('✅ Updated text field labels');
-        }
-    } catch (labelError) {
-        console.log('⚠️ Could not update text field labels:', labelError);
-    }
-    
-    console.log('🎉 Task form initialization complete!');
+    console.log('=== CLEAN SINGLE AUTOCOMPLETE COMPLETE ===');
 });
+
+// Add chip animation
+const chipAnimationCSS = `
+@keyframes chipAppear {
+    0% { opacity: 0; transform: scale(0.8) translateY(-5px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+`;
+
+if (!document.getElementById('chip-animation-styles')) {
+    const style = document.createElement('style');
+    style.id = 'chip-animation-styles';
+    style.textContent = chipAnimationCSS;
+    document.head.appendChild(style);
+}
 </script>
 {% endblock %}

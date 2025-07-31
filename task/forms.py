@@ -81,22 +81,25 @@ class TaskForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        # CRITICAL: If editing existing task, populate skills_input with current skills
+        # CRITICAL FIX: Load ALL existing skills into the form
         if self.instance and self.instance.pk:
-            current_skills = list(self.instance.skills.values_list('name', flat=True))
-            print(f"DEBUG FORM INIT: Task {self.instance.pk} has skills: {current_skills}")
+            # Get existing skills as objects with both name and id
+            existing_skills = list(self.instance.skills.all())
+            print(f"DEBUG FORM INIT: Task {self.instance.pk} has {len(existing_skills)} skills: {[s.name for s in existing_skills]}")
             
-            # Set both initial value and widget value
-            skills_json = json.dumps(current_skills)
+            # Format as objects with name and id for better handling
+            skills_data = [{'name': skill.name, 'id': skill.id} for skill in existing_skills]
+            skills_json = json.dumps(skills_data)
+            
+            # Set both initial value and widget value to ensure it's available to frontend
             self.fields['skills_input'].initial = skills_json
             self.fields['skills_input'].widget.attrs['value'] = skills_json
             
-            print(f"DEBUG FORM INIT: Set skills_input.initial to: {skills_json}")
-            print(f"DEBUG FORM INIT: Set widget value to: {skills_json}")
+            print(f"DEBUG FORM INIT: Set skills_input to: {skills_json}")
         else:
             # For new tasks, ensure empty array
-            self.fields['skills_input'].initial = '[]'
-            self.fields['skills_input'].widget.attrs['value'] = '[]'
+            self.fields['skills_input'].initial = json.dumps([])
+            self.fields['skills_input'].widget.attrs['value'] = json.dumps([])
             print("DEBUG FORM INIT: New task, set skills to empty array")
         
         # Filter projects based on user permissions
@@ -157,7 +160,7 @@ class TaskForm(forms.ModelForm):
         return descendant_ids
 
     def clean_skills_input(self):
-        """Process skills from chips input and validate"""
+        """Process skills from chips input and validate - IMPROVED VERSION"""
         skills_input = self.cleaned_data.get('skills_input', '')
         
         print(f"DEBUG CLEAN: Raw skills_input: {repr(skills_input)}")
@@ -177,19 +180,44 @@ class TaskForm(forms.ModelForm):
                 print(f"DEBUG CLEAN: Not a list, converting: {skills_data}")
                 skills_data = []
             
-            # Filter out empty strings and None values
-            skills_data = [skill for skill in skills_data if skill and str(skill).strip()]
-            print(f"DEBUG CLEAN: After filtering: {skills_data}")
+            # Process different formats that might come from frontend
+            processed_skills = []
+            for item in skills_data:
+                if isinstance(item, dict) and 'name' in item:
+                    # Format: {'name': 'Python', 'id': 1} or {'name': 'Python'}
+                    skill_name = item['name'].strip()
+                elif isinstance(item, str):
+                    # Format: 'Python'
+                    skill_name = item.strip()
+                else:
+                    # Skip invalid items
+                    print(f"DEBUG CLEAN: Skipping invalid skill item: {item}")
+                    continue
+                
+                if skill_name:
+                    processed_skills.append(skill_name)
             
-            if len(skills_data) > 20:
-                print(f"DEBUG CLEAN: Too many skills: {len(skills_data)}")
+            print(f"DEBUG CLEAN: Processed skill names: {processed_skills}")
+            
+            # Remove duplicates while preserving order
+            unique_skills = []
+            seen = set()
+            for skill in processed_skills:
+                if skill.lower() not in seen:
+                    unique_skills.append(skill)
+                    seen.add(skill.lower())
+            
+            print(f"DEBUG CLEAN: Unique skills: {unique_skills}")
+            
+            if len(unique_skills) > 20:
+                print(f"DEBUG CLEAN: Too many skills: {len(unique_skills)}")
                 raise forms.ValidationError("A task can have a maximum of 20 skills.")
             
             # Get or create skill objects
             skill_objects = []
-            for skill_name in skills_data:
-                if skill_name and str(skill_name).strip():
-                    skill_name_clean = str(skill_name).strip()
+            for skill_name in unique_skills:
+                skill_name_clean = skill_name.strip()
+                if skill_name_clean:
                     try:
                         skill = Skill.objects.get(name__iexact=skill_name_clean)
                         print(f"DEBUG CLEAN: Found existing skill: {skill.name}")
@@ -224,7 +252,8 @@ class TaskForm(forms.ModelForm):
                 return skill_objects
             except Exception as fallback_error:
                 print(f"DEBUG CLEAN: Fallback parsing also failed: {fallback_error}")
-                # If all parsing fails, return empty list
+                # If all parsing fails, return empty list (don't raise error)
+                print("DEBUG CLEAN: Returning empty list as fallback")
                 return []
 
     def clean_due_date(self):
@@ -253,7 +282,7 @@ class TaskForm(forms.ModelForm):
         to_project = cleaned_data.get('to_project')
         to_task = cleaned_data.get('to_task')
         
-        print(f"DEBUG: to_project={to_project}, type={type(to_project)}")  # Debug line
+        print(f"DEBUG CLEAN: to_project={to_project}, type={type(to_project)}")
         
         # If parent task is selected, ensure it belongs to the same project
         if to_task and to_project:  # Only if both are truthy
@@ -268,7 +297,7 @@ class TaskForm(forms.ModelForm):
                 cleaned_data['main_project'] = to_task.main_project
                 # Explicitly set to_project to None
                 cleaned_data['to_project'] = None
-                print(f"DEBUG: Inherited main_project={to_task.main_project}")  # Debug line
+                print(f"DEBUG CLEAN: Inherited main_project={to_task.main_project}")
         
         return cleaned_data
 
