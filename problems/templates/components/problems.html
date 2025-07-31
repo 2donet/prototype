@@ -178,19 +178,19 @@
                 {% endfor %}
             </div>
             {% endif %}
+            <div class="problem-actions" style="margin-top: 10px; text-align: right;">
+                <a href="{% url 'problems:detail' problem.id %}" class="btn-small blue waves-effect">
+                    <i class="material-icons left">visibility</i>View
+                </a>
+                {% if problem.user_can_edit and problem.status not in 'solved,closed' %}
+                <a href="#!" class="btn-small green waves-effect mark-solved" data-problem-id="{{ problem.id }}">
+                    <i class="material-icons left">check</i>Solve
+                </a>
+                {% endif %}
+            </div>
         </div>
         
         <!-- Quick actions -->
-        <div class="problem-actions" style="margin-top: 10px; text-align: right;">
-            <a href="{% url 'problems:detail' problem.id %}" class="btn-small blue waves-effect">
-                <i class="material-icons left">visibility</i>View
-            </a>
-            {% if problem.user_can_edit and problem.status not in 'solved,closed' %}
-            <a href="#!" class="btn-small green waves-effect mark-solved" data-problem-id="{{ problem.id }}">
-                <i class="material-icons left">check</i>Solve
-            </a>
-            {% endif %}
-        </div>
     </div>
     {% empty %}
     <div class="g12note" style="width: 100%; padding: 20px; text-align: center;">
@@ -325,6 +325,7 @@ function attachProblemEventHandlers() {
 <style>
 .problems-container {
     margin-top: 20px;
+    display: flex;
 }
 
 .problem-card {
@@ -332,6 +333,7 @@ function attachProblemEventHandlers() {
     border-left: 4px solid var(--bg-color2);
     transition: all 0.3s ease;
     position: relative;
+    height: auto;
 }
 
 .problem-card:hover {

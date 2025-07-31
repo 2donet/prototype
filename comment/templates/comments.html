@@ -227,7 +227,6 @@
         <button class="reply-btn" data-comment-id="{{ comment.id }}"
             data-controls="reply-form-{{comment.id}}">Reply</button>
             
-c
         
         <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
             {% include "comments.html" with comments=comment.replies.all is_nested_include=True %}

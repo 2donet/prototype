@@ -51,7 +51,6 @@ def conversation_list(request):
         conversation.other_user = conversation.get_other_participant(request.user)
         
         # Debug: Print to console (remove this after testing)
-        print(f"Conversation {conversation.id}: other_user = {conversation.other_user}, username = {conversation.other_user.username if conversation.other_user else 'None'}")
     
     
     context = {

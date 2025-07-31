@@ -284,9 +284,8 @@
                             <p class="center-align">{{ form.progress.value|default:0 }}% Complete</p>
                         </div>
 
-                        <div class="input-field">
+                        <div class="input-field progress-display">
                             {{ form.progress }}
-                            <label for="{{ form.progress.id_for_label }}">Progress (%)</label>
                             <span class="helper-text">{% if mode == 'create' %}Initial progress (usually 0%){% else %}Current completion progress{% endif %}</span>
                             {% if form.progress.errors %}
                                 <span class="helper-text red-text">{{ form.progress.errors|join:", " }}</span>

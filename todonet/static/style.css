@@ -3842,3 +3842,11 @@ nav ul li a {
     color: var(--bg-color) !important;
     font-weight: 800;;
 }
+.input-field.progress-display{
+    & input {
+        border: none;
+        &:focus {
+            border: none;
+        }
+    }
+}
