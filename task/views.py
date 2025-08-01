@@ -403,13 +403,11 @@ class CreateTaskView(CreateView):
         if skill_param:
             # Format as object for consistency
             initial['skills_input'] = json.dumps([{'name': skill_param}])
-            print(f"CREATE INIT: Pre-populating with skill: {skill_param}")
         
         return initial
 
     def form_valid(self, form):
         """Handle form submission and skills processing"""
-        print(f"=== CREATE TASK START ===")
         
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
@@ -417,18 +415,14 @@ class CreateTaskView(CreateView):
         # Handle skills from chips input
         skills = form.cleaned_data.get('skills_input', [])
         skill_names = [s.name for s in skills]
-        print(f"CREATE: Setting skills: {skill_names}")
         
         if skills:
             self.object.skills.set(skills)
-            print(f"CREATE: Skills set successfully: {[s.name for s in self.object.skills.all()]}")
         
         messages.success(
             self.request, 
-            f"Task created successfully! Skills: {', '.join(skill_names) if skill_names else 'None'}"
         )
         
-        print(f"=== CREATE TASK END ===")
         return response
 
     def get_success_url(self):
@@ -452,34 +446,25 @@ class UpdateTaskView(UpdateView):
 
     def form_valid(self, form):
         """Handle form submission - trust the form completely for skills"""
-        print(f"\n=== UPDATE TASK {self.object.id} START ===")
         
-        # Get existing skills for debugging
-        existing_skills = [s.name for s in self.object.skills.all()]
-        print(f"BEFORE UPDATE: Task has skills: {existing_skills}")
         
         # Process the form first (this updates all fields except skills)
         response = super().form_valid(form)
         
         # Handle skills from form - the form should contain ALL skills the user wants
         form_skills = form.cleaned_data.get('skills_input', [])
-        form_skill_names = [s.name for s in form_skills]
-        print(f"FORM PROVIDED: {form_skill_names}")
         
         # Simply set the skills to whatever the form provided
         # The form initialization ensures it contains ALL existing skills initially
         # Any additions/removals are reflected in what the form sends back
         if form_skills is not None:
             self.object.skills.set(form_skills)
-            print(f"SKILLS SET TO: {[s.name for s in self.object.skills.all()]}")
         else:
+            None
             # If form_skills is None (shouldn't happen), don't change skills
-            print("WARNING: form_skills was None, not changing skills")
         
         # Verify final result
         final_skills = [s.name for s in self.object.skills.all()]
-        print(f"FINAL RESULT: {final_skills}")
-        print(f"=== UPDATE TASK {self.object.id} END ===\n")
         
         messages.success(
             self.request, 
@@ -564,9 +549,6 @@ def debug_task_form(request, task_id):
     
     if request.method == 'GET':
         form = TaskForm(instance=task, user=request.user)
-        print(f"DEBUG GET: Task {task_id} has {task.skills.count()} skills")
-        for skill in task.skills.all():
-            print(f"  - {skill.name} (ID: {skill.id})")
-        print(f"DEBUG GET: Form skills_input value: {form.fields['skills_input'].initial}")
+
         
     return render(request, 'task_debug.html', {'form': form, 'task': task})

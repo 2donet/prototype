@@ -85,7 +85,6 @@ class TaskForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             # Get existing skills as objects with both name and id
             existing_skills = list(self.instance.skills.all())
-            print(f"DEBUG FORM INIT: Task {self.instance.pk} has {len(existing_skills)} skills: {[s.name for s in existing_skills]}")
             
             # Format as objects with name and id for better handling
             skills_data = [{'name': skill.name, 'id': skill.id} for skill in existing_skills]
@@ -95,12 +94,10 @@ class TaskForm(forms.ModelForm):
             self.fields['skills_input'].initial = skills_json
             self.fields['skills_input'].widget.attrs['value'] = skills_json
             
-            print(f"DEBUG FORM INIT: Set skills_input to: {skills_json}")
         else:
             # For new tasks, ensure empty array
             self.fields['skills_input'].initial = json.dumps([])
             self.fields['skills_input'].widget.attrs['value'] = json.dumps([])
-            print("DEBUG FORM INIT: New task, set skills to empty array")
         
         # Filter projects based on user permissions
         if user:
@@ -163,21 +160,16 @@ class TaskForm(forms.ModelForm):
         """Process skills from chips input and validate - IMPROVED VERSION"""
         skills_input = self.cleaned_data.get('skills_input', '')
         
-        print(f"DEBUG CLEAN: Raw skills_input: {repr(skills_input)}")
-        print(f"DEBUG CLEAN: Type: {type(skills_input)}")
         
         if not skills_input or skills_input.strip() == '' or skills_input.strip() == '[]':
-            print("DEBUG CLEAN: Skills input is empty or empty array, returning []")
             return []
         
         try:
             # Parse JSON data from chips input
             skills_data = json.loads(skills_input) if skills_input else []
-            print(f"DEBUG CLEAN: Parsed JSON successfully: {skills_data}")
             
             # Ensure it's a list
             if not isinstance(skills_data, list):
-                print(f"DEBUG CLEAN: Not a list, converting: {skills_data}")
                 skills_data = []
             
             # Process different formats that might come from frontend
@@ -191,13 +183,11 @@ class TaskForm(forms.ModelForm):
                     skill_name = item.strip()
                 else:
                     # Skip invalid items
-                    print(f"DEBUG CLEAN: Skipping invalid skill item: {item}")
                     continue
                 
                 if skill_name:
                     processed_skills.append(skill_name)
             
-            print(f"DEBUG CLEAN: Processed skill names: {processed_skills}")
             
             # Remove duplicates while preserving order
             unique_skills = []
@@ -207,10 +197,8 @@ class TaskForm(forms.ModelForm):
                     unique_skills.append(skill)
                     seen.add(skill.lower())
             
-            print(f"DEBUG CLEAN: Unique skills: {unique_skills}")
             
             if len(unique_skills) > 20:
-                print(f"DEBUG CLEAN: Too many skills: {len(unique_skills)}")
                 raise forms.ValidationError("A task can have a maximum of 20 skills.")
             
             # Get or create skill objects
@@ -220,21 +208,16 @@ class TaskForm(forms.ModelForm):
                 if skill_name_clean:
                     try:
                         skill = Skill.objects.get(name__iexact=skill_name_clean)
-                        print(f"DEBUG CLEAN: Found existing skill: {skill.name}")
                     except Skill.DoesNotExist:
                         skill = Skill.objects.create(name=skill_name_clean.title())
-                        print(f"DEBUG CLEAN: Created new skill: {skill.name}")
                     skill_objects.append(skill)
             
-            print(f"DEBUG CLEAN: Final skill objects: {[s.name for s in skill_objects]}")
             return skill_objects
             
         except (json.JSONDecodeError, ValueError, TypeError) as e:
-            print(f"DEBUG CLEAN: JSON parsing failed: {e}")
             # If JSON parsing fails, try to parse as comma-separated string
             try:
                 skill_names = [name.strip() for name in str(skills_input).split(',') if name.strip()]
-                print(f"DEBUG CLEAN: Trying comma-separated: {skill_names}")
                 
                 if len(skill_names) > 20:
                     raise forms.ValidationError("A task can have a maximum of 20 skills.")
@@ -248,12 +231,9 @@ class TaskForm(forms.ModelForm):
                             skill = Skill.objects.create(name=skill_name.title())
                         skill_objects.append(skill)
                 
-                print(f"DEBUG CLEAN: Comma-separated result: {[s.name for s in skill_objects]}")
                 return skill_objects
             except Exception as fallback_error:
-                print(f"DEBUG CLEAN: Fallback parsing also failed: {fallback_error}")
                 # If all parsing fails, return empty list (don't raise error)
-                print("DEBUG CLEAN: Returning empty list as fallback")
                 return []
 
     def clean_due_date(self):
@@ -282,7 +262,6 @@ class TaskForm(forms.ModelForm):
         to_project = cleaned_data.get('to_project')
         to_task = cleaned_data.get('to_task')
         
-        print(f"DEBUG CLEAN: to_project={to_project}, type={type(to_project)}")
         
         # If parent task is selected, ensure it belongs to the same project
         if to_task and to_project:  # Only if both are truthy
@@ -297,7 +276,6 @@ class TaskForm(forms.ModelForm):
                 cleaned_data['main_project'] = to_task.main_project
                 # Explicitly set to_project to None
                 cleaned_data['to_project'] = None
-                print(f"DEBUG CLEAN: Inherited main_project={to_task.main_project}")
         
         return cleaned_data
 
