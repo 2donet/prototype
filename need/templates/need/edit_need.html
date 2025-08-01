@@ -555,21 +555,66 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing components...');
+    
     // Initialize Materialize components
     M.FormSelect.init(document.querySelectorAll('select'));
     M.updateTextFields();
     
-    // Initialize skills chips with autocomplete
-    initializeSkillsChips();
+    // Initialize chips with a small delay to ensure DOM is fully ready
+    setTimeout(function() {
+        initializeSkillsChips();
+        
+        {% if mode == 'edit' and need and available_needs %}
+        initializeDependencyChips();
+        initializeRelatedNeedsChips();
+        {% endif %}
+    }, 100);
     
-    // Initialize dependency chips (edit mode only)
-    {% if mode == 'edit' and need and available_needs %}
-    initializeDependencyChips();
-    initializeRelatedNeedsChips();
-    {% endif %}
+    // Also reinitialize chips when navigating back to the page
+    window.addEventListener('pageshow', function(event) {
+        // Only reinitialize if coming from cache (back/forward navigation)
+        if (event.persisted) {
+            console.log('Page loaded from cache, reinitializing chips...');
+            setTimeout(function() {
+                initializeSkillsChips();
+                
+                {% if mode == 'edit' and need and available_needs %}
+                initializeDependencyChips();
+                initializeRelatedNeedsChips();
+                {% endif %}
+            }, 100);
+        }
+    });
 });
 
 function initializeSkillsChips() {
+    const skillsElement = document.getElementById('skills-input');
+    
+    // Check if element exists and hasn't been initialized already
+    if (!skillsElement) {
+        console.warn('Skills input element not found');
+        return;
+    }
+    
+    // Prevent double initialization
+    const existingInstance = M.Chips.getInstance(skillsElement);
+    if (existingInstance) {
+        console.log('Skills chips already initialized, destroying first');
+        existingInstance.destroy();
+    }
+    
+    // Get existing skills from template
+    const existingSkills = [
+        {% if need and need.required_skills.all %}
+            {% for skill in need.required_skills.all %}
+                {tag: '{{ skill.name }}'},
+            {% endfor %}
+        {% endif %}
+    ];
+    
+    console.log('Initializing skills chips with existing skills:', existingSkills);
+    
     // Fetch skills for autocomplete
     fetch('/n/api/skills/autocomplete/')
         .then(response => response.json())
@@ -581,17 +626,8 @@ function initializeSkillsChips() {
                 });
             }
 
-            // Initialize chips with existing skills
-            const existingSkills = [
-                {% if need and need.required_skills.all %}
-                    {% for skill in need.required_skills.all %}
-                        {tag: '{{ skill.name }}'},
-                    {% endfor %}
-                {% endif %}
-            ];
-
-            const skillsElement = document.getElementById('skills-input');
-            M.Chips.init(skillsElement, {
+            // Initialize chips with autocomplete
+            const chipsInstance = M.Chips.init(skillsElement, {
                 data: existingSkills,
                 placeholder: 'Add skills...',
                 secondaryPlaceholder: 'Enter skill name',
@@ -601,29 +637,39 @@ function initializeSkillsChips() {
                     minLength: 1
                 }
             });
+            
+            console.log('Skills chips initialized successfully with autocomplete');
         })
         .catch(error => {
-            console.warn('Could not load skills autocomplete:', error);
-            // Initialize without autocomplete
-            const existingSkills = [
-                {% if need and need.required_skills.all %}
-                    {% for skill in need.required_skills.all %}
-                        {tag: '{{ skill.name }}'},
-                    {% endfor %}
-                {% endif %}
-            ];
-
-            const skillsElement = document.getElementById('skills-input');
-            M.Chips.init(skillsElement, {
+            console.warn('Could not load skills autocomplete, initializing without:', error);
+            
+            // Initialize without autocomplete as fallback
+            const chipsInstance = M.Chips.init(skillsElement, {
                 data: existingSkills,
                 placeholder: 'Add skills...',
                 secondaryPlaceholder: 'Enter skill name'
             });
+            
+            console.log('Skills chips initialized successfully without autocomplete');
         });
 }
 
 {% if mode == 'edit' and need and available_needs %}
 function initializeDependencyChips() {
+    const dependenciesElement = document.getElementById('dependencies-input');
+    
+    if (!dependenciesElement) {
+        console.warn('Dependencies input element not found');
+        return;
+    }
+    
+    // Prevent double initialization
+    const existingInstance = M.Chips.getInstance(dependenciesElement);
+    if (existingInstance) {
+        console.log('Dependencies chips already initialized, destroying first');
+        existingInstance.destroy();
+    }
+    
     const dependencyData = {};
     {% for need_dep in available_needs %}
         dependencyData['{{ need_dep.name }}'] = null;
@@ -636,8 +682,9 @@ function initializeDependencyChips() {
             {% endfor %}
         {% endif %}
     ];
+    
+    console.log('Initializing dependency chips with existing dependencies:', existingDependencies);
 
-    const dependenciesElement = document.getElementById('dependencies-input');
     M.Chips.init(dependenciesElement, {
         data: existingDependencies,
         placeholder: 'Add dependencies...',
@@ -651,6 +698,20 @@ function initializeDependencyChips() {
 }
 
 function initializeRelatedNeedsChips() {
+    const relatedElement = document.getElementById('related-needs-input');
+    
+    if (!relatedElement) {
+        console.warn('Related needs input element not found');
+        return;
+    }
+    
+    // Prevent double initialization
+    const existingInstance = M.Chips.getInstance(relatedElement);
+    if (existingInstance) {
+        console.log('Related needs chips already initialized, destroying first');
+        existingInstance.destroy();
+    }
+    
     const relatedData = {};
     {% for need_rel in available_needs %}
         relatedData['{{ need_rel.name }}'] = null;
@@ -663,8 +724,9 @@ function initializeRelatedNeedsChips() {
             {% endfor %}
         {% endif %}
     ];
+    
+    console.log('Initializing related needs chips with existing related:', existingRelated);
 
-    const relatedElement = document.getElementById('related-needs-input');
     M.Chips.init(relatedElement, {
         data: existingRelated,
         placeholder: 'Add related needs...',
@@ -701,8 +763,16 @@ if (progressInput) {
 // Handle form submission
 document.getElementById('need-form').addEventListener('submit', function(e) {
     // Get skills data
-    const skillsInstance = M.Chips.getInstance(document.getElementById('skills-input'));
-    const skillsData = skillsInstance.chipsData.map(chip => chip.tag);
+    const skillsElement = document.getElementById('skills-input');
+    const skillsInstance = M.Chips.getInstance(skillsElement);
+    
+    let skillsData = [];
+    if (skillsInstance && skillsInstance.chipsData) {
+        skillsData = skillsInstance.chipsData.map(chip => chip.tag);
+        console.log('Submitting with skills:', skillsData);
+    } else {
+        console.warn('Skills chips instance not found or has no data');
+    }
     
     // Add hidden inputs for skills
     skillsData.forEach(skill => {
@@ -715,9 +785,11 @@ document.getElementById('need-form').addEventListener('submit', function(e) {
 
     {% if mode == 'edit' and need and available_needs %}
     // Get dependencies data
-    const depsInstance = M.Chips.getInstance(document.getElementById('dependencies-input'));
-    if (depsInstance) {
+    const depsElement = document.getElementById('dependencies-input');
+    const depsInstance = M.Chips.getInstance(depsElement);
+    if (depsInstance && depsInstance.chipsData) {
         const depsData = depsInstance.chipsData.map(chip => chip.tag);
+        console.log('Submitting with dependencies:', depsData);
         depsData.forEach(dep => {
             const input = document.createElement('input');
             input.type = 'hidden';
@@ -728,9 +800,11 @@ document.getElementById('need-form').addEventListener('submit', function(e) {
     }
 
     // Get related needs data
-    const relatedInstance = M.Chips.getInstance(document.getElementById('related-needs-input'));
-    if (relatedInstance) {
+    const relatedElement = document.getElementById('related-needs-input');
+    const relatedInstance = M.Chips.getInstance(relatedElement);
+    if (relatedInstance && relatedInstance.chipsData) {
         const relatedData = relatedInstance.chipsData.map(chip => chip.tag);
+        console.log('Submitting with related needs:', relatedData);
         relatedData.forEach(related => {
             const input = document.createElement('input');
             input.type = 'hidden';

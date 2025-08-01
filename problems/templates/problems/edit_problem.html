@@ -108,10 +108,10 @@
                         {% endif %}
                         
                         <!-- Skills -->
-                        <div class="input-field">
-                            <input type="text" name="skills" id="problem-skills" class="chips-autocomplete"
-                                   placeholder="Type skills and press Enter">
-                            <label for="problem-skills">Related Skills</label>
+                        <div class="col s12">
+                            <label>Related Skills</label>
+                            <div class="chips chips-autocomplete" id="skills-input"></div>
+                            <span class="helper-text">Add skills related to this problem. Type and press Enter to add.</span>
                         </div>
                         
                         <!-- Current Assignment -->
@@ -168,28 +168,31 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing components...');
+    
     // Initialize Materialize components
     M.FormSelect.init(document.querySelectorAll('select'));
-    M.textareaAutoResize(document.querySelectorAll('.materialize-textarea'));
+    
+    // Initialize textarea auto-resize for each textarea individually
+    document.querySelectorAll('.materialize-textarea').forEach(function(textarea) {
+        M.textareaAutoResize(textarea);
+    });
+    
     M.CharacterCounter.init(document.querySelectorAll('input[maxlength], textarea[maxlength]'));
     
-    // Initialize skills chips with existing skills
-    const existingSkills = [
-        {% for skill in problem.skills.all %}
-        {tag: '{{ skill.name }}'},
-        {% endfor %}
-    ];
+    // Initialize skills chips with a small delay to ensure DOM is fully ready
+    setTimeout(function() {
+        initializeSkillsChips();
+    }, 100);
     
-    let skillsData = existingSkills;
-    const skillsChips = M.Chips.init(document.querySelector('.chips-autocomplete'), {
-        placeholder: 'Add a skill',
-        secondaryPlaceholder: 'Add another skill',
-        data: existingSkills,
-        onChipAdd: function(e, chip) {
-            skillsData = this.chipsData;
-        },
-        onChipDelete: function(e, chip) {
-            skillsData = this.chipsData;
+    // Also reinitialize chips when navigating back to the page
+    window.addEventListener('pageshow', function(event) {
+        // Only reinitialize if coming from cache (back/forward navigation)
+        if (event.persisted) {
+            console.log('Page loaded from cache, reinitializing chips...');
+            setTimeout(function() {
+                initializeSkillsChips();
+            }, 100);
         }
     });
     
@@ -377,20 +380,41 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('edit-problem-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const formData = new FormData(this);
+        // Get skills data and add as hidden inputs
+        const skillsElement = document.getElementById('skills-input');
+        const skillsInstance = M.Chips.getInstance(skillsElement);
         
-        // Add skills data
-        const skillNames = skillsData.map(chip => chip.tag);
-        formData.set('skills', JSON.stringify(skillNames));
+        let skillsData = [];
+        if (skillsInstance && skillsInstance.chipsData) {
+            skillsData = skillsInstance.chipsData.map(chip => chip.tag);
+            console.log('Submitting with skills:', skillsData);
+        } else {
+            console.warn('Skills chips instance not found or has no data');
+        }
         
-        // Submit form
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Saving...';
-        submitBtn.disabled = true;
+        // Remove any existing skills hidden inputs
+        const existingSkillInputs = this.querySelectorAll('input[name="skills[]"]');
+        existingSkillInputs.forEach(input => input.remove());
+        
+        // Add hidden inputs for skills
+        skillsData.forEach(skill => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'skills[]';
+            input.value = skill;
+            this.appendChild(input);
+        });
+        
+        // Find submit button (it's outside the form but linked via form attribute)
+        const submitBtn = document.querySelector('button[form="edit-problem-form"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Saving...';
+            submitBtn.disabled = true;
+        }
         
         fetch(this.action || window.location.href, {
             method: 'POST',
-            body: formData,
+            body: new FormData(this),
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
             }
@@ -406,6 +430,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (html) {
                 // If we got HTML back, there were form errors
                 document.body.innerHTML = html;
+                // Reinitialize components after replacing content
+                setTimeout(function() {
+                    M.FormSelect.init(document.querySelectorAll('select'));
+                    document.querySelectorAll('.materialize-textarea').forEach(function(textarea) {
+                        M.textareaAutoResize(textarea);
+                    });
+                    initializeSkillsChips();
+                }, 100);
             }
         })
         .catch(error => {
@@ -413,8 +445,10 @@ document.addEventListener('DOMContentLoaded', function() {
             M.toast({html: 'Error saving changes', classes: 'red'});
         })
         .finally(() => {
-            submitBtn.innerHTML = '<i class="material-icons left">save</i>Save Changes';
-            submitBtn.disabled = false;
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="material-icons left">save</i>Save Changes';
+                submitBtn.disabled = false;
+            }
         });
     });
     
@@ -428,6 +462,72 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function initializeSkillsChips() {
+    const skillsElement = document.getElementById('skills-input');
+    
+    // Check if element exists and hasn't been initialized already
+    if (!skillsElement) {
+        console.warn('Skills input element not found');
+        return;
+    }
+    
+    // Prevent double initialization
+    const existingInstance = M.Chips.getInstance(skillsElement);
+    if (existingInstance) {
+        console.log('Skills chips already initialized, destroying first');
+        existingInstance.destroy();
+    }
+    
+    // Get existing skills from template
+    const existingSkills = [
+        {% if problem.skills.all %}
+            {% for skill in problem.skills.all %}
+                {tag: '{{ skill.name }}'},
+            {% endfor %}
+        {% endif %}
+    ];
+    
+    console.log('Initializing skills chips with existing skills:', existingSkills);
+    
+    // Fetch skills for autocomplete
+    fetch('/n/api/skills/autocomplete/')
+        .then(response => response.json())
+        .then(data => {
+            const autocompleteData = {};
+            if (data.success && data.skills) {
+                data.skills.forEach(skill => {
+                    autocompleteData[skill.name] = null;
+                });
+            }
+
+            // Initialize chips with autocomplete
+            const chipsInstance = M.Chips.init(skillsElement, {
+                data: existingSkills,
+                placeholder: 'Add skills...',
+                secondaryPlaceholder: 'Enter skill name',
+                autocompleteOptions: {
+                    data: autocompleteData,
+                    limit: 10,
+                    minLength: 1
+                }
+            });
+            
+            console.log('Skills chips initialized successfully with autocomplete');
+        })
+        .catch(error => {
+            console.warn('Could not load skills autocomplete, initializing without:', error);
+            
+            // Initialize without autocomplete as fallback
+            const chipsInstance = M.Chips.init(skillsElement, {
+                data: existingSkills,
+                placeholder: 'Add skills...',
+                secondaryPlaceholder: 'Enter skill name'
+            });
+            
+            console.log('Skills chips initialized successfully without autocomplete');
+        });
+}
 </script>
 
 <style>
@@ -453,6 +553,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .current-assignments {
     margin-bottom: 20px;
+}
+
+/* Chips styling to match need edit template */
+.chips {
+    border-bottom: 1px solid var(--highlightmenu);
+    min-height: 45px;
+}
+
+.chips .chip {
+    background-color: var(--bg-color2);
+    color: var(--text);
+    border: 1px solid var(--highlightmenu);
+}
+
+.chips .chip .close {
+    color: var(--text2ndary);
+}
+
+.chips .chip .close:hover {
+    color: var(--danger);
+}
+
+.chips input {
+    color: var(--text) !important;
 }
 </style>
 {% endblock %}

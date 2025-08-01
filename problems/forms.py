@@ -15,13 +15,11 @@ User = get_user_model()
 class ProblemForm(forms.ModelForm):
     """Form for creating and editing problems"""
     
+    # Change skills to match need system approach
     skills = forms.CharField(
         required=False,
-        widget=forms.TextInput(attrs={
-            'placeholder': 'Enter skills separated by commas',
-            'class': 'materialize-textarea'
-        }),
-        help_text="Skills related to this problem (comma-separated)"
+        widget=forms.HiddenInput(),
+        help_text="Skills will be handled by JavaScript chips"
     )
     
     assigned_to = forms.ModelMultipleChoiceField(
@@ -106,38 +104,15 @@ class ProblemForm(forms.ModelForm):
             # Combine querysets
             self.fields['assigned_to'].queryset = project_members.union(non_members)
         
-        # If editing, populate skills field
-        if self.instance and self.instance.pk:
-            skills_list = [skill.name for skill in self.instance.skills.all()]
-            self.fields['skills'].initial = ', '.join(skills_list)
-            
-            # Hide resolution field unless problem is solved
-            if self.instance.status != 'solved':
-                self.fields['resolution'].widget = forms.HiddenInput()
+        # Hide resolution field unless problem is solved
+        if not self.instance or self.instance.pk is None or self.instance.status != 'solved':
+            self.fields['resolution'].widget = forms.HiddenInput()
     
     def clean_name(self):
         name = self.cleaned_data.get('name', '').strip()
         if not name:
             raise ValidationError("Problem name is required.")
         return name
-    
-    def clean_skills(self):
-        """Parse and validate skills"""
-        skills_str = self.cleaned_data.get('skills', '')
-        if not skills_str.strip():
-            return []
-        
-        # Split by comma and clean up
-        skill_names = [name.strip() for name in skills_str.split(',') if name.strip()]
-        
-        # Validate each skill name
-        validated_skills = []
-        for skill_name in skill_names:
-            if len(skill_name) > 50:
-                raise ValidationError(f"Skill name '{skill_name}' is too long (max 50 characters)")
-            validated_skills.append(skill_name)
-        
-        return validated_skills
     
     def clean(self):
         cleaned_data = super().clean()
@@ -154,6 +129,16 @@ class ProblemForm(forms.ModelForm):
         
         return cleaned_data
     
+    def _process_skills(self, skill_names):
+        """Process skills from form data - similar to need system"""
+        skills = []
+        for skill_name in skill_names:
+            skill_name = skill_name.strip()
+            if skill_name:
+                skill = Skill.get_or_create_skill(skill_name)
+                skills.append(skill)
+        return skills
+    
     def save(self, commit=True):
         problem = super().save(commit=False)
         
@@ -166,21 +151,28 @@ class ProblemForm(forms.ModelForm):
             elif isinstance(self.parent_object, Need):
                 problem.to_need = self.parent_object
         
+        # Set user if provided
+        if self.user and not problem.created_by:
+            problem.created_by = self.user
+        
         if commit:
             problem.save()
-            
-            # Handle skills
-            skills_data = self.cleaned_data.get('skills', [])
-            if skills_data:
-                # Clear existing skills and add new ones
-                problem.skills.clear()
-                for skill_name in skills_data:
-                    problem.add_skill(skill_name)
-            
             # Handle many-to-many assignments
             self.save_m2m()
         
         return problem
+
+    def save_skills(self, skill_names):
+        """Save skills for the problem - similar to need system"""
+        if not self.instance:
+            return
+            
+        if skill_names:
+            skills = self._process_skills(skill_names)
+            self.instance.skills.set(skills)
+        else:
+            # Clear skills if no names provided (maintain old behavior)
+            self.instance.skills.clear()
 
 
 class QuickProblemForm(forms.ModelForm):

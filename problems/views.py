@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from .models import Problem, ProblemActivity
+from .forms import ProblemForm
 from project.models import Project
 from task.models import Task
 from need.models import Need
@@ -193,87 +194,53 @@ def create_problem(request):
         return redirect('project:index')
     
     if request.method == 'POST':
-        try:
-            # Basic problem data
-            name = request.POST.get('name', '').strip()
-            summary = request.POST.get('summary', '').strip()
-            desc = request.POST.get('desc', '').strip()
-            priority = int(request.POST.get('priority', 1))
-            status = request.POST.get('status', 'open')
-            visibility = request.POST.get('visibility', 'public')
-            
-            if not name:
-                messages.error(request, "Problem name is required.")
-                return render(request, 'problems/create_problem.html', {
-                    'parent_obj': parent_obj,
-                    'form_data': request.POST
-                })
-            
-            # Create the problem
-            problem_data = {
-                'name': name,
-                'summary': summary,
-                'desc': desc,
-                'priority': priority,
-                'status': status,
-                'visibility': visibility,
-                'created_by': request.user,
-            }
-            
-            # Set parent relationship
-            if isinstance(parent_obj, Project):
-                problem_data['to_project'] = parent_obj
-            elif isinstance(parent_obj, Task):
-                problem_data['to_task'] = parent_obj
-            elif isinstance(parent_obj, Need):
-                problem_data['to_need'] = parent_obj
-            
-            problem = Problem.objects.create(**problem_data)
-            
-            # Handle skills
-            skills_json = request.POST.get('skills', '[]')
-            if skills_json:
-                try:
-                    skill_names = json.loads(skills_json)
-                    for skill_name in skill_names:
-                        problem.add_skill(skill_name)
-                except json.JSONDecodeError:
-                    pass
-            
-            # Handle assignments
-            assigned_users = request.POST.getlist('assigned_to')
-            for user_id in assigned_users:
-                try:
-                    user = User.objects.get(id=user_id)
-                    problem.assign_user(user)
-                except User.DoesNotExist:
-                    pass
-            
-            # Create activity log
-            ProblemActivity.objects.create(
-                problem=problem,
-                user=request.user,
-                activity_type='created',
-                desc=f"Problem '{problem.name}' was created"
-            )
-            
-            messages.success(request, f"Problem '{problem.name}' created successfully!")
-            return redirect('problems:detail', problem_id=problem.id)
-            
-        except Exception as e:
-            logger.error(f"Error creating problem: {str(e)}")
-            messages.error(request, "An error occurred while creating the problem.")
-            return render(request, 'problems/create_problem.html', {
-                'parent_obj': parent_obj,
-                'form_data': request.POST
-            })
+        form = ProblemForm(request.POST, parent_object=parent_obj, user=request.user)
+        
+        if form.is_valid():
+            try:
+                problem = form.save()
+                
+                # Handle skills from JavaScript chips - similar to need system
+                skill_names = request.POST.getlist('skills[]')
+                form.save_skills(skill_names)  # This will clear if empty list
+                
+                # Handle assignments
+                assigned_users = request.POST.getlist('assigned_to')
+                for user_id in assigned_users:
+                    try:
+                        user = User.objects.get(id=user_id)
+                        problem.assign_user(user)
+                    except User.DoesNotExist:
+                        pass
+                
+                # Create activity log
+                ProblemActivity.objects.create(
+                    problem=problem,
+                    user=request.user,
+                    activity_type='created',
+                    desc=f"Problem '{problem.name}' was created"
+                )
+                
+                messages.success(request, f"Problem '{problem.name}' created successfully!")
+                return redirect('problems:detail', problem_id=problem.id)
+                
+            except Exception as e:
+                logger.error(f"Error creating problem: {str(e)}")
+                messages.error(request, f"Error creating problem: {str(e)}")
+        else:
+            # Form has validation errors
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = ProblemForm(parent_object=parent_obj, user=request.user)
     
-    # GET request
     context = {
+        'form': form,
         'parent_obj': parent_obj,
         'status_choices': Problem.STATUS_CHOICES,
         'priority_choices': Problem.PRIORITY_CHOICES,
         'visibility_choices': Problem.VISIBILITY_CHOICES,
+        'all_skills': Skill.objects.all().order_by('name'),
+        'mode': 'create',
     }
     
     return render(request, 'problems/create_problem.html', context)
@@ -290,71 +257,66 @@ def edit_problem(request, problem_id):
         return redirect('problems:detail', problem_id=problem.id)
     
     if request.method == 'POST':
-        try:
-            # Store original values for activity logging
-            original_name = problem.name
-            original_status = problem.status
-            original_priority = problem.priority
-            
-            # Update basic fields
-            problem.name = request.POST.get('name', '').strip()
-            problem.summary = request.POST.get('summary', '').strip()
-            problem.desc = request.POST.get('desc', '').strip()
-            problem.priority = int(request.POST.get('priority', 1))
-            problem.status = request.POST.get('status', 'open')
-            problem.visibility = request.POST.get('visibility', 'public')
-            
-            # Handle due date
-            due_date_str = request.POST.get('due_date')
-            if due_date_str:
-                try:
-                    problem.due_date = timezone.datetime.fromisoformat(due_date_str.replace('Z', '+00:00'))
-                except ValueError:
-                    pass
-            else:
-                problem.due_date = None
+        form = ProblemForm(
+            request.POST, 
+            instance=problem, 
+            parent_object=problem.get_related_object(), 
+            user=request.user
+        )
+        
+        if form.is_valid():
+            try:
+                # Store original values for activity logging
+                original_status = problem.status
+                original_priority = problem.priority
                 
-            # Handle resolution
-            if problem.status == 'solved':
-                if not problem.resolved_at:
-                    problem.resolved_at = timezone.now()
-                problem.resolution = request.POST.get('resolution', '')
-            else:
-                problem.resolved_at = None
-                problem.resolution = ''
-            
-            problem.save()
-            
-            # Log status change
-            if original_status != problem.status:
-                ProblemActivity.objects.create(
-                    problem=problem,
-                    user=request.user,
-                    activity_type='status_changed',
-                    desc=f"Status changed from '{original_status}' to '{problem.status}'"
-                )
-            
-            # Log priority change
-            if original_priority != problem.priority:
-                ProblemActivity.objects.create(
-                    problem=problem,
-                    user=request.user,
-                    activity_type='priority_changed',
-                    desc=f"Priority changed from {original_priority} to {problem.priority}"
-                )
-            
-            messages.success(request, "Problem updated successfully!")
-            return redirect('problems:detail', problem_id=problem.id)
-            
-        except Exception as e:
-            logger.error(f"Error updating problem: {str(e)}")
-            messages.error(request, "An error occurred while updating the problem.")
+                problem = form.save()
+                
+                # Handle skills from JavaScript chips - similar to need system
+                skill_names = request.POST.getlist('skills[]')
+                form.save_skills(skill_names)  # This will clear if empty list
+                
+                # Log status change
+                if original_status != problem.status:
+                    ProblemActivity.objects.create(
+                        problem=problem,
+                        user=request.user,
+                        activity_type='status_changed',
+                        desc=f"Status changed from '{original_status}' to '{problem.status}'"
+                    )
+                
+                # Log priority change
+                if original_priority != problem.priority:
+                    ProblemActivity.objects.create(
+                        problem=problem,
+                        user=request.user,
+                        activity_type='priority_changed',
+                        desc=f"Priority changed from {original_priority} to {problem.priority}"
+                    )
+                
+                messages.success(request, "Problem updated successfully!")
+                return redirect('problems:detail', problem_id=problem.id)
+                
+            except Exception as e:
+                logger.error(f"Error updating problem: {str(e)}")
+                messages.error(request, f"Error updating problem: {str(e)}")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = ProblemForm(
+            instance=problem, 
+            parent_object=problem.get_related_object(), 
+            user=request.user
+        )
     
     context = {
+        'form': form,
         'problem': problem,
         'status_choices': Problem.STATUS_CHOICES,
         'priority_choices': Problem.PRIORITY_CHOICES,
         'visibility_choices': Problem.VISIBILITY_CHOICES,
+        'all_skills': Skill.objects.all().order_by('name'),
+        'mode': 'edit',
     }
     
     return render(request, 'problems/edit_problem.html', context)
@@ -430,3 +392,48 @@ def unassign_user(request, problem_id):
     except Exception as e:
         logger.error(f"Error unassigning user: {str(e)}")
         return JsonResponse({'error': 'An error occurred'}, status=500)
+
+
+def users_search_api(request):
+    """API endpoint for searching users to assign to problems"""
+    try:
+        query = request.GET.get('q', '').strip()
+        project_id = request.GET.get('project_id')
+        
+        if not query or len(query) < 2:
+            return JsonResponse({'results': []})
+        
+        # Base user query
+        users = User.objects.filter(
+            Q(username__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        ).filter(is_active=True)
+        
+        # Prioritize project members if project_id is provided
+        if project_id:
+            try:
+                project = Project.objects.get(id=project_id)
+                project_members = users.filter(membership__project=project)
+                non_members = users.exclude(membership__project=project)
+                # Combine with project members first
+                users = list(project_members) + list(non_members)
+            except Project.DoesNotExist:
+                users = list(users[:20])
+        else:
+            users = list(users[:20])
+        
+        results = []
+        for user in users:
+            results.append({
+                'id': user.id,
+                'username': user.username,
+                'full_name': user.get_full_name() or user.username,
+                'avatar_url': user.profile.avatar_small.url if hasattr(user, 'profile') and user.profile.avatar else '/static/images/default-avatar.png'
+            })
+        
+        return JsonResponse({'results': results})
+        
+    except Exception as e:
+        logger.error(f"Error in user search API: {str(e)}")
+        return JsonResponse({'results': [], 'error': str(e)})
