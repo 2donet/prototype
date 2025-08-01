@@ -218,7 +218,7 @@
         <!-- Link to single comment view -->
         <a href="{% url 'comments:single_comment' comment.id %}">Permalink</a>
 
-        <span></span> {{ comment.total_replies }} replies
+        <span></span>{{ comment|nested_reply_count:user }} replies
 
         {% if comment.total_replies > 0 %}
             <button class="view-replies-btn" data-comment-id="{{ comment.id }}">View Replies</button>

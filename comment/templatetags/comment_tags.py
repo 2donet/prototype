@@ -1,6 +1,7 @@
 from django import template
 from django.templatetags.static import static
 from django.utils.safestring import mark_safe
+from django.db import models
 from comment.models import ModeratorLevel
 
 register = template.Library()
@@ -345,3 +346,54 @@ def get_status_badge_class(status):
         'REPLY_TO_DELETED': 'status-reply_to_deleted',
     }
     return status_classes.get(status, 'status-default')
+
+@register.filter
+def nested_reply_count(comment, user=None):
+    """
+    Get the total count of nested replies for a comment
+    
+    Usage: {{ comment|nested_reply_count:user }}
+    """
+    from comment.models import CommentStatus
+    
+    if not comment:
+        return 0
+    
+    # Determine which statuses to include based on user permissions
+    if user and user.is_authenticated and hasattr(comment, 'can_moderate') and comment.can_moderate(user):
+        # Moderators see more statuses
+        include_statuses = [
+            CommentStatus.APPROVED,
+            CommentStatus.PENDING,
+            CommentStatus.FLAGGED,
+            CommentStatus.REJECTED,
+            CommentStatus.CONTENT_REMOVED,
+            CommentStatus.AUTHOR_REMOVED,
+            CommentStatus.AUTHOR_AND_CONTENT_REMOVED,
+        ]
+    else:
+        # Regular users only see approved
+        include_statuses = [CommentStatus.APPROVED]
+    
+    # Use the new method if it exists, otherwise fallback to the old field
+    if hasattr(comment, 'get_total_nested_replies'):
+        return comment.get_total_nested_replies(include_statuses)
+    else:
+        return comment.total_replies or 0
+
+@register.filter  
+def total_nested_replies_for_project(project, user=None):
+    """
+    Get total nested replies for a project
+    
+    Usage: {{ project|total_nested_replies_for_project:user }}
+    """
+    if hasattr(project, 'get_comment_statistics'):
+        stats = project.get_comment_statistics(user)
+        return stats['total_replies']
+    else:
+        # Fallback to old method
+        from comment.models import Comment
+        return Comment.objects.filter(to_project=project).aggregate(
+            total=models.Sum('total_replies')
+        )['total'] or 0

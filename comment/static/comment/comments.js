@@ -25,6 +25,72 @@ document.addEventListener('DOMContentLoaded', function() {
         button.innerHTML = `<i class="material-icons left">send</i>${text}`;
     };
 
+    // Update reply count function
+    function updateReplyCount(parentId, increment = 1) {
+        // Find the reply count element - it's the text node that shows "X replies"
+        const parentComment = document.querySelector(`.comment[data-comment-id="${parentId}"]`);
+        if (!parentComment) return;
+
+        // Look for the reply count text - it's typically between a <span></span> and "replies"
+        const replyTextNodes = Array.from(parentComment.childNodes).filter(node => 
+            node.nodeType === Node.TEXT_NODE && node.textContent.includes('replies')
+        );
+
+        let replyCountUpdated = false;
+        
+        // Update the text node that contains "X replies"
+        replyTextNodes.forEach(textNode => {
+            const text = textNode.textContent.trim();
+            const match = text.match(/(\d+)\s+replies?/);
+            if (match) {
+                const currentCount = parseInt(match[1]) || 0;
+                const newCount = currentCount + increment;
+                textNode.textContent = textNode.textContent.replace(/\d+\s+replies?/, `${newCount} replies`);
+                replyCountUpdated = true;
+            }
+        });
+
+        // If we couldn't find the text node, look for span elements that might contain the count
+        if (!replyCountUpdated) {
+            const replyCountSpans = parentComment.querySelectorAll('span');
+            replyCountSpans.forEach(span => {
+                const text = span.textContent.trim();
+                if (text.match(/^\d+$/) && span.nextSibling && span.nextSibling.textContent && span.nextSibling.textContent.includes('replies')) {
+                    const currentCount = parseInt(text) || 0;
+                    const newCount = currentCount + increment;
+                    span.textContent = newCount;
+                    replyCountUpdated = true;
+                }
+            });
+        }
+
+        // Handle "View Replies" button visibility
+        const viewRepliesBtn = parentComment.querySelector('.view-replies-btn');
+        const replyBtn = parentComment.querySelector('.reply-btn');
+        
+        // Get the updated count
+        let finalCount = 0;
+        const updatedText = parentComment.textContent;
+        const countMatch = updatedText.match(/(\d+)\s+replies?/);
+        if (countMatch) {
+            finalCount = parseInt(countMatch[1]) || 0;
+        }
+
+        if (finalCount > 0 && !viewRepliesBtn && replyBtn) {
+            // Add view replies button if it doesn't exist and there are replies
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'view-replies-btn';
+            viewBtn.setAttribute('data-comment-id', parentId);
+            viewBtn.textContent = 'View Replies';
+            replyBtn.parentNode.insertBefore(viewBtn, replyBtn);
+        } else if (finalCount === 0 && viewRepliesBtn) {
+            // Remove view replies button if count is 0
+            viewRepliesBtn.remove();
+        }
+
+        console.log(`Updated reply count for comment ${parentId}: increment=${increment}, final count=${finalCount}`);
+    }
+
     // Main comment form submission
     const addCommentForm = document.getElementById('add-comment-form');
     if (addCommentForm) {
@@ -87,6 +153,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 showToast('Comment posted successfully!', 'green');
                 
+                // Dispatch custom event for statistics update
+                document.dispatchEvent(new CustomEvent('commentAdded', { 
+                    detail: { commentId: data.comment.id, isReply: false } 
+                }));
+                
                 // Smooth scroll to new comment
                 newComment.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -133,16 +204,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     repliesContainer.style.display = 'block';
                     addCommentEventListeners(repliesContainer.lastElementChild);
                     
-                    // Update reply count
-                    const replyCountElement = document.querySelector(`.comment[data-comment-id="${parentId}"] .reply-count`);
-                    if (replyCountElement) {
-                        const currentCount = parseInt(replyCountElement.textContent) || 0;
-                        replyCountElement.textContent = currentCount + 1;
+                    // Update reply count using the new function
+                    updateReplyCount(parentId, 1);
+                    
+                    // Also update any parent comments in the chain for nested replies
+                    let currentParentId = parentId;
+                    const parentComment = document.querySelector(`.comment[data-comment-id="${currentParentId}"]`);
+                    
+                    // If this reply is nested (parent comment is inside a replies-container), 
+                    // we need to update counts up the chain
+                    if (parentComment) {
+                        const parentRepliesContainer = parentComment.closest('.replies-container');
+                        if (parentRepliesContainer) {
+                            const grandParentId = parentRepliesContainer.getAttribute('data-comment-id');
+                            if (grandParentId && grandParentId !== parentId) {
+                                updateReplyCount(grandParentId, 1);
+                            }
+                        }
                     }
                 }
+                
                 e.target.reset();
                 e.target.closest('.reply-form-container').style.display = 'none';
                 showToast('Reply posted successfully!', 'green');
+                
+                // Dispatch custom event for statistics update
+                document.dispatchEvent(new CustomEvent('commentAdded', { 
+                    detail: { commentId: data.comment.id, isReply: true, parentId: parentId } 
+                }));
 
             } catch (error) {
                 console.error('Reply submission error:', error);
@@ -154,47 +243,49 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Toggle reply forms
-document.addEventListener('click', (e) => {
-    const replyButton = e.target.closest('.reply-btn');
-    if (replyButton) {
-        e.preventDefault();
+    document.addEventListener('click', (e) => {
+        const replyButton = e.target.closest('.reply-btn');
+        if (replyButton) {
+            e.preventDefault();
 
-        const commentElement = replyButton.closest('.comment');
-        const replyFormContainer = commentElement.querySelector('.reply-form-container');
+            const commentElement = replyButton.closest('.comment');
+            const replyFormContainer = commentElement.querySelector('.reply-form-container');
 
-        if (replyFormContainer) {
-            replyFormContainer.style.display = 'block';  // Always show it
-            const textarea = replyFormContainer.querySelector('textarea');
-            if (textarea) textarea.focus();
+            if (replyFormContainer) {
+                replyFormContainer.style.display = 'block';  // Always show it
+                const textarea = replyFormContainer.querySelector('textarea');
+                if (textarea) textarea.focus();
+            }
         }
-    }
-});
-// Cancel reply form
-document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('cancel-reply')) {
-        e.preventDefault();
-        const replyFormContainer = e.target.closest('.reply-form-container');
-        if (replyFormContainer) {
-            replyFormContainer.style.display = 'none';
-            
-            // Clear the form
-            const form = replyFormContainer.querySelector('form');
-            if (form) {
-                form.reset();
+    });
+
+    // Cancel reply form
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('cancel-reply')) {
+            e.preventDefault();
+            const replyFormContainer = e.target.closest('.reply-form-container');
+            if (replyFormContainer) {
+                replyFormContainer.style.display = 'none';
                 
-                // Clear textarea for Materialize
-                const textarea = form.querySelector('textarea');
-                if (textarea) {
-                    textarea.value = '';
-                    if (typeof M !== 'undefined') {
-                        M.textareaAutoResize(textarea);
-                        M.updateTextFields();
+                // Clear the form
+                const form = replyFormContainer.querySelector('form');
+                if (form) {
+                    form.reset();
+                    
+                    // Clear textarea for Materialize
+                    const textarea = form.querySelector('textarea');
+                    if (textarea) {
+                        textarea.value = '';
+                        if (typeof M !== 'undefined') {
+                            M.textareaAutoResize(textarea);
+                            M.updateTextFields();
+                        }
                     }
                 }
             }
         }
-    }
-});
+    });
+
     // View replies toggle
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('view-replies-btn')) {
@@ -205,7 +296,7 @@ document.addEventListener('click', (e) => {
             if (repliesContainer) {
                 if (repliesContainer.style.display === 'none' || !repliesContainer.style.display) {
                     // Load replies if not already loaded
-                    if (!repliesContainer.hasChildNodes()) {
+                    if (!repliesContainer.hasChildNodes() || repliesContainer.children.length === 0) {
                         await loadReplies(commentId, repliesContainer);
                     }
                     repliesContainer.style.display = 'block';
@@ -225,7 +316,6 @@ document.addEventListener('click', (e) => {
             await handleVote(e.target);
         }
     });
-
 
     // Initialize Materialize components
     if (typeof M !== 'undefined') {
@@ -274,82 +364,99 @@ document.addEventListener('click', (e) => {
         return container;
     }
 
-function createCommentHtml(commentData, isReply = false) {
-    // Get CSRF token
-    const csrfToken = getCSRFToken();
-    
-    // Format the time as "just now" for new comments
-    const timeDisplay = 'just now';
-    
-    // Get the problem ID from the current page's form
-    const problemIdInput = document.querySelector('input[name="to_problem_id"]');
-    const problemId = problemIdInput ? problemIdInput.value : null;
-    
-    // Build the HTML matching the structure in comments.html
-    return `
-        <div class="comment ${isReply ? 'reply' : ''}" data-comment-id="${commentData.id}"
-            ${commentData.user_vote ? `data-user-vote="${commentData.user_vote}"` : ''}
-            <img class="miniavatar" src="${commentData.author_avatar || '/static/icons/default-avatar.svg'}">
-            <span>
-                <i title="${new Date().toISOString()}" style="float: right;">${timeDisplay}</i>
-                ${commentData.user_id ? `<a href="/u/${commentData.user_id}">${commentData.user || 'Anonymous'}</a>` : `<span>${commentData.user || 'Anonymous'}</span>`}
+    function createCommentHtml(commentData, isReply = false) {
+        // Get CSRF token
+        const csrfToken = getCSRFToken();
+        
+        // Format the time as "just now" for new comments
+        const timeDisplay = 'just now';
+        
+        // Get the problem ID from the current page's form
+        const problemIdInput = document.querySelector('input[name="to_problem_id"]');
+        const projectIdInput = document.querySelector('input[name="to_project_id"]');
+        const taskIdInput = document.querySelector('input[name="to_task_id"]');
+        const needIdInput = document.querySelector('input[name="to_need_id"]');
+        
+        // Determine the appropriate hidden input for the form
+        let hiddenInput = '';
+        if (problemIdInput) {
+            hiddenInput = `<input type="hidden" name="to_problem_id" value="${problemIdInput.value}">`;
+        } else if (projectIdInput) {
+            hiddenInput = `<input type="hidden" name="to_project_id" value="${projectIdInput.value}">`;
+        } else if (taskIdInput) {
+            hiddenInput = `<input type="hidden" name="to_task_id" value="${taskIdInput.value}">`;
+        } else if (needIdInput) {
+            hiddenInput = `<input type="hidden" name="to_need_id" value="${needIdInput.value}">`;
+        }
+        
+        // Calculate nested reply count (for new comments, it's 0)
+        const nestedReplyCount = commentData.nested_reply_count || commentData.total_replies || 0;
+        
+        // Build the HTML matching the structure in comments.html
+        return `
+            <div class="comment ${isReply ? 'reply' : ''}" data-comment-id="${commentData.id}"${commentData.user_vote ? ` data-user-vote="${commentData.user_vote}"` : ''}>
+                <img class="miniavatar" src="${commentData.author_avatar || '/static/icons/default-avatar.svg'}">
+                <span>
+                    <i title="${new Date().toISOString()}" style="float: right;">${timeDisplay}</i>
+                    ${commentData.user_id ? `<a href="/u/${commentData.user_id}">${commentData.user || 'Anonymous'}</a>` : `<span>${commentData.user || 'Anonymous'}</span>`}
+                    
+                    <div class="comment-actions">
+                        <div class="vote-container">
+                            <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
+                                <i>👍</i>
+                            </a>
+                            <span class="score">${commentData.score || 0}</span>
+                            <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
+                                <i>👎</i>
+                            </a>
+                        </div>
+                        
+                        <a class='dropdown-trigger btn-flat' href='#' data-target='actions-${commentData.id}'>
+                            <img src="/static/icons/menu.svg" alt="actions">
+                        </a>
+                        
+                        <ul id='actions-${commentData.id}' class='dropdown-content'>
+                            ${commentData.user_id ? `<li><a href="/comments/edit/${commentData.id}/">Edit</a></li>` : ''}
+                            <li><a href="/comments/report/${commentData.id}/">Report</a></li>
+                        </ul>
+                    </div>
+                </span>
+
+                <p>${commentData.content}</p>
+
+                <a href="/comments/${commentData.id}/">Permalink</a>
+
+                <span></span> ${nestedReplyCount} replies
+
+                ${nestedReplyCount > 0 ? `
+                    <button class="view-replies-btn" data-comment-id="${commentData.id}">View Replies</button>
+                ` : ''}
+
+                <button class="reply-btn" data-comment-id="${commentData.id}" data-controls="reply-form-${commentData.id}">Reply</button>
                 
-                <div class="comment-actions">
-                    <div class="vote-container">
-                        <a href="#" class="upvote-btn tooltipped" data-position="top" data-tooltip="Upvote">
-                            <i>👍</i>
-                        </a>
-                        <span class="score">${commentData.score || 0}</span>
-                        <a href="#" class="downvote-btn tooltipped" data-position="top" data-tooltip="Downvote">
-                            <i>👎</i>
-                        </a>
-                    </div>
-                    
-                    <a class='dropdown-trigger btn-flat' href='#' data-target='actions-${commentData.id}'>
-                        <img src="/static/icons/menu.svg" alt="actions">
-                    </a>
-                    
-                    <ul id='actions-${commentData.id}' class='dropdown-content'>
-                        ${commentData.user_id ? `<li><a href="/comments/edit/${commentData.id}/">Edit</a></li>` : ''}
-                        <li><a href="/comments/report/${commentData.id}/">Report</a></li>
-                    </ul>
+                <div class="reply-form-container" id="reply-form-${commentData.id}" data-comment-id="${commentData.id}" style="display: none;">
+                    <form class="reply-form">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                        <div class="input-field">
+                            <textarea name="content" class="materialize-textarea" required></textarea>
+                            <label>Your reply</label>
+                        </div>
+                        <input type="hidden" name="parent_id" value="${commentData.id}">
+                        ${hiddenInput}
+                        <button type="submit" class="btn waves-effect waves-light blue">
+                            <i class="material-icons left">send</i>Post Reply
+                        </button>
+                        <button type="button" class="btn waves-effect waves-light grey cancel-reply">
+                            Cancel
+                        </button>
+                    </form>
                 </div>
-            </span>
-
-            <p>${commentData.content}</p>
-
-            <a href="/comments/${commentData.id}/">Permalink</a>
-
-            <span></span> ${commentData.total_replies || 0} replies
-
-            ${(commentData.total_replies || 0) > 0 ? `
-                <button class="view-replies-btn" data-comment-id="${commentData.id}">View Replies</button>
-            ` : ''}
-
-            <button class="reply-btn" data-comment-id="${commentData.id}" data-controls="reply-form-${commentData.id}">Reply</button>
-            
-            <div class="reply-form-container" id="reply-form-${commentData.id}" data-comment-id="${commentData.id}" style="display: none;">
-                <form class="reply-form">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
-                    <div class="input-field">
-                        <textarea name="content" class="materialize-textarea" required></textarea>
-                        <label>Your reply</label>
-                    </div>
-                    <input type="hidden" name="parent_id" value="${commentData.id}">
-                    <input type="hidden" name="to_problem_id" value="${commentData.to_problem_id}">
-                    <button type="submit" class="btn waves-effect waves-light blue">
-                        <i class="material-icons left">send</i>Post Reply
-                    </button>
-                    <button type="button" class="btn waves-effect waves-light grey cancel-reply">
-                        Cancel
-                    </button>
-                </form>
+                
+                <div class="replies-container" data-comment-id="${commentData.id}" style="display: none;"></div>
             </div>
-            
-            <div class="replies-container" data-comment-id="${commentData.id}" style="display: none;"></div>
-        </div>
-    `;
-}
+        `;
+    }
+
     async function loadReplies(commentId, container) {
         try {
             const response = await fetch(`/comments/load-replies/${commentId}/`);
@@ -364,6 +471,11 @@ function createCommentHtml(commentData, isReply = false) {
                     container.querySelectorAll('.comment').forEach(comment => {
                         addCommentEventListeners(comment);
                     });
+                    
+                    // Dispatch custom event for statistics update
+                    document.dispatchEvent(new CustomEvent('repliesLoaded', { 
+                        detail: { commentId: commentId, repliesCount: data.replies.length } 
+                    }));
                 } else {
                     container.innerHTML = '<p class="grey-text">No replies yet</p>';
                 }
@@ -415,7 +527,6 @@ function createCommentHtml(commentData, isReply = false) {
             showToast('Error processing vote', 'red');
         }
     }
-
 
     function addCommentEventListeners(commentElement) {
         // Initialize Materialize components for the new comment

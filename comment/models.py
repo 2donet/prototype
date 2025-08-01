@@ -87,6 +87,58 @@ class Comment(models.Model):
     edit_history = models.JSONField(default=list, blank=True,
         help_text="History of edits to this comment")
 
+    def get_total_nested_replies(self, include_statuses=None):
+        """
+        Recursively count all nested replies (replies to replies, etc.)
+        
+        Args:
+            include_statuses: List of statuses to include. If None, includes only APPROVED
+        """
+        if include_statuses is None:
+            include_statuses = [CommentStatus.APPROVED]
+        
+        # Get direct replies with the specified statuses
+        direct_replies = self.replies.filter(status__in=include_statuses)
+        
+        # Count direct replies
+        total_count = direct_replies.count()
+        
+        # Recursively count nested replies
+        for reply in direct_replies:
+            total_count += reply.get_total_nested_replies(include_statuses)
+        
+        return total_count
+
+    def get_all_nested_replies(self, include_statuses=None):
+        """
+        Get all nested replies as a flat list (for moderators who need to see all)
+        
+        Args:
+            include_statuses: List of statuses to include. If None, includes all statuses
+        """
+        if include_statuses is None:
+            # For moderators, include all statuses except completely removed ones
+            include_statuses = [
+                CommentStatus.APPROVED,
+                CommentStatus.PENDING,
+                CommentStatus.FLAGGED,
+                CommentStatus.REJECTED,
+                CommentStatus.CONTENT_REMOVED,
+                CommentStatus.AUTHOR_REMOVED,
+                CommentStatus.AUTHOR_AND_CONTENT_REMOVED,
+            ]
+        
+        all_replies = []
+        
+        # Get direct replies
+        direct_replies = self.replies.filter(status__in=include_statuses)
+        
+        for reply in direct_replies:
+            all_replies.append(reply)
+            # Recursively get nested replies
+            all_replies.extend(reply.get_all_nested_replies(include_statuses))
+        
+        return all_replies
 
     def __str__(self):
         return f"{self.content[:20]} by {self.user.username if self.user else self.author_name or 'Anonymous'}"

@@ -1,4 +1,10 @@
-{% load static %}
+{% if pending_plan_suggestions|length > 0 %}
+            <a href="{% url 'project:plans_management' content.id %}" 
+               class="quick-action-btn pending">
+                <i class="material-icons">assignment</i>
+                <span>{{ pending_plan_suggestions|length }} Plan{{ pending_plan_suggestions|length|pluralize }}</span>
+            </a>
+            {% endif %}{% load static %}
 
 <!-- Simple Working Subprojects Component -->
 <div class="subprojects-hierarchy">
@@ -16,7 +22,7 @@
         </div>
         {% if can_moderate %}
         <div class="stat-widget">
-            <div class="stat-number">{{ admin_users|length|add:moderator_users|length|add:contributor_users|length|add:member_users|length }}</div>
+            <div class="stat-number">{{ total_members|default:0 }}</div>
             <div class="stat-label">Total Members</div>
             <i class="material-icons stat-icon">group</i>
         </div>
@@ -41,46 +47,110 @@
     </div>
     {% endif %}
 
-    <!-- Main Project Card (Central Hub) -->
-    <div class="main-project-hub">
-        <div class="project-card main-card">
-            <div class="card-header">
-                <div class="project-type-badge main">
-                    <i class="material-icons">hub</i>
-                    <span>Main Project</span>
-                </div>
-            </div>
-            
-            <div class="project-content">
-                <h4 class="project-title">{{ content.name }}</h4>
-                <p class="project-summary">{{ content.summary|default:"No summary available"|truncatechars:120 }}</p>
-                
-                <div class="project-meta">
-                    <div class="meta-item">
-                        <i class="material-icons tiny">group</i>
-                        <span>{{ admin_users|length|add:moderator_users|length|add:contributor_users|length|add:member_users|length }} members</span>
-                    </div>
-                    <div class="meta-item">
-                        <i class="material-icons tiny">assignment</i>
-                        <span>{{ tasks|length }} tasks</span>
-                    </div>
-                    <div class="meta-item">
-                        <i class="material-icons tiny">help_outline</i>
-                        <span>{{ needs|length }} needs</span>
-                    </div>
-                </div>
-
-                <!-- Connection Indicators -->
-                <div class="connection-indicators">
-                    {% if parent_projects %}
-                    <div class="connection-line parent-line"></div>
-                    {% endif %}
-                    {% if child_projects %}
-                    <div class="connection-line child-line"></div>
-                    {% endif %}
-                </div>
-            </div>
+    <!-- Project Statistics Dashboard -->
+    <div class="project-stats-dashboard">
+        <div class="stats-header">
+            <h4 class="dashboard-title">
+                <i class="material-icons">analytics</i>
+                Project Overview
+            </h4>
         </div>
+        
+        <div class="stats-grid">
+            <!-- Activity Stats -->
+            <div class="stat-card activity-card">
+                <div class="stat-header">
+                    <i class="material-icons">trending_up</i>
+                    <h6>Activity</h6>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-row">
+                        <span class="stat-label">Comments</span>
+                        <span class="stat-value">{{ total_comments|default:0 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Replies</span>
+                        <span class="stat-value" id="total-replies-count">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Problems</span>
+                        <span class="stat-value">{{ total_problems_count|default:0 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Plans</span>
+                        <span class="stat-value">{{ project_plans|length }}</span>
+                    </div>
+                    <div class="activity-summary">
+                        <div class="total-discussion">
+                            <i class="material-icons tiny">forum</i>
+                            <span id="total-discussions-display">0 Total Discussions</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Team Stats -->
+            <div class="stat-card team-card">
+                <div class="stat-header">
+                    <i class="material-icons">groups</i>
+                    <h6>Team ({{ total_members }})</h6>
+                </div>
+                <div class="stat-content">
+                    <div class="team-breakdown">
+                        <div class="role-stat">
+                            <div class="role-indicator admin"></div>
+                            <span>{{ admin_users|length }} Admin{{ admin_users|length|pluralize }}</span>
+                        </div>
+                        <div class="role-stat">
+                            <div class="role-indicator moderator"></div>
+                            <span>{{ moderator_users|length }} Moderator{{ moderator_users|length|pluralize }}</span>
+                        </div>
+                        <div class="role-stat">
+                            <div class="role-indicator contributor"></div>
+                            <span>{{ contributor_users|length }} Contributor{{ contributor_users|length|pluralize }}</span>
+                        </div>
+                        <div class="role-stat">
+                            <div class="role-indicator member"></div>
+                            <span>{{ member_users|length }} Member{{ member_users|length|pluralize }}</span>
+                        </div>
+                    </div>
+                    <div class="team-summary">
+                        <div class="total-indicator">
+                            <i class="material-icons tiny">group</i>
+                            <span>{{ total_members }} Total Members</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- Quick Actions Bar -->
+        {% if can_moderate %}
+        <div class="quick-actions">
+            <span class="actions-label">Quick Actions:</span>
+            <a href="{% url 'project:moderation_dashboard' content.id %}" 
+               class="quick-action-btn dashboard">
+                <i class="material-icons">dashboard</i>
+                <span>Dashboard</span>
+            </a>
+            {% if pending_connection_requests_count > 0 %}
+            <a href="{% url 'project:subprojects_management' content.id %}" 
+               class="quick-action-btn pending">
+                <i class="material-icons">notification_important</i>
+                <span>{{ pending_connection_requests_count }} Pending</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'project:project_members' content.id %}" 
+               class="quick-action-btn members">
+                <i class="material-icons">group</i>
+                <span>Members</span>
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Parent Projects Section -->
@@ -297,14 +367,347 @@
     color: var(--highlightdark) !important;
 }
 
-/* Main Project Hub */
-.main-project-hub {
-    display: flex;
-    justify-content: center;
+/* Project Statistics Dashboard */
+.project-stats-dashboard {
     margin: 30px 0;
+    background: var(--bg-light);
+    border-radius: 16px;
+    padding: 25px;
+    border: 1px solid var(--highlightdark);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.stats-header {
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.dashboard-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text);
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.stat-card {
+    background: var(--bg-color3);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--highlightdark);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--highlight);
+    opacity: 0.7;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    border-color: var(--highlight);
+}
+
+.stat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--highlightdark);
+}
+
+.stat-header i {
+    color: var(--highlight);
+    font-size: 1.2rem;
+}
+
+.stat-header h6 {
+    margin: 0;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Activity Card */
+.activity-card::before {
+    background: var(--information);
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.stat-label {
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+}
+
+.stat-value {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 4px 8px;
+    background: var(--bg-color2);
+    border-radius: 8px;
+    min-width: 30px;
+    text-align: center;
+}
+
+/* Progress Card */
+.progress-card::before {
+    background: var(--confirm);
+}
+
+.progress-item {
+    margin-bottom: 12px;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.progress-count {
+    color: var(--text);
+    font-weight: 600;
+    background: var(--bg-color2);
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--bg-color2);
+    border-radius: 4px;
+    overflow: hidden;
     position: relative;
 }
 
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--confirm), var(--highlight));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-fill.needs-progress {
+    background: linear-gradient(90deg, var(--warning), var(--information));
+}
+
+/* Team Card */
+.team-card::before {
+    background: var(--highlight);
+}
+
+.team-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.role-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 0.9rem;
+    color: var(--text2ndary);
+}
+
+.role-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.role-indicator.admin {
+    background: var(--danger);
+    box-shadow: 0 0 8px rgba(255,0,0,0.3);
+}
+
+.role-indicator.moderator {
+    background: var(--warning);
+    box-shadow: 0 0 8px rgba(255,165,0,0.3);
+}
+
+.role-indicator.contributor {
+    background: var(--information);
+    box-shadow: 0 0 8px rgba(0,123,255,0.3);
+}
+
+.role-indicator.member {
+    background: var(--confirm);
+    box-shadow: 0 0 8px rgba(40,167,69,0.3);
+}
+
+.team-summary, .activity-summary {
+    padding-top: 12px;
+    border-top: 1px solid var(--highlightdark);
+    margin-top: 8px;
+}
+
+.total-indicator, .total-discussion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-color2);
+    border-radius: 8px;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.85rem;
+}
+
+.total-indicator i, .total-discussion i {
+    color: var(--highlight);
+}
+
+/* Connections Card */
+.connections-card::before {
+    background: var(--information);
+}
+
+.connection-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.connection-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 0.9rem;
+    color: var(--text2ndary);
+}
+
+.connection-stat.parent i {
+    color: var(--information);
+}
+
+.connection-stat.child i {
+    color: var(--confirm);
+}
+
+.connection-stat.skills i {
+    color: var(--highlight);
+}
+
+.connection-stat.empty {
+    opacity: 0.6;
+    font-style: italic;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0 0 0;
+    border-top: 1px solid var(--highlightdark);
+    flex-wrap: wrap;
+}
+
+.actions-label {
+    color: var(--text2ndary);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.quick-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-color2);
+    color: var(--text2ndary);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.quick-action-btn.dashboard {
+    border-color: var(--information);
+}
+
+.quick-action-btn.dashboard:hover {
+    background: var(--information);
+    color: white;
+}
+
+.quick-action-btn.pending {
+    border-color: var(--warning);
+    animation: pulse 2s infinite;
+}
+
+.quick-action-btn.pending:hover {
+    background: var(--warning);
+    color: var(--highlightdark);
+}
+
+.quick-action-btn.members {
+    border-color: var(--highlight);
+}
+
+.quick-action-btn.members:hover {
+    background: var(--highlight);
+    color: var(--highlightdark);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+.quick-action-btn i {
+    font-size: 1rem;
+}
+
+/* Project Card Elements (for parent/child projects) */
 .project-card {
     background: var(--bg-light);
     border-radius: 20px 20px 60px 20px;
@@ -337,20 +740,6 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.3);
     border-color: var(--highlight);
 }
-
-.main-card {
-    min-width: 350px;
-    max-width: 450px;
-    border-color: var(--highlight);
-    box-shadow: 0 4px 15px rgba(229,193,41,0.2);
-}
-
-.main-card .project-title {
-    color: var(--highlight);
-    font-size: 1.4rem;
-}
-
-/* Project Card Elements */
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -576,9 +965,39 @@
         min-width: 140px;
     }
     
-    .main-card {
-        min-width: 100%;
-        max-width: 100%;
+    /* Statistics Dashboard Mobile */
+    .project-stats-dashboard {
+        padding: 20px 15px;
+        margin: 20px 0;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 15px;
+    }
+    
+    .dashboard-title {
+        font-size: 1.1rem;
+    }
+    
+    .quick-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .actions-label {
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    
+    .quick-action-btn {
+        justify-content: center;
+        padding: 12px;
     }
     
     .projects-grid {
@@ -605,6 +1024,28 @@
         font-size: 1.5rem;
     }
     
+    /* Mobile Statistics Dashboard */
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .team-breakdown {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .team-summary, .activity-summary {
+        grid-column: 1 / -1;
+    }
+    
+    .connection-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+    
     .project-meta {
         flex-direction: column;
         gap: 8px;
@@ -614,35 +1055,144 @@
         flex-direction: column;
         align-items: center;
     }
+    
+    .quick-actions {
+        padding: 10px 0 0 0;
+    }
+    
+    .quick-action-btn {
+        font-size: 0.9rem;
+        padding: 10px 15px;
+    }
 }
 
-/* Animation for project cards */
+/* Project Cards Animation */
 .project-card {
-    animation: fadeInUp 0.6s ease-out;
+    opacity: 1;
+    transform: translateY(0);
 }
 
-.parent-card {
-    animation-delay: 0.1s;
-}
-
-.child-card {
-    animation-delay: 0.2s;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.parent-card, .child-card {
+    opacity: 1;
+    transform: translateY(0);
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Function to calculate and update reply statistics
+    function updateReplyStatistics() {
+        // Method 1: Count all reply elements in the DOM
+        const directReplies = document.querySelectorAll('.comment.reply');
+        const containerReplies = document.querySelectorAll('.replies-container .comment');
+        
+        // Create a Set to avoid double counting
+        const allReplyElements = new Set();
+        directReplies.forEach(reply => allReplyElements.add(reply));
+        containerReplies.forEach(reply => allReplyElements.add(reply));
+        
+        let totalReplies = allReplyElements.size;
+        
+        // Method 2: Fallback - count by parsing reply count text in each comment
+        if (totalReplies === 0) {
+            let parsedRepliesCount = 0;
+            document.querySelectorAll('.comment').forEach(comment => {
+                // Look for text like "5 replies" in each comment
+                const textContent = comment.textContent || '';
+                const replyMatch = textContent.match(/(\d+)\s+replies?/);
+                if (replyMatch) {
+                    parsedRepliesCount += parseInt(replyMatch[1]) || 0;
+                }
+            });
+            totalReplies = parsedRepliesCount;
+        }
+        
+        // Get total comments from the backend value
+        const totalCommentsFromBackend = {{ total_comments|default:0 }};
+        const totalDiscussions = totalCommentsFromBackend + totalReplies;
+        
+        // Update the display elements
+        const totalRepliesElement = document.getElementById('total-replies-count');
+        const totalDiscussionsElement = document.getElementById('total-discussions-display');
+        
+        if (totalRepliesElement) {
+            totalRepliesElement.textContent = totalReplies;
+        }
+        
+        if (totalDiscussionsElement) {
+            totalDiscussionsElement.textContent = `${totalDiscussions} Total Discussions`;
+        }
+        
+        console.log(`Updated statistics: Comments=${totalCommentsFromBackend}, Replies=${totalReplies}, Total=${totalDiscussions}`);
+    }
+    
+    // Debug function (can be called from browser console)
+    window.debugReplyCount = function() {
+        const directReplies = document.querySelectorAll('.comment.reply');
+        const containerReplies = document.querySelectorAll('.replies-container .comment');
+        const allComments = document.querySelectorAll('.comment');
+        
+        console.log('=== Reply Count Debug ===');
+        console.log('Direct replies (.comment.reply):', directReplies.length);
+        console.log('Container replies (.replies-container .comment):', containerReplies.length);
+        console.log('All comments (.comment):', allComments.length);
+        console.log('Backend comments count:', {{ total_comments|default:0 }});
+        
+        // Show each comment's reply count
+        document.querySelectorAll('.comment').forEach((comment, index) => {
+            const textContent = comment.textContent || '';
+            const replyMatch = textContent.match(/(\d+)\s+replies?/);
+            if (replyMatch) {
+                console.log(`Comment ${index + 1} has ${replyMatch[1]} replies`);
+            }
+        });
+        
+        updateReplyStatistics();
+    };
+    
+    // Initial calculation with a small delay to ensure DOM is fully loaded
+    setTimeout(updateReplyStatistics, 500);
+    
+    // Update statistics whenever comments are loaded or modified
+    const observer = new MutationObserver(function(mutations) {
+        let shouldUpdate = false;
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                // Check if any comment elements were added or removed
+                const hasCommentChanges = Array.from(mutation.addedNodes).some(node => 
+                    node.nodeType === Node.ELEMENT_NODE && 
+                    (node.classList.contains('comment') || node.querySelector('.comment'))
+                ) || Array.from(mutation.removedNodes).some(node => 
+                    node.nodeType === Node.ELEMENT_NODE && 
+                    (node.classList.contains('comment') || node.querySelector('.comment'))
+                );
+                
+                if (hasCommentChanges) {
+                    shouldUpdate = true;
+                }
+            }
+        });
+        
+        if (shouldUpdate) {
+            // Debounce the update to avoid excessive calls
+            clearTimeout(window.replyStatsTimeout);
+            window.replyStatsTimeout = setTimeout(updateReplyStatistics, 100);
+        }
+    });
+    
+    // Observe changes in the comments container
+    const commentsContainer = document.getElementById('comments-container') || 
+                            document.querySelector('.newcomments') || 
+                            document.querySelector('.comments-section');
+    
+    if (commentsContainer) {
+        observer.observe(commentsContainer, {
+            childList: true,
+            subtree: true
+        });
+    }
+
+    
     // Add hover effects to project cards
     document.querySelectorAll('.project-card').forEach(function(card) {
         card.addEventListener('mouseenter', function() {
@@ -654,17 +1204,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Animate stats on scroll
-    const observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-                entry.target.style.animation = 'fadeInUp 0.6s ease-out';
-            }
+    // Add hover effects to stat cards
+    document.querySelectorAll('.stat-card').forEach(function(card) {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
         });
     });
     
-    document.querySelectorAll('.stat-widget').forEach(function(widget) {
-        observer.observe(widget);
+    // Add click effects to quick action buttons
+    document.querySelectorAll('.quick-action-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            // Create simple click effect
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
     });
 });
 </script>

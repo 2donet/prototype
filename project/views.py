@@ -16,7 +16,7 @@ from comment.utils import is_moderator, get_moderator_level
 from task.models import Task
 from need.models import Need
 from django.urls import path, reverse
-from django.db.models import Prefetch, Q, Count
+from django.db.models import Prefetch, Q, Count, Sum
 from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.urls import reverse
@@ -160,7 +160,7 @@ def project_members(request, project_id):
         'user__profile'  # This is the key addition for avatar loading
     ).order_by('user__username')
     
-    # Organize users by role
+    # Organize users by role - FIXED: No longer double counting
     admin_users = []
     moderator_users = []
     contributor_users = []
@@ -168,6 +168,9 @@ def project_members(request, project_id):
     all_members = User.objects.filter(
         membership__project=project
     ).select_related('profile').order_by('username')
+    
+    # Count total unique members
+    total_members = memberships.count()
     
     paginator = Paginator(all_members, 15)  # Show 15 members per page
     page_number = request.GET.get('page')
@@ -206,14 +209,13 @@ def project_members(request, project_id):
         'moderator_users': moderator_users,
         'contributor_users': contributor_users,
         'member_users': member_users,
+        'total_members': total_members,  # FIXED: Use proper count
         'can_manage_members': can_manage_members,
         'role_choices': ProjectPermissionGroup.choices,
         'all_members': all_members,
-        'total_members': paginator.count,
     }
     
     return render(request, 'members.html', context)
-
 
 def project(request, project_id):
     # Efficiently load project with creator profile
@@ -307,25 +309,22 @@ def project(request, project_id):
     moderator_users = []
     contributor_users = []
     member_users = []
-    
+    total_members = memberships.count()
     for membership in memberships:
-        user = membership.user
-        # Add membership data to the user object
-        user.membership_date_joined = membership.date_joined
-        user.membership_id = membership.id
-        user.membership_role = membership.role
-        
-        if membership.is_administrator:
-            admin_users.append(user)
-            member_users.append(user)
-        elif membership.is_moderator:
-            moderator_users.append(user)
-            member_users.append(user)
-        elif membership.is_contributor:
-            contributor_users.append(user)
-        else:
-            member_users.append(user)
-    
+            user = membership.user
+            # Add membership data to the user object
+            user.membership_date_joined = membership.date_joined
+            user.membership_id = membership.id
+            user.membership_role = membership.role
+            
+            if membership.is_administrator:
+                admin_users.append(user)
+            elif membership.is_moderator:
+                moderator_users.append(user)
+            elif membership.is_contributor:
+                contributor_users.append(user)
+            else:
+                member_users.append(user)
     # Check if current user is a member of this project
     is_member = False
     can_manage_members = False
@@ -392,6 +391,12 @@ def project(request, project_id):
             Q(content_type=need_ct, object_id__in=content.need_set.values_list('id', flat=True)),
             status=PlanSuggestionStatus.PENDING
         ).select_related('plan', 'suggested_by')[:5]  # Limit to 5 for the preview
+    total_members = memberships.count()
+    comment_stats = content.get_comment_statistics(request.user)
+    
+    total_comments = comment_stats['total_comments']
+    total_replies = comment_stats['total_replies'] 
+    total_discussions = comment_stats['total_discussions']
     context = {
         "content": content,
         "child_projects": child_projects,
@@ -409,6 +414,11 @@ def project(request, project_id):
         "can_moderate": can_moderate,
         "pending_connection_requests_count": pending_connection_requests_count,
         "project_plans": project_plans,
+        "total_members": total_members, 
+        "comment_stats": comment_stats,
+        "total_replies": total_replies,
+        "total_comments": total_comments,
+        "total_discussions": total_discussions,
         "pending_plan_suggestions": pending_plan_suggestions,
         "problems": recent_problems,  # For the component
         "total_problems_count": len(filtered_problems),  # For display
@@ -1056,7 +1066,6 @@ def project_locations_management(request, project_id):
     
     return render(request, 'moderation/locations.html', context)
 
-@user_passes_test(lambda u: u.is_authenticated)
 @user_passes_test(lambda u: u.is_authenticated)
 def project_subprojects_management(request, project_id):
     """Project subprojects management page"""

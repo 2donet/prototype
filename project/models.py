@@ -107,7 +107,55 @@ class Project(models.Model):
             if Membership.objects.filter(project=self, user=user).exists():
                 return True
         return False
-    
+    def get_comment_statistics(self, user=None):
+        """
+        Get comprehensive comment statistics for this project
+        
+        Args:
+            user: User object to determine what comments they can see
+            
+        Returns:
+            dict: Statistics including total_comments, total_replies, total_discussions
+        """
+        from comment.models import Comment, CommentStatus
+        
+        # Determine which statuses the user can see
+        if user and user.is_authenticated and self.user_can_moderate_comments(user):
+            # Moderators see all statuses except completely removed ones
+            include_statuses = [
+                CommentStatus.APPROVED,
+                CommentStatus.PENDING,
+                CommentStatus.FLAGGED,
+                CommentStatus.REJECTED,
+                CommentStatus.CONTENT_REMOVED,
+                CommentStatus.AUTHOR_REMOVED,
+                CommentStatus.AUTHOR_AND_CONTENT_REMOVED,
+            ]
+        else:
+            # Regular users only see approved
+            include_statuses = [CommentStatus.APPROVED]
+        
+        # Get all comments for this project (including nested ones)
+        all_project_comments = Comment.objects.filter(
+            to_project=self,
+            status__in=include_statuses
+        )
+        
+        # Count top-level comments (parent is null)
+        total_comments = all_project_comments.filter(parent__isnull=True).count()
+        
+        # Count all replies (parent is not null)  
+        total_replies = all_project_comments.filter(parent__isnull=False).count()
+        
+        # Total discussions = comments + all nested replies
+        total_discussions = total_comments + total_replies
+        
+        return {
+            'total_comments': total_comments,
+            'total_replies': total_replies,
+            'total_discussions': total_discussions,
+            'include_statuses': include_statuses
+        }
     def add_member(self, user, role='VIEWER'):
         """Add a user to the project with specified role"""
         membership, created = Membership.objects.get_or_create(
