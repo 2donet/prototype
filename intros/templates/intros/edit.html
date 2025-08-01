@@ -1,0 +1,436 @@
+
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit: {{ intro.name }}{% endblock %}
+
+{% block content %}
+<!-- intros/edit.html -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <style>
+        :root {
+            --highlight: #e5c129;
+            --text: #ffffff;
+            --highlightdark: #3B4139;
+            --bg-color: #141622;
+            --bg-light: #1d1e2d;
+            --bg-color2: #1f2234;
+            --bg-color3: #30344a;
+            --confirm: #5ce65c;
+            --danger: #ff2c2c;
+            --warning: #db9200;
+            --bg-menu: #222434;
+            --information: #305cde;
+            --text2ndary: #d1d1d1;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .card {
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .card-content {
+            color: var(--text);
+        }
+        
+        .card-title {
+            color: var(--highlight) !important;
+            font-weight: 500;
+        }
+        
+        .input-field input:focus + label,
+        .input-field textarea:focus + label {
+            color: var(--highlight) !important;
+        }
+        
+        .input-field input:focus,
+        .input-field textarea:focus {
+            border-bottom: 1px solid var(--highlight) !important;
+            box-shadow: 0 1px 0 0 var(--highlight) !important;
+        }
+        
+        .input-field input,
+        .input-field textarea {
+            color: var(--text);
+            background-color: var(--bg-color2);
+            border-radius: 4px;
+            padding: 12px;
+            border: 1px solid var(--bg-color3);
+        }
+        
+        .input-field label {
+            color: var(--text2ndary);
+        }
+        
+        .input-field label.active {
+            color: var(--highlight);
+        }
+        
+        select {
+            background-color: var(--bg-color2);
+            color: var(--text);
+            border: 1px solid var(--bg-color3);
+            border-radius: 4px;
+            padding: 8px;
+        }
+        
+        .helper-text {
+            color: var(--text2ndary);
+            font-size: 0.9em;
+        }
+        
+        .btn {
+            background-color: var(--highlight);
+            color: var(--bg-color);
+            border-radius: 8px;
+            text-transform: none;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background-color: var(--highlight-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--bg-color3);
+            color: var(--text);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--highlightmenu);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: var(--text);
+        }
+        
+        .btn-danger:hover {
+            background-color: var(--risk);
+        }
+        
+        .error-message {
+            color: var(--danger);
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+        
+        .current-relations {
+            background-color: var(--bg-color2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border-left: 4px solid var(--information);
+        }
+        
+        .relation-preview {
+            background-color: var(--bg-color3);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            border-left: 3px solid var(--confirm);
+        }
+        
+        .relation-preview.draft {
+            border-left-color: var(--warning);
+            background-color: rgba(219, 146, 0, 0.1);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--highlight);
+        }
+        
+        .tabs .tab a {
+            color: var(--text2ndary);
+        }
+        
+        .tabs .tab a:hover,
+        .tabs .tab a.active {
+            color: var(--highlight);
+        }
+        
+        .tabs .indicator {
+            background-color: var(--highlight);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row" style="margin-top: 32px;">
+            <div class="col s12 l10 offset-l1">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="row">
+                            <div class="col s12 m8">
+                                <span class="card-title">
+                                    <i class="material-icons left">edit</i>
+                                    Edit Introduction
+                                </span>
+                            </div>
+                            <div class="col s12 m4 right-align">
+                                <a href="{{ intro.get_absolute_url }}" class="btn-secondary btn waves-effect waves-light">
+                                    <i class="material-icons left">visibility</i>View
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Current Relationships Summary -->
+                        {% if intro.relations.exists %}
+                            <div class="current-relations">
+                                <h6><i class="material-icons left">link</i>Current Relationships</h6>
+                                <div class="row">
+                                    {% for relation in intro.relations.all %}
+                                        <div class="col s12 m6 l4">
+                                            <div class="relation-preview {% if relation.status != 'published' %}draft{% endif %}">
+                                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                                    <div>
+                                                        <small style="color: var(--text2ndary); text-transform: uppercase;">{{ relation.get_entity_type }}</small>
+                                                        <p style="margin: 4px 0; font-weight: 500;">{{ relation.get_related_entity|truncatechars:30 }}</p>
+                                                        <span style="font-size: 0.8em; color: var(--text2ndary);">{{ relation.get_status_display }}</span>
+                                                    </div>
+                                                    <i class="material-icons" style="color: var(--text2ndary);">
+                                                        {% if relation.to_project %}folder
+                                                        {% elif relation.to_task %}assignment
+                                                        {% elif relation.to_need %}help_outline
+                                                        {% elif relation.to_problem %}report_problem
+                                                        {% elif relation.to_plan %}list
+                                                        {% else %}link
+                                                        {% endif %}
+                                                    </i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <!-- Name -->
+                                <div class="input-field col s12">
+                                    {{ form.name }}
+                                    <label for="id_name" class="active">{{ form.name.label }}</label>
+                                    {% if form.name.help_text %}
+                                        <span class="helper-text">{{ form.name.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.name.errors %}
+                                        {% for error in form.name.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Summary -->
+                                <div class="input-field col s12">
+                                    {{ form.summary }}
+                                    <label for="id_summary" class="active">{{ form.summary.label }}</label>
+                                    {% if form.summary.help_text %}
+                                        <span class="helper-text">{{ form.summary.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.summary.errors %}
+                                        {% for error in form.summary.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Description -->
+                                <div class="input-field col s12">
+                                    {{ form.desc }}
+                                    <label for="id_desc" class="active">{{ form.desc.label }}</label>
+                                    {% if form.desc.help_text %}
+                                        <span class="helper-text">{{ form.desc.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.desc.errors %}
+                                        {% for error in form.desc.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Tabs for different sections -->
+                            <div class="row">
+                                <div class="col s12">
+                                    <ul class="tabs">
+                                        <li class="tab col s4"><a href="#basic-settings" class="active">Basic Settings</a></li>
+                                        <li class="tab col s4"><a href="#visibility-settings">Visibility & Access</a></li>
+                                        <li class="tab col s4"><a href="#advanced-settings">Advanced</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Basic Settings Tab -->
+                            <div id="basic-settings" class="col s12">
+                                <div class="row">
+                                    <div class="input-field col s12 m6">
+                                        {{ form.intro_type }}
+                                        <label>{{ form.intro_type.label }}</label>
+                                        {% if form.intro_type.help_text %}
+                                            <span class="helper-text">{{ form.intro_type.help_text }}</span>
+                                        {% endif %}
+                                        {% if form.intro_type.errors %}
+                                            {% for error in form.intro_type.errors %}
+                                                <div class="error-message">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="input-field col s12 m6">
+                                        {{ form.status }}
+                                        <label>{{ form.status.label }}</label>
+                                        {% if form.status.help_text %}
+                                            <span class="helper-text">{{ form.status.help_text }}</span>
+                                        {% endif %}
+                                        {% if form.status.errors %}
+                                            {% for error in form.status.errors %}
+                                                <div class="error-message">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Visibility Settings Tab -->
+                            <div id="visibility-settings" class="col s12">
+                                <div class="row">
+                                    <div class="input-field col s12 m6">
+                                        {{ form.visibility }}
+                                        <label>{{ form.visibility.label }}</label>
+                                        {% if form.visibility.help_text %}
+                                            <span class="helper-text">{{ form.visibility.help_text }}</span>
+                                        {% endif %}
+                                        {% if form.visibility.errors %}
+                                            {% for error in form.visibility.errors %}
+                                                <div class="error-message">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="input-field col s12 m6">
+                                        {{ form.main_project }}
+                                        <label>{{ form.main_project.label }}</label>
+                                        {% if form.main_project.help_text %}
+                                            <span class="helper-text">{{ form.main_project.help_text }}</span>
+                                        {% endif %}
+                                        {% if form.main_project.errors %}
+                                            {% for error in form.main_project.errors %}
+                                                <div class="error-message">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col s12">
+                                        <div style="background-color: var(--bg-color2); padding: 16px; border-radius: 8px; border-left: 4px solid var(--information);">
+                                            <h6><i class="material-icons left">info</i>Visibility Guide</h6>
+                                            <ul style="margin: 8px 0; padding-left: 20px;">
+                                                <li><strong>Public:</strong> Anyone can view this introduction</li>
+                                                <li><strong>Logged-in Users:</strong> Only authenticated users can view</li>
+                                                <li><strong>Restricted:</strong> Only members of the main project can view</li>
+                                                <li><strong>Private:</strong> Only you can view this introduction</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Advanced Settings Tab -->
+                            <div id="advanced-settings" class="col s12">
+                                <div class="row">
+                                    <div class="input-field col s12 m6">
+                                        {{ form.order }}
+                                        <label for="id_order" class="active">{{ form.order.label }}</label>
+                                        {% if form.order.help_text %}
+                                            <span class="helper-text">{{ form.order.help_text }}</span>
+                                        {% endif %}
+                                        {% if form.order.errors %}
+                                            {% for error in form.order.errors %}
+                                                <div class="error-message">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col s12 m6">
+                                        <div style="padding: 16px; background-color: var(--bg-color2); border-radius: 8px; margin-top: 16px;">
+                                            <h6><i class="material-icons left">analytics</i>Statistics</h6>
+                                            <p><strong>Views:</strong> {{ intro.view_count }}</p>
+                                            <p><strong>Created:</strong> {{ intro.created_at|date:"M d, Y H:i" }}</p>
+                                            <p><strong>Updated:</strong> {{ intro.updated_at|date:"M d, Y H:i" }}</p>
+                                            <p><strong>Relationships:</strong> {{ intro.relations.count }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Form Actions -->
+                            <div class="row" style="margin-top: 32px;">
+                                <div class="col s12 center-align">
+                                    <button type="submit" class="btn waves-effect waves-light" style="margin-right: 16px;">
+                                        <i class="material-icons left">save</i>Update Introduction
+                                    </button>
+                                    <a href="{{ intro.get_absolute_url }}" class="btn-secondary btn waves-effect waves-light" style="margin-right: 16px;">
+                                        <i class="material-icons left">cancel</i>Cancel
+                                    </a>
+                                    <a href="{% url 'intros:delete' intro.pk %}" class="btn-danger btn waves-effect waves-light" 
+                                       onclick="return confirm('Are you sure you want to delete this introduction? This will also remove all relationships.')">
+                                        <i class="material-icons left">delete</i>Delete
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Materialize components
+            M.Tabs.init(document.querySelectorAll('.tabs'));
+            M.FormSelect.init(document.querySelectorAll('select'));
+            M.textareaAutoResize(document.querySelectorAll('textarea'));
+            M.updateTextFields();
+            
+            // Character counter for summary
+            const summaryField = document.getElementById('id_summary');
+            if (summaryField) {
+                M.CharacterCounter.init(summaryField);
+                summaryField.setAttribute('data-length', '500');
+            }
+            
+            // Auto-save draft functionality (optional)
+            let autoSaveTimeout;
+            const form = document.querySelector('form');
+            const formElements = form.querySelectorAll('input, textarea, select');
+            
+            formElements.forEach(element => {
+                element.addEventListener('input', function() {
+                    clearTimeout(autoSaveTimeout);
+                    autoSaveTimeout = setTimeout(() => {
+                        // Auto-save logic could go here
+                        // For now, just show a subtle indicator
+                        console.log('Auto-save triggered');
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+
+{% endblock %}

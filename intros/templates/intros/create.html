@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Intro for {{ entity_type }}{% endblock %}
+
+{% block content %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <style>
+        :root {
+            --highlight: #e5c129;
+            --text: #ffffff;
+            --highlightdark: #3B4139;
+            --bg-color: #141622;
+            --bg-light: #1d1e2d;
+            --bg-color2: #1f2234;
+            --bg-color3: #30344a;
+            --confirm: #5ce65c;
+            --danger: #ff2c2c;
+            --warning: #db9200;
+            --bg-menu: #222434;
+            --information: #305cde;
+            --text2ndary: #d1d1d1;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .card {
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .card-content {
+            color: var(--text);
+        }
+        
+        .card-title {
+            color: var(--highlight) !important;
+            font-weight: 500;
+        }
+        
+        .input-field input:focus + label,
+        .input-field textarea:focus + label {
+            color: var(--highlight) !important;
+        }
+        
+        .input-field input:focus,
+        .input-field textarea:focus {
+            border-bottom: 1px solid var(--highlight) !important;
+            box-shadow: 0 1px 0 0 var(--highlight) !important;
+        }
+        
+        .input-field input,
+        .input-field textarea {
+            color: var(--text);
+            background-color: var(--bg-color2);
+            border-radius: 4px;
+            padding: 12px;
+            border: 1px solid var(--bg-color3);
+        }
+        
+        .input-field label {
+            color: var(--text2ndary);
+        }
+        
+        .input-field label.active {
+            color: var(--highlight);
+        }
+        
+        select {
+            background-color: var(--bg-color2);
+            color: var(--text);
+            border: 1px solid var(--bg-color3);
+            border-radius: 4px;
+            padding: 8px;
+        }
+        
+        .helper-text {
+            color: var(--text2ndary);
+            font-size: 0.9em;
+        }
+        
+        .btn {
+            background-color: var(--highlight);
+            color: var(--bg-color);
+            border-radius: 8px;
+            text-transform: none;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background-color: var(--highlight-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--bg-color3);
+            color: var(--text);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--highlightmenu);
+        }
+        
+        .error-message {
+            color: var(--danger);
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+        
+        .context-info {
+            background-color: var(--bg-color2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border-left: 4px solid var(--information);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--highlight);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row" style="margin-top: 32px;">
+            <div class="col s12 l8 offset-l2">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">
+                            <i class="material-icons left">add_circle</i>
+                            Create Introduction for {{ entity_type }}
+                        </span>
+                        
+                        <!-- Context Information -->
+                        <div class="context-info">
+                            <h6><i class="material-icons left">info</i>Creating intro for:</h6>
+                            <p style="margin: 8px 0 0 0; font-weight: 500;">{{ related_object }}</p>
+                        </div>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <!-- Name -->
+                                <div class="input-field col s12">
+                                    {{ form.name }}
+                                    <label for="id_name">{{ form.name.label }}</label>
+                                    {% if form.name.help_text %}
+                                        <span class="helper-text">{{ form.name.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.name.errors %}
+                                        {% for error in form.name.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Summary -->
+                                <div class="input-field col s12">
+                                    {{ form.summary }}
+                                    <label for="id_summary">{{ form.summary.label }}</label>
+                                    {% if form.summary.help_text %}
+                                        <span class="helper-text">{{ form.summary.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.summary.errors %}
+                                        {% for error in form.summary.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Description -->
+                                <div class="input-field col s12">
+                                    {{ form.desc }}
+                                    <label for="id_desc">{{ form.desc.label }}</label>
+                                    {% if form.desc.help_text %}
+                                        <span class="helper-text">{{ form.desc.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.desc.errors %}
+                                        {% for error in form.desc.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Type and Status -->
+                                <div class="input-field col s12 m6">
+                                    {{ form.intro_type }}
+                                    <label>{{ form.intro_type.label }}</label>
+                                    {% if form.intro_type.help_text %}
+                                        <span class="helper-text">{{ form.intro_type.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.intro_type.errors %}
+                                        {% for error in form.intro_type.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="input-field col s12 m6">
+                                    {{ form.status }}
+                                    <label>{{ form.status.label }}</label>
+                                    {% if form.status.help_text %}
+                                        <span class="helper-text">{{ form.status.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.status.errors %}
+                                        {% for error in form.status.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Visibility and Order -->
+                                <div class="input-field col s12 m6">
+                                    {{ form.visibility }}
+                                    <label>{{ form.visibility.label }}</label>
+                                    {% if form.visibility.help_text %}
+                                        <span class="helper-text">{{ form.visibility.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.visibility.errors %}
+                                        {% for error in form.visibility.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="input-field col s12 m6">
+                                    {{ form.order }}
+                                    <label for="id_order">{{ form.order.label }}</label>
+                                    {% if form.order.help_text %}
+                                        <span class="helper-text">{{ form.order.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.order.errors %}
+                                        {% for error in form.order.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Main Project -->
+                                <div class="input-field col s12">
+                                    {{ form.main_project }}
+                                    <label>{{ form.main_project.label }}</label>
+                                    {% if form.main_project.help_text %}
+                                        <span class="helper-text">{{ form.main_project.help_text }}</span>
+                                    {% endif %}
+                                    {% if form.main_project.errors %}
+                                        {% for error in form.main_project.errors %}
+                                            <div class="error-message">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Buttons -->
+                            <div class="row">
+                                <div class="col s12 center-align">
+                                    <button type="submit" class="btn waves-effect waves-light" style="margin-right: 16px;">
+                                        <i class="material-icons left">save</i>Create Introduction
+                                    </button>
+                                    <a href="javascript:history.back()" class="btn-secondary btn waves-effect waves-light">
+                                        <i class="material-icons left">cancel</i>Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Materialize components
+            M.FormSelect.init(document.querySelectorAll('select'));
+            M.textareaAutoResize(document.querySelectorAll('textarea'));
+            M.updateTextFields();
+            
+            // Character counter for summary
+            const summaryField = document.getElementById('id_summary');
+            if (summaryField) {
+                M.CharacterCounter.init(summaryField);
+                summaryField.setAttribute('data-length', '500');
+            }
+        });
+    </script>
+{% endblock %}

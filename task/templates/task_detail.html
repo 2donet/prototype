@@ -62,7 +62,8 @@
                     </div>
                     
                     <div class="divider" style="margin: 15px 0;"></div>
-                    
+                       <a href="{% url 'intros:create' 'task' task.id %}" class="btn">Create Intro</a>
+    <a href="{% url 'intros:link' 'task' task.id %}" class="btn-secondary">Link Intro</a>
                     <div class="task-description flow-text">
                         {{ task.desc|default:"No description provided."|linebreaks }}
                     </div>

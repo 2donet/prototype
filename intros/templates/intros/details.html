@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ intro.name }}{% endblock %}
+{% block content %}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <style>
+        :root {
+            --highlight: #e5c129;
+            --text: #ffffff;
+            --highlightdark: #3B4139;
+            --bg-color: #141622;
+            --bg-light: #1d1e2d;
+            --bg-color2: #1f2234;
+            --bg-color3: #30344a;
+            --confirm: #5ce65c;
+            --danger: #ff2c2c;
+            --warning: #db9200;
+            --bg-menu: #222434;
+            --information: #305cde;
+            --risk: #FC6C85;
+            --text2ndary: #d1d1d1;
+            --bgpopup: #222434;
+            --highlight-dark: #d5d370;
+            --highlightmenu: #4B4E5F;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .container {
+            max-width: 1200px;
+        }
+        
+        .card {
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .card-content {
+            color: var(--text);
+        }
+        
+        .card-title {
+            color: var(--highlight) !important;
+            font-weight: 500;
+        }
+        
+        .chip {
+            background-color: var(--bg-color3);
+            color: var(--text);
+            border: 1px solid var(--highlightdark);
+        }
+        
+        .chip.published {
+            background-color: var(--confirm);
+            color: var(--bg-color);
+        }
+        
+        .chip.draft {
+            background-color: var(--warning);
+            color: var(--bg-color);
+        }
+        
+        .chip.under-review {
+            background-color: var(--information);
+            color: var(--text);
+        }
+        
+        .chip.archived {
+            background-color: var(--text2ndary);
+            color: var(--bg-color);
+        }
+        
+        .btn {
+            background-color: var(--highlight);
+            color: var(--bg-color);
+            border-radius: 8px;
+            text-transform: none;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background-color: var(--highlight-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--bg-color3);
+            color: var(--text);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--highlightmenu);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: var(--text);
+        }
+        
+        .btn-danger:hover {
+            background-color: var(--risk);
+        }
+        
+        .intro-meta {
+            background-color: var(--bg-color2);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-left: 4px solid var(--highlight);
+        }
+        
+        .relation-item {
+            background-color: var(--bg-color2);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--information);
+            transition: all 0.3s ease;
+        }
+        
+        .relation-item:hover {
+            border-left-color: var(--highlight);
+            transform: translateX(4px);
+        }
+        
+        .relation-item.draft {
+            border-left-color: var(--warning);
+            background-color: rgba(219, 146, 0, 0.1);
+        }
+        
+        .relation-item.published {
+            border-left-color: var(--confirm);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.8em;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .status-badge.published {
+            background-color: var(--confirm);
+            color: var(--bg-color);
+        }
+        
+        .status-badge.draft {
+            background-color: var(--warning);
+            color: var(--bg-color);
+        }
+        
+        .tabs .tab a {
+            color: var(--text2ndary);
+        }
+        
+        .tabs .tab a:hover,
+        .tabs .tab a.active {
+            color: var(--highlight);
+        }
+        
+        .tabs .indicator {
+            background-color: var(--highlight);
+        }
+        
+        .divider {
+            background-color: var(--bg-color3);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--highlight);
+        }
+        
+        .modal {
+            background-color: var(--bgpopup);
+            color: var(--text);
+        }
+        
+        .modal-footer {
+            background-color: var(--bgpopup);
+        }
+        
+        @media only screen and (max-width: 992px) {
+            .container {
+                padding: 0 16px;
+            }
+        }
+    </style>
+
+    <div class="container">
+        <div class="row" style="margin-top: 32px;">
+            <div class="col s12">
+                <div class="card">
+                    <div class="card-content">
+                        <!-- Header -->
+                        <div class="row">
+                            <div class="col s12 m8">
+                                <span class="card-title">{{ intro.name }}</span>
+                                <div style="margin-top: 8px;">
+                                    <div class="chip {{ intro.status }}">
+                                        <i class="material-icons left">{% if intro.status == 'published' %}check_circle{% elif intro.status == 'draft' %}edit{% else %}archive{% endif %}</i>
+                                        {{ intro.get_status_display }}
+                                    </div>
+                                    <div class="chip">
+                                        <i class="material-icons left">category</i>
+                                        {{ intro.get_intro_type_display }}
+                                    </div>
+                                    <div class="chip">
+                                        <i class="material-icons left">visibility</i>
+                                        {{ intro.get_visibility_display }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col s12 m4 right-align">
+                                {% if can_edit %}
+                                    <a href="{% url 'intros:edit' intro.pk %}" class="btn waves-effect waves-light">
+                                        <i class="material-icons left">edit</i>Edit
+                                    </a>
+                                    <a href="{% url 'intros:delete' intro.pk %}" class="btn-danger btn waves-effect waves-light" 
+                                       onclick="return confirm('Are you sure you want to delete this intro?')">
+                                        <i class="material-icons left">delete</i>Delete
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="divider" style="margin: 20px 0;"></div>
+                        
+                        <!-- Meta Information -->
+                        <div class="intro-meta">
+                            <div class="row">
+                                <div class="col s12 m6">
+                                    <p><i class="material-icons left">person</i><strong>Created by:</strong> {{ intro.by_user.username }}</p>
+                                    <p><i class="material-icons left">access_time</i><strong>Created:</strong> {{ intro.created_at|date:"M d, Y H:i" }}</p>
+                                    {% if intro.updated_at != intro.created_at %}
+                                        <p><i class="material-icons left">update</i><strong>Updated:</strong> {{ intro.updated_at|date:"M d, Y H:i" }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col s12 m6">
+                                    {% if intro.main_project %}
+                                        <p><i class="material-icons left">folder</i><strong>Main Project:</strong> 
+                                           <a href="#" style="color: var(--highlight);">{{ intro.main_project.name }}</a>
+                                        </p>
+                                    {% endif %}
+                                    <p><i class="material-icons left">visibility</i><strong>Views:</strong> {{ intro.view_count }}</p>
+                                    <p><i class="material-icons left">sort</i><strong>Order:</strong> {{ intro.order }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Summary -->
+                        <div class="section">
+                            <h5><i class="material-icons left">description</i>Summary</h5>
+                            <p style="font-size: 1.1em; line-height: 1.6;">{{ intro.summary }}</p>
+                        </div>
+                        
+                        <div class="divider"></div>
+                        
+                        <!-- Full Description -->
+                        <div class="section">
+                            <h5><i class="material-icons left">article</i>Full Description</h5>
+                            <div style="line-height: 1.8; font-size: 1em;">
+                                {{ intro.desc|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Relationships Section -->
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">
+                            <i class="material-icons left">link</i>Related To
+                        </span>
+                        
+                        <!-- Show relationships without tabs for now to avoid complexity -->
+                        {% if published_relations %}
+                            <div class="section">
+                                <h6>Published Relationships ({{ published_relations|length }})</h6>
+                                {% for relation in published_relations %}
+                                    <div class="relation-item published card-panel">
+                                        <div class="row valign-wrapper">
+                                            <div class="col s12 m8">
+                                                <h6>
+                                                    <i class="material-icons left">
+                                                        {% if relation.to_project %}folder
+                                                        {% elif relation.to_task %}assignment
+                                                        {% elif relation.to_need %}help_outline
+                                                        {% elif relation.to_problem %}report_problem
+                                                        {% elif relation.to_plan %}list
+                                                        {% else %}link
+                                                        {% endif %}
+                                                    </i>
+                                                    {% with entity=relation.get_related_entity %}
+                                                        {{ entity }}
+                                                    {% endwith %}
+                                                    <span class="status-badge published">{{ relation.get_status_display }}</span>
+                                                </h6>
+                                                <p style="margin: 8px 0; color: var(--text2ndary);">
+                                                    <small>
+                                                        <i class="material-icons tiny">person</i> Linked by {{ relation.linked_by.username }} 
+                                                        on {{ relation.linked_at|date:"M d, Y" }}
+                                                    </small>
+                                                </p>
+                                                {% if relation.note %}
+                                                    <p style="font-style: italic; color: var(--text2ndary);">{{ relation.note }}</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col s12 m4 right-align">
+                                                {% if relation.can_edit_status %}
+                                                    <a href="#" class="btn-secondary btn-small waves-effect">
+                                                        <i class="material-icons left">settings</i>Manage
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        {% if draft_relations %}
+                            <div class="section">
+                                <h6>Pending Review ({{ draft_relations|length }})</h6>
+                                <p style="color: var(--warning); margin-bottom: 20px;">
+                                    <i class="material-icons left">warning</i>
+                                    These relationships are pending review and only visible to project administrators and moderators.
+                                </p>
+                                
+                                {% for relation in draft_relations %}
+                                    <div class="relation-item draft card-panel">
+                                        <div class="row valign-wrapper">
+                                            <div class="col s12 m8">
+                                                <h6>
+                                                    <i class="material-icons left">
+                                                        {% if relation.to_project %}folder
+                                                        {% elif relation.to_task %}assignment
+                                                        {% elif relation.to_need %}help_outline
+                                                        {% elif relation.to_problem %}report_problem
+                                                        {% elif relation.to_plan %}list
+                                                        {% else %}link
+                                                        {% endif %}
+                                                    </i>
+                                                    {% with entity=relation.get_related_entity %}
+                                                        {{ entity }}
+                                                    {% endwith %}
+                                                    <span class="status-badge draft">{{ relation.get_status_display }}</span>
+                                                </h6>
+                                                <p style="margin: 8px 0; color: var(--text2ndary);">
+                                                    <small>
+                                                        <i class="material-icons tiny">person</i> Linked by {{ relation.linked_by.username }} 
+                                                        on {{ relation.linked_at|date:"M d, Y" }}
+                                                    </small>
+                                                </p>
+                                                {% if relation.note %}
+                                                    <p style="font-style: italic; color: var(--text2ndary);">{{ relation.note }}</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col s12 m4 right-align">
+                                                {% if relation.can_edit_status %}
+                                                    <a href="#" class="btn-secondary btn-small waves-effect">
+                                                        <i class="material-icons left">settings</i>Review
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        {% if not published_relations and not draft_relations %}
+                            <div class="center-align" style="padding: 40px;">
+                                <i class="material-icons large" style="color: var(--text2ndary);">link_off</i>
+                                <p style="color: var(--text2ndary); margin-top: 16px;">This intro is not linked to any entities yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Back Button -->
+                <div class="center-align" style="margin: 32px 0;">
+                    <a href="{% url 'intros:list' %}" class="btn-secondary btn waves-effect waves-light">
+                        <i class="material-icons left">list</i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Materialize components - removed tabs for now
+            M.Modal.init(document.querySelectorAll('.modal'));
+            M.FormSelect.init(document.querySelectorAll('select'));
+            
+            // Auto-resize textareas
+            M.textareaAutoResize(document.querySelectorAll('textarea'));
+        });
+    </script>
+
+{% endblock %}

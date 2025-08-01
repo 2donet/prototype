@@ -1,0 +1,172 @@
+
+<!-- intros/linking_issue.html -->
+ {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Linking Issue Detected{% endblock %}
+{% block content %}
+
+
+
+
+    <style>
+        :root {
+            --highlight: #e5c129;
+            --text: #ffffff;
+            --highlightdark: #3B4139;
+            --bg-color: #141622;
+            --bg-light: #1d1e2d;
+            --bg-color2: #1f2234;
+            --bg-color3: #30344a;
+            --confirm: #5ce65c;
+            --danger: #ff2c2c;
+            --warning: #db9200;
+            --bg-menu: #222434;
+            --information: #305cde;
+            --text2ndary: #d1d1d1;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .card {
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .card-content {
+            color: var(--text);
+        }
+        
+        .card-title {
+            color: var(--warning) !important;
+            font-weight: 500;
+        }
+        
+        .btn {
+            background-color: var(--highlight);
+            color: var(--bg-color);
+            border-radius: 8px;
+            text-transform: none;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background-color: var(--highlight-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--bg-color3);
+            color: var(--text);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--highlightmenu);
+        }
+        
+        .warning-box {
+            background-color: rgba(219, 146, 0, 0.2);
+            border: 1px solid var(--warning);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .existing-relation {
+            background-color: var(--bg-color2);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            border-left: 4px solid var(--information);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--highlight);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row" style="margin-top: 32px;">
+            <div class="col s12 l8 offset-l2">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">
+                            <i class="material-icons left">warning</i>
+                            Linking Issue Detected
+                        </span>
+                        
+                        <div class="warning-box">
+                            <h6><i class="material-icons left">error</i>Relationship Already Exists</h6>
+                            <p>
+                                The introduction "{{ intro.name }}" is already linked to {{ target_entity }}.
+                                You cannot create duplicate relationships between the same intro and entity.
+                            </p>
+                        </div>
+                        
+                        {% if existing_relation %}
+                            <div class="existing-relation">
+                                <h6><i class="material-icons left">link</i>Existing Relationship</h6>
+                                <p><strong>Status:</strong> {{ existing_relation.get_status_display }}</p>
+                                <p><strong>Linked by:</strong> {{ existing_relation.linked_by.username }}</p>
+                                <p><strong>Linked on:</strong> {{ existing_relation.linked_at|date:"M d, Y H:i" }}</p>
+                                {% if existing_relation.note %}
+                                    <p><strong>Note:</strong> {{ existing_relation.note }}</p>
+                                {% endif %}
+                                
+                                {% if existing_relation.can_edit_status %}
+                                    <div style="margin-top: 16px;">
+                                        <a href="{{ existing_relation.get_absolute_url }}" class="btn-secondary btn-small waves-effect">
+                                            <i class="material-icons left">settings</i>Manage Relationship
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="section">
+                            <h6>What would you like to do?</h6>
+                            <p style="color: var(--text2ndary);">
+                                This linking issue has been logged for review. In the future, we'll provide more options 
+                                for handling these situations.
+                            </p>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col s12 center-align">
+                                <a href="{{ intro.get_absolute_url }}" class="btn waves-effect waves-light" style="margin-right: 16px;">
+                                    <i class="material-icons left">visibility</i>View Introduction
+                                </a>
+                                
+                                {% if target_entity.get_absolute_url %}
+                                    <a href="{{ target_entity.get_absolute_url }}" class="btn-secondary btn waves-effect waves-light" style="margin-right: 16px;">
+                                        <i class="material-icons left">open_in_new</i>View {{ entity_type }}
+                                    </a>
+                                {% endif %}
+                                
+                                <a href="javascript:history.back()" class="btn-secondary btn waves-effect waves-light">
+                                    <i class="material-icons left">arrow_back</i>Go Back
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-redirect after a delay (optional)
+            // setTimeout(() => {
+            //     window.history.back();
+            // }, 5000);
+        });
+    </script>
+{% endblock %}

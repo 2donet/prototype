@@ -642,6 +642,14 @@ document.addEventListener('DOMContentLoaded', function() {
         </ul>
         <div id="intro" class="col s12">
             Test 1
+
+    <a href="{% url 'intros:create' 'project' project.id %}" class="btn">
+        <i class="material-icons left">add</i>Create Introduction
+    </a>
+    <a href="{% url 'intros:link' 'project' project.id %}" class="btn-secondary">
+        <i class="material-icons left">link</i>Link Existing
+    </a>
+
             {% include "components/hint.html" with hint=1 %}
         </div>
         <div id="tasks" class="tab col s12">
