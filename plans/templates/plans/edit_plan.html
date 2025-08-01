@@ -75,24 +75,23 @@
                             <p class="grey-text">{{ step.desc|truncatewords:20 }}</p>
                             {% endif %}
                         </div>
-                        <div class="step-actions">
-                            <a href="{% url 'plans:edit_step' plan.id step.id %}" class="btn-small waves-effect">
-                                <i class="material-icons">edit</i>
-                            </a>
-                            <a href="{% url 'plans:delete_step' plan.id step.id %}" class="btn-small red waves-effect">
-                                <i class="material-icons">delete</i>
-                            </a>
-                            {% if not forloop.first %}
-                            <button class="btn-small waves-effect move-up" data-step-id="{{ step.id }}">
-                                <i class="material-icons">keyboard_arrow_up</i>
-                            </button>
-                            {% endif %}
-                            {% if not forloop.last %}
-                            <button class="btn-small waves-effect move-down" data-step-id="{{ step.id }}">
-                                <i class="material-icons">keyboard_arrow_down</i>
-                            </button>
-                            {% endif %}
-                        </div>
+<div class="step-actions">
+    <a href="{% url 'plans:edit_step' plan.id step.id %}" class="btn-small waves-effect">
+        <i class="material-icons">edit</i>
+    </a>
+    <a href="{% url 'plans:delete_step' plan.id step.id %}" class="btn-small red waves-effect">
+        <i class="material-icons">delete</i>
+    </a>
+    <!-- Always show both buttons for all steps (when there are multiple steps) -->
+    {% if plan.steps.count > 1 %}
+    <button class="btn-small waves-effect move-up" data-step-id="{{ step.id }}">
+        <i class="material-icons">keyboard_arrow_up</i>
+    </button>
+    <button class="btn-small waves-effect move-down" data-step-id="{{ step.id }}">
+        <i class="material-icons">keyboard_arrow_down</i>
+    </button>
+    {% endif %}
+</div>
                     </div>
                 </div>
                 {% endfor %}
@@ -261,7 +260,6 @@
     }
 }
 </style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const moveUpButtons = document.querySelectorAll('.move-up');
@@ -286,12 +284,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentItem = stepItems.find(item => item.dataset.stepId === stepId);
         const currentIndex = stepItems.indexOf(currentItem);
 
-        let newIndex;
-        if (direction === 'up' && currentIndex > 0) {
-            newIndex = currentIndex - 1;
-        } else if (direction === 'down' && currentIndex < stepItems.length - 1) {
-            newIndex = currentIndex + 1;
+        let targetIndex;
+        if (direction === 'up') {
+            targetIndex = currentIndex - 1;
         } else {
+            targetIndex = currentIndex + 1;
+        }
+
+        // Check boundaries - if move is not possible, just return
+        if (targetIndex < 0 || targetIndex >= stepItems.length) {
             return;
         }
 
@@ -302,7 +303,18 @@ document.addEventListener('DOMContentLoaded', function() {
             container.insertBefore(stepItems[currentIndex + 1], currentItem);
         }
 
+        updateStepNumbers();
         updateStepOrders();
+    }
+
+    function updateStepNumbers() {
+        const stepItems = document.querySelectorAll('.collection-item');
+        stepItems.forEach((item, index) => {
+            const stepNumber = item.querySelector('.step-number');
+            if (stepNumber) {
+                stepNumber.textContent = index + 1;
+            }
+        });
     }
 
     function updateStepOrders() {
@@ -341,5 +353,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
 {% endblock %}

@@ -49,16 +49,9 @@ def api_skills_autocomplete(request):
     return JsonResponse({'skills': skills_data})
 
 
-def skill_detail(request, skill_name):
-    try:
-        skill = Skill.objects.get(name__iexact=skill_name)
-    except Skill.DoesNotExist:
-        # Handle case where skill doesn't exist
-        raise Http404("Skill not found")
-    except Skill.MultipleObjectsReturned:
-        # Handle case where multiple skills exist
-        # Get the first one
-        skill = Skill.objects.filter(name__iexact=skill_name).first()
+def skill_detail(request, skill_id):
+    # Use get_object_or_404 for cleaner error handling
+    skill = get_object_or_404(Skill, id=skill_id)
     
     projects = Project.objects.filter(skills=skill)
     return render(request, 'skills/projects_with_skill.html', {'skill': skill, 'projects': projects})

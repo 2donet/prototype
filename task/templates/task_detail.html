@@ -80,7 +80,8 @@
 
 <div class="chips" style="border-bottom: none;">
     {% for skill in task.skills.all %}
-        <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+    
+        <a href="{% url 'skill_detail' skill.id %}" class="chip">
             {{ skill.name }}
         </a>
     {% empty %}

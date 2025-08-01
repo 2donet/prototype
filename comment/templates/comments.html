@@ -227,6 +227,32 @@
         <button class="reply-btn" data-comment-id="{{ comment.id }}"
             data-controls="reply-form-{{comment.id}}">Reply</button>
             
+        <!-- Reply form container -->
+        <div class="reply-form-container" id="reply-form-{{ comment.id }}" data-comment-id="{{ comment.id }}" style="display: none;">
+            <form class="reply-form">
+                {% csrf_token %}
+                <div class="input-field">
+                    <textarea name="content" class="materialize-textarea" required></textarea>
+                    <label for="content">Your reply</label>
+                </div>
+                <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                {% if problem %}
+                    <input type="hidden" name="to_problem_id" value="{{ problem.id }}">
+                {% elif project %}
+                    <input type="hidden" name="to_project_id" value="{{ project.id }}">
+                {% elif task %}
+                    <input type="hidden" name="to_task_id" value="{{ task.id }}">
+                {% elif need %}
+                    <input type="hidden" name="to_need_id" value="{{ need.id }}">
+                {% endif %}
+                <button type="submit" class="btn waves-effect waves-light blue">
+                    <i class="material-icons left">send</i>Post Reply
+                </button>
+                <button type="button" class="btn waves-effect waves-light grey cancel-reply">
+                    Cancel
+                </button>
+            </form>
+        </div>
         
         <div class="replies-container" data-comment-id="{{ comment.id }}" style="display: none;">
             {% include "comments.html" with comments=comment.replies.all is_nested_include=True %}

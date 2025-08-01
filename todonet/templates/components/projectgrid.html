@@ -166,7 +166,7 @@
         <div class="chips">
             {% for skill in project.skills.all %}
             <div class="chip">
-                <a href="{% url 'skill_detail' skill.name|lower %}">
+                <a href="{% url 'skill_detail' skill.id %}">
                     {{ skill.name }}
                 </a>
             </div>

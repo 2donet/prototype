@@ -142,7 +142,7 @@
                         <h6><strong>Related Skills</strong></h6>
                         <div class="chips" style="border-bottom: none;">
                             {% for skill in problem.skills.all %}
-                            <a href="{% url 'skill_detail' skill.name|lower %}" class="chip">
+                            <a href="{% url 'skill_detail' skill.id %}" class="chip">
                                 {{ skill.name }}
                             </a>
                             {% empty %}
