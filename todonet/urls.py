@@ -25,6 +25,7 @@ urlpatterns = [
     path("messages/", include("messaging.urls")),
     path("problems/", include("problems.urls")),  # Problems app URLs
     path('api/', include('problems.api_urls')),
+    path("intros/", include("intros.urls")),  # Intros app URLs
 ]
 
 if settings.DEBUG:

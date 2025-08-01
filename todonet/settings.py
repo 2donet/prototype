@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'messaging', 
     'plans',
     'problems',
+    'intros',  
 
 
 ]
