@@ -144,24 +144,66 @@ class CommentVoteViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
+def can_moderate_comments_for_object(user, object_type, object_id):
+    """
+    Helper function to check if user can moderate comments for a specific object
+    """
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff:
+        return True
+    
+    # Import here to avoid circular imports
+    try:
+        if object_type == 'project':
+            from project.models import Project
+            obj = Project.objects.get(id=object_id)
+            return obj.user_can_moderate_comments(user)
+        elif object_type == 'task':
+            from task.models import Task
+            task = Task.objects.select_related('to_project').get(id=object_id)
+            if task.to_project:
+                return task.to_project.user_can_moderate_comments(user)
+        elif object_type == 'need':
+            from need.models import Need
+            need = Need.objects.select_related('to_project').get(id=object_id)
+            if need.to_project:
+                return need.to_project.user_can_moderate_comments(user)
+        elif object_type == 'problem':
+            from problems.models import Problem
+            problem = Problem.objects.get(id=object_id)
+            # Check if problem is related to a project through task/need/direct relation
+            if hasattr(problem, 'to_project') and problem.to_project:
+                return problem.to_project.user_can_moderate_comments(user)
+            elif hasattr(problem, 'to_task') and problem.to_task and problem.to_task.to_project:
+                return problem.to_task.to_project.user_can_moderate_comments(user)
+            elif hasattr(problem, 'to_need') and problem.to_need and problem.to_need.to_project:
+                return problem.to_need.to_project.user_can_moderate_comments(user)
+    except:
+        pass
+    
+    return False
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def filtered_comments_api(request):
     """
     AJAX endpoint for filtering comments with admin controls
-    Only accessible to staff/moderators
+    Accessible to staff and project-specific comment moderators
     """
-    if not (request.user.is_staff or request.user.is_superuser):
-        return Response({'error': 'Permission denied'}, status=403)
-
     try:
         # Get filter parameters from request body
         data = json.loads(request.body) if request.body else {}
+        object_type = data.get('object_type')
+        object_id = data.get('object_id')
+        
+        # Check if user can moderate comments for this specific object
+        if not can_moderate_comments_for_object(request.user, object_type, object_id):
+            return Response({'error': 'Permission denied'}, status=403)
 
         statuses = data.get('statuses', ['APPROVED', 'PENDING'])
-        object_type = data.get('object_type')  # 'project', 'task', 'need', etc.
-        object_id = data.get('object_id')
+        # object_type and object_id already extracted above
 
         # Build the base queryset
         comments = Comment.objects.select_related('user').prefetch_related('replies__user')
@@ -245,6 +287,7 @@ def filtered_comments_api(request):
             'user': request.user,
             'object_type': object_type,
             'is_nested_include': True,
+            'can_moderate': can_moderate_comments_for_object(request.user, object_type, object_id),
         }
 
         # Include object model context if applicable
@@ -284,22 +327,31 @@ def filtered_comments_api(request):
 
 
 @csrf_exempt
-@user_passes_test(lambda u: u.is_staff or u.is_superuser)
 def filtered_comments_view(request):
     """
     Django view version for non-DRF usage
+    FIXED: Returns proper JSON error responses and checks project-specific permissions
     """
+    # Check permissions first and return JSON error if unauthorized
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
     try:
         # Get filter parameters from request body
         data = json.loads(request.body) if request.body else {}
+        object_type = data.get('object_type')
+        object_id = data.get('object_id')
+        
+        # Check if user can moderate comments for this specific object
+        if not can_moderate_comments_for_object(request.user, object_type, object_id):
+            return JsonResponse({'error': 'Permission denied'}, status=403)
         
         # Get the filtering parameters
         statuses = data.get('statuses', ['APPROVED', 'PENDING'])
-        object_type = data.get('object_type')
-        object_id = data.get('object_id')
+        # object_type and object_id already extracted above
         
         # Build the base queryset
         comments = Comment.objects.select_related('user').prefetch_related('replies__user')
@@ -332,8 +384,6 @@ def filtered_comments_view(request):
             # Default to no parent comments if no specific object
             comments = comments.filter(parent__isnull=True)
 
-
-            
         
         # Apply status filtering
         if statuses:
@@ -359,10 +409,6 @@ def filtered_comments_view(request):
                 to_report__isnull=True,
                 parent__isnull=True
             )
-            
-
-
-
 
         comments = comments
         total_count = total_comments.count()
@@ -387,6 +433,7 @@ def filtered_comments_view(request):
             'comments': comments,
             'user': request.user,
             'is_nested_include': True,  # Prevent admin panel from rendering in AJAX responses
+            'can_moderate': can_moderate_comments_for_object(request.user, object_type, object_id),
         }
         
         # Add specific object context

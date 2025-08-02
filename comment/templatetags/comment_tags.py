@@ -53,35 +53,20 @@ def user_avatar_url(user, size='small'):
     return static('icons/default-avatar.svg')
 
 
-@register.inclusion_tag('comment_avatar.html')
-def comment_avatar(user, css_class='miniavatar circle'):
-    """
-    Render a comment avatar with proper fallback
-    
-    Usage in templates:
-    {% load comment_tags %}
-    {% comment_avatar comment.user %}
-    {% comment_avatar comment.user 'custom-avatar-class' %}
-    """
-    return {
-        'user': user,
-        'avatar_url': user_avatar_url(user, 'small'),
-        'css_class': css_class
-    }
-
-
+# FIXED: Remove duplicate and use simple_tag for comment_avatar
 @register.simple_tag
 def comment_avatar(user, size='small'):
     """Render user avatar for comments"""
-    if user and hasattr(user, 'profile') and user.profile.avatar:
-        if size == 'small':
+    if user and hasattr(user, 'profile') and user.profile and hasattr(user.profile, 'avatar') and user.profile.avatar:
+        if size == 'small' and hasattr(user.profile, 'avatar_small'):
             avatar_url = user.profile.avatar_small.url
         else:
             avatar_url = user.profile.avatar.url
     else:
         avatar_url = '/static/icons/default-avatar.svg'
     
-    return mark_safe(f'<img src="{avatar_url}" alt="{user.username if user else "Anonymous"}" class="comment-avatar {size}">')
+    username = user.username if user else 'Anonymous'
+    return mark_safe(f'<img src="{avatar_url}" alt="{username}" class="miniavatar" title="{username}">')
 
 
 @register.filter
@@ -100,10 +85,67 @@ def moderator_level_badge(user):
     return ""
 
 
+# FIXED: Updated with better permission logic for project-specific comment moderation
 @register.filter 
-def can_moderate_comment(user, comment):
-    """Check if user can moderate a specific comment"""
-    return comment.can_moderate(user)
+def can_moderate_comment(comment, user):
+    """
+    Check if user can moderate a specific comment
+    Now includes project-specific moderation permissions
+    
+    Usage: {{ comment|can_moderate_comment:user }}
+    """
+    if not user or not user.is_authenticated:
+        return False
+    
+    # Staff and superusers can always moderate comments
+    if user.is_superuser or user.is_staff:
+        return True
+    
+    # Check project-specific comment moderation permissions
+    try:
+        if comment.to_project:
+            return comment.to_project.user_can_moderate_comments(user)
+        elif comment.to_task and comment.to_task.to_project:
+            return comment.to_task.to_project.user_can_moderate_comments(user)
+        elif comment.to_need and comment.to_need.to_project:
+            return comment.to_need.to_project.user_can_moderate_comments(user)
+        elif hasattr(comment, 'to_problem') and comment.to_problem:
+            # Handle problems - they might be related to projects through various paths
+            problem = comment.to_problem
+            if hasattr(problem, 'to_project') and problem.to_project:
+                return problem.to_project.user_can_moderate_comments(user)
+            elif hasattr(problem, 'to_task') and problem.to_task and problem.to_task.to_project:
+                return problem.to_task.to_project.user_can_moderate_comments(user)
+            elif hasattr(problem, 'to_need') and problem.to_need and problem.to_need.to_project:
+                return problem.to_need.to_project.user_can_moderate_comments(user)
+    except:
+        # If any error occurs, fall back to checking the comment's can_moderate method
+        pass
+    
+    # Fallback to comment's own can_moderate method if it exists
+    if hasattr(comment, 'can_moderate'):
+        return comment.can_moderate(user)
+    
+    return False
+
+
+# ADDED: Enhanced template tag for checking if user can view comment history
+@register.filter
+def can_view_comment_history(user, comment):
+    """Check if user can view comment history"""
+    if not user or not user.is_authenticated:
+        return False
+    
+    # Global admins can see everything
+    if user.is_superuser or user.is_staff:
+        return True
+    
+    # Comment authors can see their own history
+    if comment.user == user:
+        return True
+    
+    # Project/object moderators can see history using the same logic as comment moderation
+    return can_moderate_comment(comment, user)
 
 
 @register.inclusion_tag('comment_moderation_status.html')
@@ -270,38 +312,6 @@ def was_edited_by_user(comment):
         return False
 
 
-@register.inclusion_tag('changelog_summary.html')
-def changelog_summary(comment, max_entries=3):
-    """Display a summary of recent changes for a comment"""
-    if not hasattr(comment, 'change_log'):
-        return {'changes': [], 'comment': comment}
-    
-    recent_changes = comment.change_log.select_related('changed_by')[:max_entries]
-    return {
-        'changes': recent_changes,
-        'comment': comment,
-        'total_changes': comment.change_log.count(),
-        'max_entries': max_entries
-    }
-
-
-@register.filter
-def can_view_comment_history(user, comment):
-    """Check if user can view comment history"""
-    if not user.is_authenticated:
-        return False
-    
-    # Global admins can see everything
-    if user.is_superuser or user.is_staff:
-        return True
-    
-    # Project moderators can see moderation history
-    if hasattr(comment, 'can_moderate') and comment.can_moderate(user):
-        return True
-    
-    return False
-
-
 @register.filter
 def can_view_all_changes(user, comment):
     """Check if user can view all changes (including user edits)"""
@@ -347,10 +357,12 @@ def get_status_badge_class(status):
     }
     return status_classes.get(status, 'status-default')
 
+
+# FIXED: Updated nested_reply_count with better permission logic
 @register.filter
 def nested_reply_count(comment, user=None):
     """
-    Get the total count of nested replies for a comment
+    Get the total count of nested replies for a comment based on user permissions
     
     Usage: {{ comment|nested_reply_count:user }}
     """
@@ -360,19 +372,34 @@ def nested_reply_count(comment, user=None):
         return 0
     
     # Determine which statuses to include based on user permissions
-    if user and user.is_authenticated and hasattr(comment, 'can_moderate') and comment.can_moderate(user):
-        # Moderators see more statuses
-        include_statuses = [
-            CommentStatus.APPROVED,
-            CommentStatus.PENDING,
-            CommentStatus.FLAGGED,
-            CommentStatus.REJECTED,
-            CommentStatus.CONTENT_REMOVED,
-            CommentStatus.AUTHOR_REMOVED,
-            CommentStatus.AUTHOR_AND_CONTENT_REMOVED,
-        ]
+    if user and user.is_authenticated:
+        # Check if user is staff/superuser (can see all comment statuses)
+        if user.is_staff or user.is_superuser:
+            include_statuses = [
+                CommentStatus.APPROVED,
+                CommentStatus.PENDING,
+                CommentStatus.FLAGGED,
+                CommentStatus.REJECTED,
+                CommentStatus.CONTENT_REMOVED,
+                CommentStatus.AUTHOR_REMOVED,
+                CommentStatus.AUTHOR_AND_CONTENT_REMOVED,
+            ]
+        # Check if user can moderate this specific comment (project-specific permissions)
+        elif can_moderate_comment(comment, user):
+            include_statuses = [
+                CommentStatus.APPROVED,
+                CommentStatus.PENDING,
+                CommentStatus.FLAGGED,
+                CommentStatus.REJECTED,
+                CommentStatus.CONTENT_REMOVED,
+                CommentStatus.AUTHOR_REMOVED,
+                CommentStatus.AUTHOR_AND_CONTENT_REMOVED,
+            ]
+        else:
+            # Regular authenticated users only see approved
+            include_statuses = [CommentStatus.APPROVED]
     else:
-        # Regular users only see approved
+        # Anonymous users only see approved
         include_statuses = [CommentStatus.APPROVED]
     
     # Use the new method if it exists, otherwise fallback to the old field
@@ -380,6 +407,7 @@ def nested_reply_count(comment, user=None):
         return comment.get_total_nested_replies(include_statuses)
     else:
         return comment.total_replies or 0
+
 
 @register.filter  
 def total_nested_replies_for_project(project, user=None):
@@ -397,3 +425,75 @@ def total_nested_replies_for_project(project, user=None):
         return Comment.objects.filter(to_project=project).aggregate(
             total=models.Sum('total_replies')
         )['total'] or 0
+
+
+# ADDED: Additional template tags that might be needed
+@register.filter
+def is_staff_or_superuser(user):
+    """Check if user is staff or superuser"""
+    return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+
+@register.simple_tag
+def get_comment_context_type(project=None, task=None, need=None, problem=None, decision=None, membership=None, report=None):
+    """Get the context type for comments"""
+    if project:
+        return 'project'
+    elif task:
+        return 'task'
+    elif need:
+        return 'need'
+    elif problem:
+        return 'problem'
+    elif decision:
+        return 'decision'
+    elif membership:
+        return 'membership'
+    elif report:
+        return 'report'
+    else:
+        return 'unknown'
+
+
+@register.simple_tag
+def get_comment_context_id(project=None, task=None, need=None, problem=None, decision=None, membership=None, report=None):
+    """Get the context ID for comments"""
+    if project:
+        return project.id
+    elif task:
+        return task.id
+    elif need:
+        return need.id
+    elif problem:
+        return problem.id
+    elif decision:
+        return decision.id
+    elif membership:
+        return membership.id
+    elif report:
+        return report.id
+    else:
+        return None
+
+
+@register.filter
+def comment_status_badge(status):
+    """Generate a status badge for a comment"""
+    from comment.models import CommentStatus
+    
+    status_colors = {
+        CommentStatus.APPROVED: 'green',
+        CommentStatus.PENDING: 'orange',
+        CommentStatus.REJECTED: 'red',
+        CommentStatus.FLAGGED: 'purple',
+        CommentStatus.CONTENT_REMOVED: 'grey',
+        CommentStatus.AUTHOR_REMOVED: 'pink',
+        CommentStatus.AUTHOR_AND_CONTENT_REMOVED: 'deep-orange',
+        CommentStatus.THREAD_DELETED: 'black',
+        CommentStatus.REPLY_TO_DELETED: 'grey darken-2',
+    }
+    
+    color = status_colors.get(status, 'grey')
+    display_name = dict(CommentStatus.choices).get(status, status)
+    
+    return mark_safe(f'<span class="badge {color} white-text">{display_name}</span>')

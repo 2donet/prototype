@@ -2,7 +2,7 @@
 {% load static %}
 {% load comment_tags %}
 
-<!-- Admin Comment Status Filter - Only shown ONCE at top level -->
+<!-- Admin Comment Status Filter - Only shown ONCE at top level and to comment moderators -->
 {% if user.is_staff or user.is_superuser or can_moderate %}
 {% if not is_nested_include %}
 <div id="admin-comment-filters" style="margin-bottom: 15px; padding: 12px; background: var(--bg-color2); border-radius: 6px; border-left: 3px solid var(--information);">
@@ -88,7 +88,7 @@
 <div {% if not is_nested_include %}id="comments-container"{% endif %}>
 {% for comment in comments %}
 <!-- Only show approved comments to regular users, all comments to moderators -->
-{% if comment.status == 'APPROVED' or user.is_staff or comment|can_moderate_comment:user %}
+{% if comment.status == 'APPROVED' or user.is_staff or user.is_superuser or comment|can_moderate_comment:user %}
 <div class="comment" data-comment-id="{{ comment.id }}" {% if comment.user_vote%}data-user-vote="{{ comment.user_vote }}" {% endif %}>
     {% comment_avatar comment.user %}
 
@@ -104,8 +104,8 @@
             <span>Anonymous</span>
         {% endif %}
 
-        <!-- Show moderation status to moderators -->
-        {% if user.is_staff or comment|can_moderate_comment:user %}
+        <!-- Show moderation status to comment moderators ONLY (not general project moderators) -->
+        {% if user.is_staff or user.is_superuser or comment|can_moderate_comment:user %}
             {% if comment.status != 'APPROVED' %}
                 <span class="moderation-status" style="background: #ff6b6b; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
                     {{ comment.get_status_display }}
@@ -145,8 +145,8 @@
                 </li>
                 {% endif %}
                 
-                <!-- History link for moderators -->
-                {% if user|can_view_comment_history:comment %}
+                <!-- History link for moderators ONLY -->
+                {% if user.is_staff or user.is_superuser or user|can_view_comment_history:comment %}
                     <li>
                         <a href="{% url 'comments:comment_history' comment.id %}">
                             📜 View History
@@ -177,7 +177,7 @@
         {% if comment.status == 'CONTENT_REMOVED' or comment.status == 'AUTHOR_AND_CONTENT_REMOVED' %}
             <em style="color: #666;">[Content removed by moderation]</em>
             
-            <!-- Show original content to admins -->
+            <!-- Show original content to admins ONLY -->
             {% if user.is_superuser or user.is_staff %}
                 <details style="margin-top: 5px;">
                     <summary style="cursor: pointer; color: #2196f3; font-size: 12px;">Show Original (Admin Only)</summary>
@@ -189,7 +189,7 @@
         {% elif comment.status == 'THREAD_DELETED' or comment.status == 'REPLY_TO_DELETED' %}
             <em style="color: #666;">[Comment deleted]</em>
             
-            <!-- Show original content to admins -->
+            <!-- Show original content to admins ONLY -->
             {% if user.is_superuser or user.is_staff %}
                 <details style="margin-top: 5px;">
                     <summary style="cursor: pointer; color: #2196f3; font-size: 12px;">Show Original (Admin Only)</summary>
@@ -206,7 +206,7 @@
         {% if comment.is_edited %}
             <small style="color: #666; font-style: italic;">
                 (edited)
-                {% if user.is_staff or comment|can_moderate_comment:user %}
+                {% if user.is_staff or user.is_superuser or comment|can_moderate_comment:user %}
                     - <a href="{% url 'comments:comment_history' comment.id %}" style="color: #2196f3;">view history</a>
                 {% endif %}
             </small>
@@ -264,14 +264,14 @@
 {% endfor %}
 </div>
 
-<!-- Context data and JavaScript - ONLY AT TOP LEVEL -->
+<!-- Context data and JavaScript - ONLY AT TOP LEVEL AND FOR COMMENT MODERATORS -->
 {% if user.is_staff or user.is_superuser or can_moderate %}
 {% if not is_nested_include %}
 <script type="application/json" id="comment-context-data">
 {
     "object_type": "{% if project %}project{% elif task %}task{% elif need %}need{% elif problem %}problem{% else %}unknown{% endif %}",
     "object_id": {% if project %}{{ project.id }}{% elif task %}{{ task.id }}{% elif need %}{{ need.id }}{% elif problem %}{{ problem.id }}{% else %}null{% endif %},
-    "can_moderate": {% if can_moderate %}true{% else %}false{% endif %}
+    "can_moderate": {% if user.is_staff or user.is_superuser %}true{% else %}false{% endif %}
 }
 </script>
 
@@ -476,6 +476,22 @@ function initializeAdminCommentFiltering() {
             body: JSON.stringify(requestData)
         })
         .then(response => {
+            // Handle non-JSON responses (like permission errors that return HTML)
+            if (response.status === 401) {
+                throw new Error('Authentication required');
+            }
+            if (response.status === 403) {
+                throw new Error('Permission denied');
+            }
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Server returned non-JSON response');
+            }
+            
             return response.json();
         })
         .then(data => {
@@ -517,8 +533,18 @@ function initializeAdminCommentFiltering() {
         .catch(error => {
             console.error('AJAX error:', error);
             hideLoading();
+            
+            let errorMessage = 'Failed to load comments';
+            if (error.message === 'Authentication required') {
+                errorMessage = 'Please log in to access admin features';
+            } else if (error.message === 'Permission denied') {
+                errorMessage = 'You do not have permission to use admin features';
+            } else if (error.message.includes('non-JSON response')) {
+                errorMessage = 'Server error - please refresh the page';
+            }
+            
             if (commentsContainer) {
-                commentsContainer.innerHTML = '<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load comments</p>';
+                commentsContainer.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">${errorMessage}</p>`;
             }
             if (filterCount) filterCount.textContent = 'Load failed';
         });

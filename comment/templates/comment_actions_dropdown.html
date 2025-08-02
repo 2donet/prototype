@@ -1,0 +1,67 @@
+<!-- comment/templates/comment_actions_dropdown.html -->
+<!-- Dropdown Structure for Comment Actions -->
+<ul id='actions-{{comment.id}}' class='dropdown-content'>
+    {% if user.is_staff %}
+    <li>
+        <a href="/admin/comment/comment/{{ comment.id }}/change/">[ ADMIN ]</a>
+    </li>
+    {% endif %}
+    
+    <!-- History link for moderators/staff -->
+    {% if can_view_history %}
+        <li>
+            <a href="{% url 'comments:comment_history' comment.id %}">
+                📜 View History
+                {% if comment.change_log.count > 0 %}
+                    ({{ comment.change_log.count }})
+                {% endif %}
+            </a>
+        </li>
+    {% endif %}
+    
+    <!-- Edit for comment owner or staff -->
+    {% if can_edit %}
+    <li><a href="{% url 'comments:edit_comment' comment.id %}">✏️ Edit</a></li>
+    {% endif %}
+    
+    <!-- Message user (if comment has a user) -->
+    {% if comment.user %}
+    <li>
+        <a href="/messages/{{ comment.user.username }}/">✉️ Message</a>
+    </li>
+    {% endif %}
+    
+    <!-- Report comment -->
+    <li>
+        <a href="{% url 'comments:report_comment' comment.id %}">
+            🚩 Report
+        </a>
+    </li>
+    
+    <!-- Moderation actions for moderators -->
+    {% if can_moderate %}
+        <li class="divider"></li>
+        <li class="collection-header">Moderation</li>
+        {% if comment.status != 'APPROVED' %}
+        <li>
+            <a href="{% url 'comments:enhanced_report_detail' comment.id %}">
+                ✅ Approve
+            </a>
+        </li>
+        {% endif %}
+        
+        {% if comment.status != 'REJECTED' %}
+        <li>
+            <a href="{% url 'comments:enhanced_report_detail' comment.id %}">
+                ❌ Reject
+            </a>
+        </li>
+        {% endif %}
+        
+        <li>
+            <a href="{% url 'comments:enhanced_delete_comment' comment.id %}">
+                🗑️ Delete
+            </a>
+        </li>
+    {% endif %}
+</ul>
