@@ -1,10 +1,10 @@
 {% if pending_plan_suggestions|length > 0 %}
-            <a href="{% url 'project:plans_management' content.id %}" 
-               class="quick-action-btn pending">
-                <i class="material-icons">assignment</i>
-                <span>{{ pending_plan_suggestions|length }} Plan{{ pending_plan_suggestions|length|pluralize }}</span>
-            </a>
-            {% endif %}{% load static %}
+<a href="{% url 'project:plans_management' content.id %}" 
+   class="quick-action-btn pending">
+    <i class="material-icons">assignment</i>
+    <span>{{ pending_plan_suggestions|length }} Plan{{ pending_plan_suggestions|length|pluralize }}</span>
+</a>
+{% endif %}{% load static %}
 
 <!-- Simple Working Subprojects Component -->
 <div class="subprojects-hierarchy">
@@ -89,8 +89,6 @@
                 </div>
             </div>
 
-
-
             <!-- Team Stats -->
             <div class="stat-card team-card">
                 <div class="stat-header">
@@ -124,8 +122,6 @@
                     </div>
                 </div>
             </div>
-
-
         </div>
 
         <!-- Quick Actions Bar -->
@@ -480,51 +476,6 @@
     text-align: center;
 }
 
-/* Progress Card */
-.progress-card::before {
-    background: var(--confirm);
-}
-
-.progress-item {
-    margin-bottom: 12px;
-}
-
-.progress-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-    font-size: 0.9rem;
-}
-
-.progress-count {
-    color: var(--text);
-    font-weight: 600;
-    background: var(--bg-color2);
-    padding: 2px 8px;
-    border-radius: 6px;
-}
-
-.progress-bar {
-    height: 8px;
-    background: var(--bg-color2);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--confirm), var(--highlight));
-    border-radius: 4px;
-    transition: width 0.3s ease;
-    position: relative;
-}
-
-.progress-fill.needs-progress {
-    background: linear-gradient(90deg, var(--warning), var(--information));
-}
-
 /* Team Card */
 .team-card::before {
     background: var(--highlight);
@@ -593,43 +544,6 @@
 
 .total-indicator i, .total-discussion i {
     color: var(--highlight);
-}
-
-/* Connections Card */
-.connections-card::before {
-    background: var(--information);
-}
-
-.connection-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.connection-stat {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    font-size: 0.9rem;
-    color: var(--text2ndary);
-}
-
-.connection-stat.parent i {
-    color: var(--information);
-}
-
-.connection-stat.child i {
-    color: var(--confirm);
-}
-
-.connection-stat.skills i {
-    color: var(--highlight);
-}
-
-.connection-stat.empty {
-    opacity: 0.6;
-    font-style: italic;
 }
 
 /* Quick Actions */
@@ -896,34 +810,6 @@
     background: linear-gradient(to top, var(--confirm), transparent);
 }
 
-.connection-indicators {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-}
-
-.connection-line {
-    position: absolute;
-    width: 3px;
-    height: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0.4;
-}
-
-.parent-line {
-    top: -15px;
-    background: linear-gradient(to bottom, var(--information), transparent);
-}
-
-.child-line {
-    bottom: -15px;
-    background: linear-gradient(to top, var(--confirm), transparent);
-}
-
 /* Empty State */
 .empty-hierarchy {
     text-align: center;
@@ -1040,12 +926,6 @@
         grid-column: 1 / -1;
     }
     
-    .connection-stats {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 6px;
-    }
-    
     .project-meta {
         flex-direction: column;
         gap: 8px;
@@ -1080,141 +960,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Function to calculate and update reply statistics
-    function updateReplyStatistics() {
-        // Method 1: Count all reply elements in the DOM
-        const directReplies = document.querySelectorAll('.comment.reply');
-        const containerReplies = document.querySelectorAll('.replies-container .comment');
-        
-        // Create a Set to avoid double counting
-        const allReplyElements = new Set();
-        directReplies.forEach(reply => allReplyElements.add(reply));
-        containerReplies.forEach(reply => allReplyElements.add(reply));
-        
-        let totalReplies = allReplyElements.size;
-        
-        // Method 2: Fallback - count by parsing reply count text in each comment
-        if (totalReplies === 0) {
-            let parsedRepliesCount = 0;
-            document.querySelectorAll('.comment').forEach(comment => {
-                // Look for text like "5 replies" in each comment
-                const textContent = comment.textContent || '';
-                const replyMatch = textContent.match(/(\d+)\s+replies?/);
-                if (replyMatch) {
-                    parsedRepliesCount += parseInt(replyMatch[1]) || 0;
-                }
-            });
-            totalReplies = parsedRepliesCount;
-        }
-        
-        // Get total comments from the backend value
-        const totalCommentsFromBackend = {{ total_comments|default:0 }};
-        const totalDiscussions = totalCommentsFromBackend + totalReplies;
-        
-        // Update the display elements
-        const totalRepliesElement = document.getElementById('total-replies-count');
-        const totalDiscussionsElement = document.getElementById('total-discussions-display');
-        
-        if (totalRepliesElement) {
-            totalRepliesElement.textContent = totalReplies;
-        }
-        
-        if (totalDiscussionsElement) {
-            totalDiscussionsElement.textContent = `${totalDiscussions} Total Discussions`;
-        }
-        
-        console.log(`Updated statistics: Comments=${totalCommentsFromBackend}, Replies=${totalReplies}, Total=${totalDiscussions}`);
-    }
-    
-    // Debug function (can be called from browser console)
-    window.debugReplyCount = function() {
-        const directReplies = document.querySelectorAll('.comment.reply');
-        const containerReplies = document.querySelectorAll('.replies-container .comment');
-        const allComments = document.querySelectorAll('.comment');
-        
-        console.log('=== Reply Count Debug ===');
-        console.log('Direct replies (.comment.reply):', directReplies.length);
-        console.log('Container replies (.replies-container .comment):', containerReplies.length);
-        console.log('All comments (.comment):', allComments.length);
-        console.log('Backend comments count:', {{ total_comments|default:0 }});
-        
-        // Show each comment's reply count
-        document.querySelectorAll('.comment').forEach((comment, index) => {
-            const textContent = comment.textContent || '';
-            const replyMatch = textContent.match(/(\d+)\s+replies?/);
-            if (replyMatch) {
-                console.log(`Comment ${index + 1} has ${replyMatch[1]} replies`);
-            }
-        });
-        
-        updateReplyStatistics();
-    };
-    
-    // Initial calculation with a small delay to ensure DOM is fully loaded
-    setTimeout(updateReplyStatistics, 500);
-    
-    // Update statistics whenever comments are loaded or modified
-    const observer = new MutationObserver(function(mutations) {
-        let shouldUpdate = false;
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                // Check if any comment elements were added or removed
-                const hasCommentChanges = Array.from(mutation.addedNodes).some(node => 
-                    node.nodeType === Node.ELEMENT_NODE && 
-                    (node.classList.contains('comment') || node.querySelector('.comment'))
-                ) || Array.from(mutation.removedNodes).some(node => 
-                    node.nodeType === Node.ELEMENT_NODE && 
-                    (node.classList.contains('comment') || node.querySelector('.comment'))
-                );
-                
-                if (hasCommentChanges) {
-                    shouldUpdate = true;
-                }
-            }
-        });
-        
-        if (shouldUpdate) {
-            // Debounce the update to avoid excessive calls
-            clearTimeout(window.replyStatsTimeout);
-            window.replyStatsTimeout = setTimeout(updateReplyStatistics, 100);
-        }
-    });
-    
-    // Observe changes in the comments container
-    const commentsContainer = document.getElementById('comments-container') || 
-                            document.querySelector('.newcomments') || 
-                            document.querySelector('.comments-section');
-    
-    if (commentsContainer) {
-        observer.observe(commentsContainer, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    
-    // Add hover effects to project cards
-    document.querySelectorAll('.project-card').forEach(function(card) {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-5px) scale(1.02)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-    });
-    
-    // Add hover effects to stat cards
-    document.querySelectorAll('.stat-card').forEach(function(card) {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-3px) scale(1.02)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-    });
-    
     // Add click effects to quick action buttons
     document.querySelectorAll('.quick-action-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {

@@ -131,12 +131,12 @@ updateUnreadCount();
       </nav>
       
       <!-- Dropdown for Authenticated Users -->
-      {% if user.is_authenticated %}
-      <ul id="dropdown-user-nav" class="dropdown-content">
-        <li><a href="/u/{{ user.id }}">Profile</a></li>
-        <li><a href="/u/logout">Logout</a></li>
-      </ul>
-      {% endif %}
+{% if user.is_authenticated %}
+<ul id="dropdown-user-nav" class="dropdown-content">
+  <li><a href="/u/{{ request.user.id }}">Profile</a></li>
+  <li><a href="/u/logout">Logout</a></li>
+</ul>
+{% endif %}
 
       <ul id="dropdown-add-nav" class="dropdown-content">
         <li><a href="/create">Project</a></li>
@@ -159,16 +159,15 @@ updateUnreadCount();
         {% endif %}
         <li><a href="/admin">admin</a></li>
         
-        {% if user.is_authenticated %}
-          <!-- Authenticated user mobile menu -->
-          <li><a href="/u/{{ user.id }}">Profile</a></li>
-          <li><a href="/u/logout">Logout</a></li>
-        {% else %}
-          <!-- Non-authenticated user mobile menu -->
-          <li><a href="/u/signin">Login</a></li>
-          <li><a href="/u/signup">Register</a></li>
-        {% endif %}
-        
+{% if user.is_authenticated %}
+  <!-- Authenticated user mobile menu -->
+  <li><a href="/u/{{ request.user.id }}">Profile</a></li>
+  <li><a href="/u/logout">Logout</a></li>
+{% else %}
+  <!-- Non-authenticated user mobile menu -->
+  <li><a href="/u/signin">Login</a></li>
+  <li><a href="/u/signup">Register</a></li>
+{% endif %}
         <li><a class="dropdown-trigger" href="#!" data-target="dropdown-add-nav-mobile">Add</a></li>
       </ul>
       
