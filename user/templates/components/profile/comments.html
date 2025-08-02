@@ -94,7 +94,7 @@
         <div class="comments-pagination">
             <div class="pagination-controls">
                 {% if user_comments.has_previous %}
-                    <a href="?comments_page={{ user_comments.previous_page_number }}#comments" 
+                    <a href="?comments_page={{ user_comments.previous_page_number }}#profile-comments" 
                        class="btn-flat waves-effect pagination-btn">
                         <i class="material-icons left">chevron_left</i>Previous
                     </a>
@@ -105,7 +105,7 @@
                 </span>
                 
                 {% if user_comments.has_next %}
-                    <a href="?comments_page={{ user_comments.next_page_number }}#comments" 
+                    <a href="?comments_page={{ user_comments.next_page_number }}#profile-comments" 
                        class="btn-flat waves-effect pagination-btn">
                         Next<i class="material-icons right">chevron_right</i>
                     </a>
