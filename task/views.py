@@ -421,6 +421,8 @@ class CreateTaskView(CreateView):
         
         messages.success(
             self.request, 
+            f"Task '{self.object.name}' created successfully! " + 
+            (f"Skills: {', '.join(skill_names)}" if skill_names else "No skills assigned.")
         )
         
         return response

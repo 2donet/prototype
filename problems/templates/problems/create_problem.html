@@ -60,29 +60,31 @@
                         <!-- Priority and Status Row -->
                         <div class="row">
                             <div class="col s12 m6">
+
                                 <div class="input-field">
-                                    <select name="priority" id="problem-priority">
+                                    <h6>Priority</h6>
+                                    <select class="browser-default" name="priority" id="problem-priority">
                                         {% for value, label in priority_choices %}
                                         <option value="{{ value }}" {% if form_data.priority == value|stringformat:"s" or value == 2 and not form_data.priority %}selected{% endif %}>
                                             {{ label }}
                                         </option>
                                         {% endfor %}
                                     </select>
-                                    <label>Priority *</label>
+                                    
                                     <span class="helper-text">How urgent is this problem?</span>
                                 </div>
                             </div>
                             
                             <div class="col s12 m6">
                                 <div class="input-field">
-                                    <select name="status" id="problem-status">
+                                    <h6>Status</h6>
+                                    <select class="browser-default" name="status" id="problem-status">
                                         {% for value, label in status_choices %}
                                         <option value="{{ value }}" {% if form_data.status == value or value == 'open' and not form_data.status %}selected{% endif %}>
                                             {{ label }}
                                         </option>
                                         {% endfor %}
                                     </select>
-                                    <label>Status</label>
                                     <span class="helper-text">Current status of the problem</span>
                                 </div>
                             </div>
@@ -90,14 +92,15 @@
                         
                         <!-- Visibility -->
                         <div class="input-field">
-                            <select name="visibility" id="problem-visibility">
+                            <h6>Visibility</h6>
+                            <select class="browser-default" name="visibility" id="problem-visibility">
                                 {% for value, label in visibility_choices %}
                                 <option value="{{ value }}" {% if form_data.visibility == value or value == 'public' and not form_data.visibility %}selected{% endif %}>
                                     {{ label }}
                                 </option>
                                 {% endfor %}
                             </select>
-                            <label>Visibility</label>
+                            
                             <span class="helper-text">Who can view this problem?</span>
                         </div>
                         

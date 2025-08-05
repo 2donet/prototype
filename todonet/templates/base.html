@@ -55,7 +55,7 @@
           
           // Poll for unread messages count (for authenticated users)
 // Poll for unread messages count (for authenticated users)
-{% if user.is_authenticated %}
+{% if request.user.is_authenticated %}
 function updateUnreadCount() {
   $.get('/messages/ajax/unread-count/', function(data) {
     const desktopBadge = $('#unread-count');
@@ -115,7 +115,7 @@ updateUnreadCount();
             {% endif %}
             <li><a href="/admin">admin</a></li>
             
-            {% if user.is_authenticated %}
+            {% if request.user.is_authenticated %}
               <!-- Authenticated user dropdown -->
               <li><a class="dropdown-trigger" href="#!" data-target="dropdown-user-nav">User</a></li>
             {% else %}
@@ -131,7 +131,7 @@ updateUnreadCount();
       </nav>
       
       <!-- Dropdown for Authenticated Users -->
-{% if user.is_authenticated %}
+{% if request.user.is_authenticated %}
 <ul id="dropdown-user-nav" class="dropdown-content">
   <li><a href="/u/{{ request.user.id }}">Profile</a></li>
   <li><a href="/u/logout">Logout</a></li>
@@ -149,7 +149,7 @@ updateUnreadCount();
       <ul class="sidenav" id="mobile-demo">
         <li><a href="/">Home</a></li>
         <li><a href="/1">2do.net</a></li>
-        {% if user.is_authenticated %}
+{% if request.user.is_authenticated %}
           <li>
             <a href="/messages/">
               Messages 
@@ -159,7 +159,7 @@ updateUnreadCount();
         {% endif %}
         <li><a href="/admin">admin</a></li>
         
-{% if user.is_authenticated %}
+{% if request.user.is_authenticated %}
   <!-- Authenticated user mobile menu -->
   <li><a href="/u/{{ request.user.id }}">Profile</a></li>
   <li><a href="/u/logout">Logout</a></li>
@@ -181,7 +181,7 @@ updateUnreadCount();
     <div class="row">
         <div class="s12 m8">
             <div class="contentBASE">
-              {% if messages %}
+              {% if messages and request.user.is_authenticated %}
     {% for message in messages %}
         <div class="card-panel {{ message.tags|default:'blue' }} lighten-4">
             <i class="material-icons left">
@@ -197,7 +197,7 @@ updateUnreadCount();
                 
             </div>
             <div class="s12 m4">
-                {% if user.is_authenticated %}
+                {% if request.user.is_authenticated %}
                 <button onclick="window.location.href='/create/'">Create project</button>
                 {% endif %}
             </div>

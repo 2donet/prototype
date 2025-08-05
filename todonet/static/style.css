@@ -3850,3 +3850,9 @@ nav ul li a {
         }
     }
 }
+
+.browser-default{
+    background-color: var(--bg-color3);
+    color: var(--text);
+    border: solid 2px var(--bg-color2);
+}
