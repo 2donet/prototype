@@ -82,7 +82,7 @@ class IntroListView(LoginRequiredMixin, ListView):
 
 class IntroDetailView(BaseIntroView, DetailView):
     """Show detailed intro view with all relationships"""
-    template_name = 'intros/detail.html'
+    template_name = 'intros/details.html'
     context_object_name = 'intro'
     
     def get_object(self, queryset=None):

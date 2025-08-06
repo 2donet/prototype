@@ -200,8 +200,8 @@
                                 <div class="row">
                                     <!-- Intro Selection -->
                                     <div class="input-field col s12">
+                                        <h6>{{ form.intro.label }}</h6>
                                         {{ form.intro }}
-                                        <label>{{ form.intro.label }}</label>
                                         {% if form.intro.help_text %}
                                             <span class="helper-text">{{ form.intro.help_text }}</span>
                                         {% endif %}
@@ -214,8 +214,8 @@
                                     
                                     <!-- Status and Order -->
                                     <div class="input-field col s12 m6">
+                                        <h6>{{ form.status.label }}</h6>
                                         {{ form.status }}
-                                        <label>{{ form.status.label }}</label>
                                         {% if form.status.help_text %}
                                             <span class="helper-text">{{ form.status.help_text }}</span>
                                         {% endif %}
@@ -227,8 +227,8 @@
                                     </div>
                                     
                                     <div class="input-field col s12 m6">
+                                        <h6>{{ form.order.label }}</h6>
                                         {{ form.order }}
-                                        <label for="id_order">{{ form.order.label }}</label>
                                         {% if form.order.help_text %}
                                             <span class="helper-text">{{ form.order.help_text }}</span>
                                         {% endif %}

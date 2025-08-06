@@ -24,7 +24,7 @@ from django.core.paginator import Paginator
 import json
 from problems.models import Problem 
 from skills.models import Skill
-
+from intros.models import Intro
 from django.contrib.auth import get_user_model
 User = get_user_model()
 import logging
@@ -227,7 +227,10 @@ def project(request, project_id):
         id=project_id
     )
     project = content  # Keep both for backward compatibility
-    
+    intros = Intro.objects.filter(
+    relations__to_project=project,
+    relations__status='published'
+).distinct()
     # Check if user has permission to view this project
     can_view = False
     
@@ -415,6 +418,7 @@ def project(request, project_id):
         "pending_connection_requests_count": pending_connection_requests_count,
         "project_plans": project_plans,
         "total_members": total_members, 
+        "intros": intros,
         "comment_stats": comment_stats,
         "total_replies": total_replies,
         "total_comments": total_comments,

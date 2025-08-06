@@ -148,8 +148,10 @@
                             <div class="row">
                                 <!-- Name -->
                                 <div class="input-field col s12">
+                                    <h6>
+                                        {{ form.name.label }}
+                                    </h6>
                                     {{ form.name }}
-                                    <label for="id_name">{{ form.name.label }}</label>
                                     {% if form.name.help_text %}
                                         <span class="helper-text">{{ form.name.help_text }}</span>
                                     {% endif %}
@@ -162,8 +164,8 @@
                                 
                                 <!-- Summary -->
                                 <div class="input-field col s12">
+                                    <h6>{{ form.summary.label }}</h6>
                                     {{ form.summary }}
-                                    <label for="id_summary">{{ form.summary.label }}</label>
                                     {% if form.summary.help_text %}
                                         <span class="helper-text">{{ form.summary.help_text }}</span>
                                     {% endif %}
@@ -176,8 +178,8 @@
                                 
                                 <!-- Description -->
                                 <div class="input-field col s12">
+                                    <h6>{{ form.desc.label }}</h6>
                                     {{ form.desc }}
-                                    <label for="id_desc">{{ form.desc.label }}</label>
                                     {% if form.desc.help_text %}
                                         <span class="helper-text">{{ form.desc.help_text }}</span>
                                     {% endif %}
@@ -190,8 +192,8 @@
                                 
                                 <!-- Type and Status -->
                                 <div class="input-field col s12 m6">
+                                    <h6>{{ form.intro_type.label }}</h6>
                                     {{ form.intro_type }}
-                                    <label>{{ form.intro_type.label }}</label>
                                     {% if form.intro_type.help_text %}
                                         <span class="helper-text">{{ form.intro_type.help_text }}</span>
                                     {% endif %}
@@ -203,8 +205,8 @@
                                 </div>
                                 
                                 <div class="input-field col s12 m6">
+                                    <h6>{{ form.status.label }}</h6>
                                     {{ form.status }}
-                                    <label>{{ form.status.label }}</label>
                                     {% if form.status.help_text %}
                                         <span class="helper-text">{{ form.status.help_text }}</span>
                                     {% endif %}
@@ -217,8 +219,8 @@
                                 
                                 <!-- Visibility and Order -->
                                 <div class="input-field col s12 m6">
+                                    <h6>{{ form.visibility.label }}</h6>
                                     {{ form.visibility }}
-                                    <label>{{ form.visibility.label }}</label>
                                     {% if form.visibility.help_text %}
                                         <span class="helper-text">{{ form.visibility.help_text }}</span>
                                     {% endif %}
@@ -230,8 +232,8 @@
                                 </div>
                                 
                                 <div class="input-field col s12 m6">
+                                    <h6>{{ form.order.label }}</h6>
                                     {{ form.order }}
-                                    <label for="id_order">{{ form.order.label }}</label>
                                     {% if form.order.help_text %}
                                         <span class="helper-text">{{ form.order.help_text }}</span>
                                     {% endif %}
@@ -244,8 +246,8 @@
                                 
                                 <!-- Main Project -->
                                 <div class="input-field col s12">
+                                    <h6>{{ form.main_project.label }}</h6>
                                     {{ form.main_project }}
-                                    <label>{{ form.main_project.label }}</label>
                                     {% if form.main_project.help_text %}
                                         <span class="helper-text">{{ form.main_project.help_text }}</span>
                                     {% endif %}

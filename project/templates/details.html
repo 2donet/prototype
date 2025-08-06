@@ -3,111 +3,132 @@
 2do.net - {{ content.name }}
 {% endblock %}
 {% block projecttitle %}
-{{ content.name}}{% endblock %}
+To do Network: {{ content.name}}{% endblock %}
 {% block content %}
 {% load static %}
 {% load humanize %}
 {% load project_filters %}
 
 <div class="grid2">
+    
     <div class="pcard">
+        {% if can_moderate %}
+        <div class="moderation-alert">
+            <div class="alert-content">
+                <i class="material-icons" style="color: aliceblue !important;">security</i>
+                <div class="alert-text">
+                    <h6>Project Moderation</h6>
+                    <p>Manage and moderate all aspects of this project.</p>
+                </div>
+                <a href="{% url 'project:moderation_dashboard' content.id %}" class="btn waves-effect waves-light red">
+                    <i class="material-icons left">security</i>
+                    Dashboard
+                </a>
+                <a href="{% url 'submissions:submission_list' 'project' content.id %}" class="btn blue">
+                    View Submissions ({{ project.submissions.count }})
+                </a>
+            </div>
+    
+        </div>
+        {% endif %}
+
         <div class="box">
-            {% include "components/newhero.html" %}
-
-            <h2>{{ content.name }}</h2>
-            <i>{{ content.summary|default_if_none:" " }}</i>
-                    <div class="chips" style="border-bottom: none;">
-            {% for skill in content.skills.all %}
-            <a href="{% url 'skill_detail' skill.id %}" class="chip">
-                {{ skill.name }}
+    
+            <h2>{{ content.name }}</h2>            <a href="{% url 'submissions:create_submission_for_content' 'project' content.id %}"
+                class="btn blue waves-effect waves-light">
+                <i class="material-icons left">assignment</i>Apply Now
             </a>
-            {% empty %}
-            <p>No skills added yet.</p>
-            {% endfor %}
-        </div>
-
+            <div class="chips" style="border-bottom: none;">
+                {% for skill in content.skills.all %}
+                <a href="{% url 'skill_detail' skill.id %}" class="chip">
+                    {{ skill.name }}
+                </a>
+                {% empty %}
+                <p>No skills added yet.</p>
+                {% endfor %}
+            </div>
+    
+            <blockquote style="border-left: 5px solid #e5c129;">
+                {{ content.summary|default_if_none:" " }}
+            </blockquote>
+                    <h5>Locations</h5>
+                {% include "components/localizations.html" %}
             <div class="section">
-            {% if can_moderate %}
-            <div class="moderation-alert">
-                <div class="alert-content">
-                    <i class="material-icons" style="color: aliceblue !important;" >security</i>
-                    <div class="alert-text">
-                        <h6>Project Moderation</h6>
-                        <p>Manage and moderate all aspects of this project.</p>
+    
+    
+                {% if can_moderate and content|has_pending_connection_requests %}
+                <div class="card amber lighten-4" style="margin-bottom: 20px;">
+                    <div class="card-content">
+                        <span class="card-title amber-text text-darken-2">
+                            <i class="material-icons left">notification_important</i>
+                            Connection Requests Pending
+                            <span class="new badge amber" data-badge-caption="">{{ content|pending_connection_requests_count
+                                }}</span>
+                        </span>
+                        <p>
+                            You have {{ content|pending_connection_requests_count }} project{{
+                            content|pending_connection_requests_count|pluralize }}
+                            requesting to connect as subproject{{ content|pending_connection_requests_count|pluralize }}.
+                        </p>
+                        <a href="{% url 'project:subprojects_management' content.id %}"
+                            class="btn amber darken-2 white-text waves-effect waves-light">
+                            <i class="material-icons left">settings</i>
+                            Review Requests
+                        </a>
                     </div>
-                    <a href="{% url 'project:moderation_dashboard' content.id %}" 
-                       class="btn waves-effect waves-light red">
-                        <i class="material-icons left">security</i>
-                        Dashboard
-                    </a>
                 </div>
-            </div>
-            {% endif %}
+                {% endif %}
+                <h5>Intros</h5>
+                <a href="{% url 'intros:create' 'project' project.id %}" class="btn">
+                    <i class="material-icons left">add</i>Create Introduction
+                </a>
+                <a href="{% url 'intros:link' 'project' project.id %}" class="btn-secondary">
+                    <i class="material-icons left">link</i>Link Existing
+                </a>
+                
+                    {% if intros %}
+                    <div class="row">
+                        <ul>
+                                {% for intro in intros %}
+                                <li><a href="{% url 'intros:detail' intro.id%}">{{intro.name}}</a> - {{intro.summary}}</li>
+                                {% endfor %}
+                            </ul>
+                    </div>
 
+                    {% endif %}
 
-{% if can_moderate and content|has_pending_connection_requests %}
-<div class="card amber lighten-4" style="margin-bottom: 20px;">
-    <div class="card-content">
-        <span class="card-title amber-text text-darken-2">
-            <i class="material-icons left">notification_important</i>
-            Connection Requests Pending
-            <span class="new badge amber" data-badge-caption="">{{ content|pending_connection_requests_count }}</span>
-        </span>
-        <p>
-            You have {{ content|pending_connection_requests_count }} project{{ content|pending_connection_requests_count|pluralize }} 
-            requesting to connect as subproject{{ content|pending_connection_requests_count|pluralize }}.
-        </p>
-        <a href="{% url 'project:subprojects_management' content.id %}" 
-           class="btn amber darken-2 white-text waves-effect waves-light">
-            <i class="material-icons left">settings</i>
-            Review Requests
-        </a>
-    </div>
-</div>
-{% endif %}
-
-  <h5>Locations</h5>
-
-
-            {% include "components/localizations.html" %}
-            {% if content.desc %}
-            <div class="project-description-card">
-                <h5 class="section-title">
-                    <i class="material-icons left" style="color: aliceblue !important;">description</i>
-                    Project Description
-                </h5>
-                <div class="description-content">
-                    {{ content.desc|linebreaks }}
+    
+    
+                {% if content.desc %}
+                <div class="project-description-card">
+                    <h5 class="section-title">
+                        <i class="material-icons left" style="color: aliceblue !important;">description</i>
+                        Project Description
+                    </h5>
+                    <div class="description-content">
+                        {{ content.desc|linebreaks }}
+                    </div>
                 </div>
+                {% endif %}
             </div>
-            {% endif %}
-</div>
             <br>
-<a href="{% url 'submissions:submission_list' 'project' content.id %}" 
-   class="btn blue">
-    View Submissions ({{ content.submissions.count }})
-</a>
-<a href="{% url 'submissions:create_submission_for_content' 'project' content.id %}" 
-   class="btn blue waves-effect waves-light">
-    <i class="material-icons left">assignment</i>Apply Now
-</a>
-{% include "components/status.html" %}
-<p>
-    Creating MVP/Prototype showcasing main idea which is splitting big pieces of work into smaller and smaller parts. 
-</p>
-{{content.desc | linebreaks}}
+    
 
-<h5>Plans</h5>
+
+
+    
+            <h5>Plans</h5>
             {% include "components/plans.html" %}
-
-
-
         </div>
-
+        <h5>Tasks</h5>
+        {% include "components/tasks.html" %}
+        <h5>Needs</h5>
+        {% include "components/needs.html"%}
+        <h5>Problems</h5>
+        {% include "components/problems.html" with problems=problems can_contribute=can_contribute %}
+    
+    
     </div>
-
-
-
 
     <div class="pinfo">
         {% include "components/hero.html" %}
@@ -401,6 +422,81 @@
     </details>
 </div>
 
+
+
+
+        </div>
+
+
+
+    </div>
+
+
+
+    <div class="pcom">
+        <ul class="tabs">
+            <li class="tab"><a href="#comments" class="active">Comments</a></li>
+            <li class="tab"><a href="#contribs">Contribs</a></li>
+            <li class="tab"><a href="#rewards">Rewards</a></li>
+        </ul>
+
+
+        <div id="contribs">
+            contribs
+        </div>
+        <div id="rewards">
+            rewards
+        </div>
+        <div id="comments" class="newcomments">
+
+
+            
+            <div>
+                {% if comments %}
+                <div class="input-field col s12">
+                    <select>
+                        <option value="" disabled>Sorting by</option>
+                        <option value="0" selected>Highest reviews</option>
+                        <option value="1">Lowest reviews</option>
+                        <option value="2">Newest</option>
+                        <option value="3">Oldest</option>
+                    </select>
+
+                    <label>Sorting by</label>
+
+                </div>
+                <label>
+                    <input type="checkbox" class="filled-in"  />
+                    <span>Show comments from anonymous Users</span>
+                  </label>
+
+                {% include "comments.html" with comments=comments %}
+                {% else %}
+                <p>No comments</p>
+                {% endif %}
+                <form id="add-comment-form" method="post">
+                    {% csrf_token %}
+                    <textarea name="content" placeholder="Add a comment..."></textarea>
+                    <input type="hidden" name="to_project_id" value="{{ content.id }}">
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+
+            <br>
+
+        </div>
+    </div>
+
+</div>
+
+
+
+
+<!--    <script src="{% static 'project/js/script.js' %}"></script>-->
+
+
+
+ 
 <style>
 .user-group-summary {
     display: flex;
@@ -613,7 +709,6 @@ details[open] .user-group-content {
     color: var(--text2ndary);
 }
 </style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize dropdowns
@@ -625,141 +720,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-        </div>
-
-
-
-    </div>
-    <div class="ptab">
-
-
-<!-- Your problems component include -->
-{% include "components/problems.html" with problems=problems can_contribute=can_contribute %}        <ul class="tabs">
-            <li class="tab col s3"><a href="#intro">Intro</a></li>
-            <li class="tab col s3"><a class="active" href="#tasks">Tasks</a></li>
-            <li class="tab col s3"><a href="#needs">Needs</a></li>
-            <li class="tab col s3"><a href="#ideas">Ideas</a></li>
-        </ul>
-        <div id="intro" class="col s12">
-            Test 1
-
-    <a href="{% url 'intros:create' 'project' project.id %}" class="btn">
-        <i class="material-icons left">add</i>Create Introduction
-    </a>
-    <a href="{% url 'intros:link' 'project' project.id %}" class="btn-secondary">
-        <i class="material-icons left">link</i>Link Existing
-    </a>
-
-            {% include "components/hint.html" with hint=1 %}
-        </div>
-        <div id="tasks" class="tab col s12">
-            {%include "components/tasks.html"%}
-        </div>
-
-        <div id="ideas" class="col s12">
-            Goals
-            {% include "components/hint.html" with hint=2 %}
-
-            <details>
-                <summary>
-                    <p>
-                        <label>
-                            <input type="checkbox" class="filled-in" checked="checked" />
-                            <span>Create sth</span>
-                        </label>
-                    </p>
-                </summary>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia dolores ipsam eos. Saepe modi
-                dolores quasi accusantium non enim amet nisi sit vel molestias quisquam, nam omnis similique?
-                Reprehenderit, amet!
-
-            </details>
-            <p>
-                <label>
-                    <input type="checkbox" class="filled-in" />
-                    <span>Filled in</span>
-                </label>
-            </p>
-            <p>
-                <label>
-                    <input type="checkbox" class="filled-in" />
-                    <span>Filled in</span>
-                </label>
-            </p>
-
-        </div>
-        <div id="needs" class="col s12">
-{%include "components/needs.html"%}
-        </div>
-
-
-    </div>
-    <div class="pcom">
-        <ul class="tabs">
-            <li class="tab"><a href="#comments" class="active">Comments</a></li>
-            <li class="tab"><a href="#contribs">Contribs</a></li>
-            <li class="tab"><a href="#rewards">Rewards</a></li>
-        </ul>
-
-
-        <div id="contribs">
-            contribs
-        </div>
-        <div id="rewards">
-            rewards
-        </div>
-        <div id="comments" class="newcomments">
-
-
-            
-            <div>
-                {% if comments %}
-                <div class="input-field col s12">
-                    <select>
-                        <option value="" disabled>Sorting by</option>
-                        <option value="0" selected>Highest reviews</option>
-                        <option value="1">Lowest reviews</option>
-                        <option value="2">Newest</option>
-                        <option value="3">Oldest</option>
-                    </select>
-
-                    <label>Sorting by</label>
-
-                </div>
-                <label>
-                    <input type="checkbox" class="filled-in"  />
-                    <span>Show comments from anonymous Users</span>
-                  </label>
-
-                {% include "comments.html" with comments=comments %}
-                {% else %}
-                <p>No comments</p>
-                {% endif %}
-                <form id="add-comment-form" method="post">
-                    {% csrf_token %}
-                    <textarea name="content" placeholder="Add a comment..."></textarea>
-                    <input type="hidden" name="to_project_id" value="{{ content.id }}">
-                    <button type="submit">Submit</button>
-                </form>
-            </div>
-
-            <br>
-
-        </div>
-    </div>
-</div>
-
-
-
-
-<!--    <script src="{% static 'project/js/script.js' %}"></script>-->
-
-
-
-</div>
-
- 
-
 <script src="{% static 'comment/comments.js' %}"></script>
 
 <script>
