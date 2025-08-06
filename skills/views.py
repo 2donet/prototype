@@ -7,6 +7,9 @@ from .models import Skill
 from .serializers import SkillSerializer
 from rest_framework.permissions import AllowAny
 from project.models import Project  
+from task.models import Task
+from problems.models import Problem
+from need.models import Need
 
 
 class SkillListCreateView(generics.ListCreateAPIView):
@@ -54,4 +57,15 @@ def skill_detail(request, skill_id):
     skill = get_object_or_404(Skill, id=skill_id)
     
     projects = Project.objects.filter(skills=skill)
-    return render(request, 'skills/projects_with_skill.html', {'skill': skill, 'projects': projects})
+    tasks = Task.objects.filter(skills=skill)
+    needs = Need.objects.filter(required_skills=skill)
+    problems = Problem.objects.filter(skills=skill)
+    context ={
+        'skill': skill,
+        'projects': projects,
+        'tasks': tasks,
+        'needs': needs,
+        'problems': problems
+
+    }
+    return render(request, 'skills/projects_with_skill.html', context=context)

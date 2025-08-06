@@ -20,6 +20,47 @@
             {% else %}
                 <p>No projects linked to this skill yet.</p>
             {% endif %}
+            <h6>Tasks</h6>
+            {% if tasks %}
+                <ul>
+                    {% for task in tasks %}
+                        <li>
+                            <a href="{% url 'task:task_detail' task.id %}">{{ task.name }}</a> 
+                            <!-- Replace 'project:project' with the correct URL name for the project details page -->
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No tasks linked to this skill yet.</p>
+            {% endif %}
+
+            <h6>Needs</h6>
+            {% if needs %}
+                <ul>
+                    {% for need in needs %}
+                        <li>
+                            <a href="{% url 'need:need' need.id %}">{{ need.name }}</a> 
+                            <!-- Replace 'project:project' with the correct URL name for the project details page -->
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No needs linked to this skill yet.</p>
+            {% endif %}
+
+            <h6>Problems</h6>
+            {% if problems %}
+                <ul>
+                    {% for problem in problems %}
+                        <li>
+                            <a href="{% url 'problems:detail' problem.id %}">{{ problem.name }}</a> 
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No problems linked to this skill yet.</p>
+            {% endif %}
+
         </div>
     </div>
 {% endblock %}

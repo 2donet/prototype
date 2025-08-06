@@ -16,6 +16,7 @@ from need.models import Need
 from skills.models import Skill
 from comment.models import Comment, CommentStatus
 
+
 User = get_user_model()
 
 import json
