@@ -1,6 +1,7 @@
 <!-- problems/templates/problems/edit_problem.html -->
 {% extends "base.html" %}
 {% load static %}
+{% load comment_tags %}
 
 {% block title %}Edit Problem: {{ problem.name }} | 2do.net{% endblock %}
 
@@ -114,32 +115,29 @@
                             <span class="helper-text">Add skills related to this problem. Type and press Enter to add.</span>
                         </div>
                         
-                        <!-- Current Assignment -->
+                        <!-- Assignment Section -->
                         <div class="section">
                             <h6>Assignment</h6>
+                            <p class="grey-text">Click on project members to assign/unassign them to this problem</p>
                             
-                            {% if problem.assigned_to.all %}
-                            <div class="current-assignments">
-                                <p><strong>Currently assigned to:</strong></p>
-                                <div id="current-assigned-users">
-                                    {% for user in problem.assigned_to.all %}
-                                    <div class="chip" data-user-id="{{ user.id }}">
-                                        {% if user.profile.avatar %}
-                                        <img src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}">
-                                        {% endif %}
-                                        {{ user.username }}
-                                        <i class="close material-icons" onclick="unassignUser({{ user.id }})">close</i>
+                            <div id="project-members-container">
+                                <div id="project-members-loading" class="center-align">
+                                    <div class="preloader-wrapper small active">
+                                        <div class="spinner-layer spinner-blue">
+                                            <div class="circle-clipper left">
+                                                <div class="circle"></div>
+                                            </div>
+                                            <div class="gap-patch">
+                                                <div class="circle"></div>
+                                            </div>
+                                            <div class="circle-clipper right">
+                                                <div class="circle"></div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    {% endfor %}
+                                    <p>Loading project members...</p>
                                 </div>
-                            </div>
-                            {% else %}
-                            <p class="grey-text">No one currently assigned to this problem.</p>
-                            {% endif %}
-                            
-                            <div class="input-field">
-                                <input type="text" id="user-search" placeholder="Search users to assign...">
-                                <label for="user-search">Add Assignee</label>
+                                <div id="project-members-list" style="display: none;"></div>
                             </div>
                         </div>
                     </form>
@@ -185,159 +183,123 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeSkillsChips();
     }, 100);
     
-    // Also reinitialize chips when navigating back to the page
-    window.addEventListener('pageshow', function(event) {
-        // Only reinitialize if coming from cache (back/forward navigation)
-        if (event.persisted) {
-            console.log('Page loaded from cache, reinitializing chips...');
-            setTimeout(function() {
-                initializeSkillsChips();
-            }, 100);
-        }
-    });
+    // Assignment functionality
+    let assignedUsers = new Set();
+    let projectMembers = [];
     
-    // User search functionality
-    const userSearch = document.getElementById('user-search');
-    let searchTimeout;
+    // Get currently assigned users
+    const currentlyAssigned = [
+        {% for user in problem.assigned_to.all %}
+            {{ user.id }},
+        {% endfor %}
+    ];
     
-    userSearch.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        const query = this.value.trim();
+    // Initialize assigned users set
+    currentlyAssigned.forEach(id => assignedUsers.add(id));
+    
+    // Load project members on page load
+    loadProjectMembers();
+    
+    function loadProjectMembers() {
+        const projectId = {% if problem.to_project %}{{ problem.to_project.id }}{% elif problem.to_task.to_project %}{{ problem.to_task.to_project.id }}{% elif problem.to_need.to_project %}{{ problem.to_need.to_project.id }}{% else %}null{% endif %};
         
-        if (query.length < 2) {
+        if (!projectId) {
+            document.getElementById('project-members-loading').innerHTML = '<p class="grey-text">No project context available</p>';
             return;
         }
         
-        searchTimeout = setTimeout(() => {
-            searchUsers(query);
-        }, 300);
-    });
-    
-    function searchUsers(query) {
-        const projectId = {% if problem.to_project %}{{ problem.to_project.id }}{% else %}null{% endif %};
-        let url = `/api/problems/users/search/?q=${encodeURIComponent(query)}`;
-        if (projectId) {
-            url += `&project_id=${projectId}`;
-        }
-        
-        fetch(url)
+        fetch(`/api/problems/users/project-members/?project_id=${projectId}`)
         .then(response => response.json())
         .then(data => {
             if (data.results && data.results.length > 0) {
-                showUserSuggestions(data.results);
+                projectMembers = data.results;
+                displayProjectMembers();
+            } else {
+                document.getElementById('project-members-loading').innerHTML = '<p class="grey-text">No project members found</p>';
             }
         })
         .catch(error => {
-            console.error('Error searching users:', error);
+            console.error('Error loading project members:', error);
+            document.getElementById('project-members-loading').innerHTML = '<p class="red-text">Error loading project members</p>';
         });
     }
     
-    function showUserSuggestions(users) {
-        // Filter out already assigned users
-        const currentlyAssigned = Array.from(document.querySelectorAll('#current-assigned-users .chip'))
-            .map(chip => parseInt(chip.dataset.userId));
+    function displayProjectMembers() {
+        const container = document.getElementById('project-members-list');
+        const loading = document.getElementById('project-members-loading');
         
-        const availableUsers = users.filter(user => !currentlyAssigned.includes(user.id));
-        
-        if (availableUsers.length === 0) {
+        if (projectMembers.length === 0) {
+            loading.innerHTML = '<p class="grey-text">No project members found</p>';
             return;
         }
         
-        let dropdown = document.getElementById('user-suggestions');
-        if (!dropdown) {
-            dropdown = document.createElement('div');
-            dropdown.id = 'user-suggestions';
-            dropdown.className = 'collection';
-            dropdown.style.cssText = 'position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd;';
-            userSearch.parentNode.appendChild(dropdown);
-        }
+        container.innerHTML = projectMembers.map(member => {
+            const isAssigned = assignedUsers.has(member.id);
+            return `
+                <div class="member-chip ${isAssigned ? 'assigned' : ''}" data-user-id="${member.id}" onclick="toggleAssignment(${member.id})">
+                    <img src="${member.avatar_url}" alt="${member.username}" class="member-avatar">
+                    <span class="member-name">${member.full_name}</span>
+                </div>
+            `;
+        }).join('');
         
-        dropdown.innerHTML = availableUsers.map(user => `
-            <a href="#!" class="collection-item" onclick="assignUser(${user.id}, '${user.username}', '${user.full_name}', '${user.avatar_url}')">
-                <img src="${user.avatar_url}" class="circle" style="width: 30px; height: 30px; margin-right: 10px;">
-                <span>${user.full_name} (@${user.username})</span>
-            </a>
-        `).join('');
+        loading.style.display = 'none';
+        container.style.display = 'block';
     }
     
-    window.assignUser = function(userId, username, fullName, avatarUrl) {
-        // Make API call to assign user
-        fetch(`{% url 'problems:assign_user' problem.id %}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: `user_id=${userId}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Add chip to UI
-                const container = document.getElementById('current-assigned-users');
-                if (!container) {
-                    // Create container if it doesn't exist
-                    const newContainer = document.createElement('div');
-                    newContainer.id = 'current-assigned-users';
-                    document.querySelector('.current-assignments').appendChild(newContainer);
-                }
-                
-                const chip = document.createElement('div');
-                chip.className = 'chip';
-                chip.dataset.userId = userId;
-                chip.innerHTML = `
-                    <img src="${avatarUrl}" alt="${username}">
-                    ${username}
-                    <i class="close material-icons" onclick="unassignUser(${userId})">close</i>
-                `;
-                container.appendChild(chip);
-                
-                M.toast({html: data.message, classes: 'green'});
-                
-                // Clear search
-                userSearch.value = '';
-                document.getElementById('user-suggestions').innerHTML = '';
-            } else {
-                M.toast({html: 'Error: ' + data.error, classes: 'red'});
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            M.toast({html: 'Error assigning user', classes: 'red'});
-        });
-    };
-    
-    window.unassignUser = function(userId) {
-        if (!confirm('Unassign this user from the problem?')) {
-            return;
-        }
+    window.toggleAssignment = function(userId) {
+        const chip = document.querySelector(`.member-chip[data-user-id="${userId}"]`);
+        const wasAssigned = assignedUsers.has(userId);
         
-        fetch(`{% url 'problems:unassign_user' problem.id %}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: `user_id=${userId}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Remove chip from UI
-                const chip = document.querySelector(`#current-assigned-users .chip[data-user-id="${userId}"]`);
-                if (chip) {
-                    chip.remove();
+        if (wasAssigned) {
+            // Unassign via API
+            fetch(`{% url 'problems:unassign_user' problem.id %}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: `user_id=${userId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    assignedUsers.delete(userId);
+                    chip.classList.remove('assigned');
+                    M.toast({html: data.message, classes: 'green'});
+                } else {
+                    M.toast({html: 'Error: ' + data.error, classes: 'red'});
                 }
-                
-                M.toast({html: data.message, classes: 'green'});
-            } else {
-                M.toast({html: 'Error: ' + data.error, classes: 'red'});
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            M.toast({html: 'Error unassigning user', classes: 'red'});
-        });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                M.toast({html: 'Error unassigning user', classes: 'red'});
+            });
+        } else {
+            // Assign via API
+            fetch(`{% url 'problems:assign_user' problem.id %}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: `user_id=${userId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    assignedUsers.add(userId);
+                    chip.classList.add('assigned');
+                    M.toast({html: data.message, classes: 'green'});
+                } else {
+                    M.toast({html: 'Error: ' + data.error, classes: 'red'});
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                M.toast({html: 'Error assigning user', classes: 'red'});
+            });
+        }
     };
     
     // Handle status change to show/hide resolution field
@@ -451,16 +413,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
-    // Hide user suggestions when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!userSearch.contains(e.target)) {
-            const suggestions = document.getElementById('user-suggestions');
-            if (suggestions) {
-                suggestions.innerHTML = '';
-            }
-        }
-    });
 });
 
 function initializeSkillsChips() {
@@ -531,31 +483,7 @@ function initializeSkillsChips() {
 </script>
 
 <style>
-#current-assigned-users .chip {
-    margin: 5px 5px 5px 0;
-}
-
-#current-assigned-users .chip img {
-    width: 25px;
-    height: 25px;
-    margin-right: 8px;
-}
-
-#user-suggestions .collection-item {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-}
-
-#user-suggestions .collection-item:hover {
-    background-color: var(--bg-light);
-}
-
-.current-assignments {
-    margin-bottom: 20px;
-}
-
-/* Chips styling to match need edit template */
+/* Color scheme application */
 .chips {
     border-bottom: 1px solid var(--highlightmenu);
     min-height: 45px;
@@ -577,6 +505,115 @@ function initializeSkillsChips() {
 
 .chips input {
     color: var(--text) !important;
+}
+
+.helper-text {
+    color: var(--text2ndary) !important;
+}
+
+/* Member chip styling */
+#project-members-list {
+    margin-top: 15px;
+}
+
+.member-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 4px;
+    background-color: var(--bg-color2);
+    border: 2px solid var(--highlightmenu);
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text);
+}
+
+.member-chip:hover {
+    background-color: var(--bg-color3);
+    border-color: var(--highlight);
+}
+
+.member-chip.assigned {
+    background-color: var(--confirm);
+    border-color: var(--confirm);
+    color: var(--bg-color);
+}
+
+.member-chip.assigned:hover {
+    background-color: var(--confirm);
+    opacity: 0.9;
+}
+
+.member-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 8px;
+    object-fit: cover;
+}
+
+.member-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Loading spinner */
+.spinner-layer.spinner-blue {
+    border-color: var(--information);
+}
+
+/* Card styling */
+.card {
+    background-color: var(--bg-color2);
+    color: var(--text);
+}
+
+.card-title {
+    color: var(--text) !important;
+}
+
+/* Form styling */
+.input-field input:focus + label,
+.input-field textarea:focus + label {
+    color: var(--highlight) !important;
+}
+
+.input-field input:focus,
+.input-field textarea:focus {
+    border-bottom: 1px solid var(--highlight) !important;
+    box-shadow: 0 1px 0 0 var(--highlight) !important;
+}
+
+select.browser-default:focus {
+    outline-color: var(--highlight);
+}
+
+/* Button styling */
+.btn {
+    background-color: var(--information);
+}
+
+.btn:hover {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+}
+
+.btn-flat {
+    color: var(--text2ndary);
+}
+
+.btn-flat:hover {
+    color: var(--text);
+}
+
+.btn.green {
+    background-color: var(--confirm);
+}
+
+.btn.green:hover {
+    background-color: var(--confirm);
+    opacity: 0.9;
 }
 </style>
 {% endblock %}

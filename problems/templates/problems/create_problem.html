@@ -1,6 +1,7 @@
 <!-- problems/templates/problems/create_problem.html -->
 {% extends "base.html" %}
 {% load static %}
+{% load comment_tags %}
 
 {% block title %}Report New Problem | 2do.net{% endblock %}
 
@@ -60,7 +61,6 @@
                         <!-- Priority and Status Row -->
                         <div class="row">
                             <div class="col s12 m6">
-
                                 <div class="input-field">
                                     <h6>Priority</h6>
                                     <select class="browser-default" name="priority" id="problem-priority">
@@ -70,7 +70,6 @@
                                         </option>
                                         {% endfor %}
                                     </select>
-                                    
                                     <span class="helper-text">How urgent is this problem?</span>
                                 </div>
                             </div>
@@ -100,7 +99,6 @@
                                 </option>
                                 {% endfor %}
                             </select>
-                            
                             <span class="helper-text">Who can view this problem?</span>
                         </div>
                         
@@ -114,17 +112,27 @@
                         
                         <!-- Assignment Section -->
                         <div class="section">
-                            <h6>Assignment (Optional)</h6>
-                            <p class="grey-text">You can assign users to work on this problem</p>
+                            <h6>Assignment</h6>
+                            <p class="grey-text">Click on project members to assign them to this problem</p>
                             
-                            <div class="input-field">
-                                <input type="text" id="user-search" placeholder="Search users to assign...">
-                                <label for="user-search">Search Users</label>
-                            </div>
-                            
-                            <div id="selected-users" class="section">
-                                <h6>Assigned Users:</h6>
-                                <div id="assigned-users-chips"></div>
+                            <div id="project-members-container">
+                                <div id="project-members-loading" class="center-align">
+                                    <div class="preloader-wrapper small active">
+                                        <div class="spinner-layer spinner-blue">
+                                            <div class="circle-clipper left">
+                                                <div class="circle"></div>
+                                            </div>
+                                            <div class="gap-patch">
+                                                <div class="circle"></div>
+                                            </div>
+                                            <div class="circle-clipper right">
+                                                <div class="circle"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p>Loading project members...</p>
+                                </div>
+                                <div id="project-members-list" style="display: none;"></div>
                             </div>
                         </div>
                     </form>
@@ -166,99 +174,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // User assignment functionality
-    let assignedUsers = [];
-    const userSearch = document.getElementById('user-search');
-    let searchTimeout;
+    // Assignment functionality
+    let assignedUsers = new Set();
+    let projectMembers = [];
     
-    userSearch.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        const query = this.value.trim();
-        
-        if (query.length < 2) {
+    // Load project members on page load
+    loadProjectMembers();
+    
+    function loadProjectMembers() {
+        const projectId = {{ parent_obj.to_project.id|default:parent_obj.id|default:'null' }};
+        if (!projectId) {
+            document.getElementById('project-members-loading').innerHTML = '<p class="grey-text">No project context available</p>';
             return;
         }
         
-        searchTimeout = setTimeout(() => {
-            searchUsers(query);
-        }, 300);
-    });
-    
-    function searchUsers(query) {
-        const projectId = {{ parent_obj.to_project.id|default:parent_obj.id|default:'null' }};
-        let url = `/api/problems/users/search/?q=${encodeURIComponent(query)}`;
-        if (projectId) {
-            url += `&project_id=${projectId}`;
-        }
-        
-        fetch(url)
+        fetch(`/api/problems/users/project-members/?project_id=${projectId}`)
         .then(response => response.json())
         .then(data => {
             if (data.results && data.results.length > 0) {
-                showUserSuggestions(data.results);
+                projectMembers = data.results;
+                displayProjectMembers();
+            } else {
+                document.getElementById('project-members-loading').innerHTML = '<p class="grey-text">No project members found</p>';
             }
         })
         .catch(error => {
-            console.error('Error searching users:', error);
+            console.error('Error loading project members:', error);
+            document.getElementById('project-members-loading').innerHTML = '<p class="red-text">Error loading project members</p>';
         });
     }
     
-    function showUserSuggestions(users) {
-        // Create or update suggestions dropdown
-        let dropdown = document.getElementById('user-suggestions');
-        if (!dropdown) {
-            dropdown = document.createElement('div');
-            dropdown.id = 'user-suggestions';
-            dropdown.className = 'collection';
-            dropdown.style.cssText = 'position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd;';
-            userSearch.parentNode.appendChild(dropdown);
-        }
+    function displayProjectMembers() {
+        const container = document.getElementById('project-members-list');
+        const loading = document.getElementById('project-members-loading');
         
-        dropdown.innerHTML = users.map(user => `
-            <a href="#!" class="collection-item" onclick="addAssignedUser(${user.id}, '${user.username}', '${user.full_name}', '${user.avatar_url}')">
-                <img src="${user.avatar_url}" class="circle" style="width: 30px; height: 30px; margin-right: 10px;">
-                <span>${user.full_name} (@${user.username})</span>
-            </a>
-        `).join('');
-    }
-    
-    window.addAssignedUser = function(userId, username, fullName, avatarUrl) {
-        // Check if already assigned
-        if (assignedUsers.find(u => u.id === userId)) {
-            M.toast({html: 'User already assigned'});
+        if (projectMembers.length === 0) {
+            loading.innerHTML = '<p class="grey-text">No project members found</p>';
             return;
         }
         
-        // Add to assigned users
-        assignedUsers.push({
-            id: userId,
-            username: username,
-            full_name: fullName,
-            avatar_url: avatarUrl
-        });
-        
-        // Update UI
-        updateAssignedUsersDisplay();
-        
-        // Clear search
-        userSearch.value = '';
-        document.getElementById('user-suggestions').innerHTML = '';
-    };
-    
-    function updateAssignedUsersDisplay() {
-        const container = document.getElementById('assigned-users-chips');
-        container.innerHTML = assignedUsers.map(user => `
-            <div class="chip">
-                <img src="${user.avatar_url}" alt="${user.username}">
-                ${user.full_name}
-                <i class="close material-icons" onclick="removeAssignedUser(${user.id})">close</i>
+        container.innerHTML = projectMembers.map(member => `
+            <div class="member-chip" data-user-id="${member.id}" onclick="toggleAssignment(${member.id})">
+                <img src="${member.avatar_url}" alt="${member.username}" class="member-avatar">
+                <span class="member-name">${member.full_name}</span>
             </div>
         `).join('');
+        
+        loading.style.display = 'none';
+        container.style.display = 'block';
     }
     
-    window.removeAssignedUser = function(userId) {
-        assignedUsers = assignedUsers.filter(u => u.id !== userId);
-        updateAssignedUsersDisplay();
+    window.toggleAssignment = function(userId) {
+        const chip = document.querySelector(`.member-chip[data-user-id="${userId}"]`);
+        
+        if (assignedUsers.has(userId)) {
+            // Unassign
+            assignedUsers.delete(userId);
+            chip.classList.remove('assigned');
+        } else {
+            // Assign
+            assignedUsers.add(userId);
+            chip.classList.add('assigned');
+        }
     };
     
     // Form submission
@@ -269,12 +246,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add skills data
         const skillNames = skillsData.map(chip => chip.tag);
-        formData.set('skills', JSON.stringify(skillNames));
+        skillNames.forEach(skill => {
+            formData.append('skills[]', skill);
+        });
         
         // Add assigned users
-        const userIds = assignedUsers.map(u => u.id);
-        userIds.forEach(id => {
-            formData.append('assigned_to', id);
+        assignedUsers.forEach(userId => {
+            formData.append('assigned_to', userId);
         });
         
         // Submit form
@@ -311,48 +289,127 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.disabled = false;
         });
     });
-    
-    // Hide user suggestions when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!userSearch.contains(e.target)) {
-            const suggestions = document.getElementById('user-suggestions');
-            if (suggestions) {
-                suggestions.innerHTML = '';
-            }
-        }
-    });
 });
 </script>
 
 <style>
+/* Color scheme application */
 .chips .chip {
-    display: inline-block;
-    margin: 0 5px 5px 0;
+    background-color: var(--bg-color2);
+    color: var(--text);
+    border: 1px solid var(--highlightmenu);
 }
 
-#assigned-users-chips .chip {
-    margin: 5px 5px 5px 0;
-}
-
-#assigned-users-chips .chip img {
-    width: 25px;
-    height: 25px;
-    margin-right: 8px;
-}
-
-#user-suggestions .collection-item {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-}
-
-#user-suggestions .collection-item:hover {
-    background-color: var(--bg-light);
-}
-
-.input-field .helper-text {
-    font-size: 0.8rem;
+.chips .chip .close {
     color: var(--text2ndary);
+}
+
+.chips .chip .close:hover {
+    color: var(--danger);
+}
+
+.chips input {
+    color: var(--text) !important;
+}
+
+.helper-text {
+    color: var(--text2ndary) !important;
+}
+
+/* Member chip styling */
+#project-members-list {
+    margin-top: 15px;
+}
+
+.member-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 4px;
+    background-color: var(--bg-color2);
+    border: 2px solid var(--highlightmenu);
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text);
+}
+
+.member-chip:hover {
+    background-color: var(--bg-color3);
+    border-color: var(--highlight);
+}
+
+.member-chip.assigned {
+    background-color: var(--confirm);
+    border-color: var(--confirm);
+    color: var(--bg-color);
+}
+
+.member-chip.assigned:hover {
+    background-color: var(--confirm);
+    opacity: 0.9;
+}
+
+.member-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 8px;
+    object-fit: cover;
+}
+
+.member-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Loading spinner */
+.spinner-layer.spinner-blue {
+    border-color: var(--information);
+}
+
+/* Card styling */
+.card {
+    background-color: var(--bg-color2);
+    color: var(--text);
+}
+
+.card-title {
+    color: var(--text) !important;
+}
+
+/* Form styling */
+.input-field input:focus + label,
+.input-field textarea:focus + label {
+    color: var(--highlight) !important;
+}
+
+.input-field input:focus,
+.input-field textarea:focus {
+    border-bottom: 1px solid var(--highlight) !important;
+    box-shadow: 0 1px 0 0 var(--highlight) !important;
+}
+
+select.browser-default:focus {
+    outline-color: var(--highlight);
+}
+
+/* Button styling */
+.btn {
+    background-color: var(--information);
+}
+
+.btn:hover {
+    background-color: var(--highlight);
+    color: var(--bg-color);
+}
+
+.btn-flat {
+    color: var(--text2ndary);
+}
+
+.btn-flat:hover {
+    color: var(--text);
 }
 </style>
 {% endblock %}

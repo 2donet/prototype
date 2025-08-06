@@ -26,6 +26,33 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+def get_user_avatar_url(user, size='small'):
+    """
+    Helper function to get user avatar URL - matches comment_tags logic
+    """
+    if not user:
+        return '/static/icons/default-avatar.svg'
+    
+    try:
+        # Check if user has a profile
+        if hasattr(user, 'profile') and user.profile:
+            profile = user.profile
+            # Check if profile has an avatar
+            if hasattr(profile, 'avatar') and profile.avatar:
+                if size == 'small' and hasattr(profile, 'avatar_small'):
+                    return profile.avatar_small.url
+                elif size == 'thumbnail' and hasattr(profile, 'avatar_thumbnail'):
+                    return profile.avatar_thumbnail.url
+                else:
+                    # Fallback to original avatar
+                    return profile.avatar.url
+    except:
+        # Any error in accessing avatar, use default
+        pass
+    
+    return '/static/icons/default-avatar.svg'
+
+
 class IsOwnerOrCanEdit(permissions.BasePermission):
     """
     Custom permission to only allow users who can edit the problem to modify it.
@@ -238,6 +265,50 @@ class ProblemViewSet(viewsets.ModelViewSet):
         return Response({'activities': activity_data})
 
 
+@api_view(['GET'])
+def get_project_members_for_assignment(request):
+    """
+    Get all project members that can be assigned to problems
+    Returns all members regardless of role
+    """
+    project_id = request.GET.get('project_id')
+    
+    if not project_id:
+        return JsonResponse({'results': []})
+    
+    try:
+        project = Project.objects.get(id=project_id)
+        
+        # Check if user can view this project
+        if not project.user_can_view(request.user):
+            return JsonResponse({'results': []})
+        
+        # Get all project members (including admins/mods who are treated as members)
+        members = User.objects.filter(
+            membership__project=project
+        ).select_related('profile').order_by('username')
+        
+        results = []
+        for user in members:
+            # Get avatar URL using the helper function
+            avatar_url = get_user_avatar_url(user, 'small')
+            
+            results.append({
+                'id': user.id,
+                'username': user.username,
+                'full_name': f"{user.first_name} {user.last_name}".strip() or user.username,
+                'avatar_url': avatar_url
+            })
+        
+        return JsonResponse({'results': results})
+        
+    except Project.DoesNotExist:
+        return JsonResponse({'results': []})
+    except Exception as e:
+        logger.error(f"Error getting project members: {str(e)}")
+        return JsonResponse({'results': [], 'error': str(e)})
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def filtered_problems_api(request):
@@ -321,7 +392,7 @@ def filtered_problems_api(request):
 @api_view(['GET'])
 def search_users_for_assignment(request):
     """
-    Search users that can be assigned to problems
+    Search users that can be assigned to problems - RESTRICTED TO PROJECT MEMBERS ONLY
     Used for autocomplete in assignment forms
     """
     query = request.GET.get('q', '').strip()
@@ -330,33 +401,36 @@ def search_users_for_assignment(request):
     if len(query) < 2:
         return JsonResponse({'results': []})
     
-    # Base user search
-    users = User.objects.filter(
-        Q(username__icontains=query) | 
-        Q(first_name__icontains=query) | 
-        Q(last_name__icontains=query)
-    ).select_related('profile')[:10]
+    if not project_id:
+        return JsonResponse({'results': []})
     
-    # If project_id is provided, prioritize project members
-    if project_id:
-        try:
-            project = Project.objects.get(id=project_id)
-            # Get project members first
-            project_members = users.filter(membership__project=project).distinct()
-            # Get non-members
-            non_members = users.exclude(membership__project=project).distinct()
-            # Combine with members first
-            users = list(project_members) + list(non_members)
-        except Project.DoesNotExist:
-            pass
+    try:
+        project = Project.objects.get(id=project_id)
+        
+        # Check if user can view this project
+        if not project.user_can_view(request.user):
+            return JsonResponse({'results': []})
+        
+        # Search ONLY among project members
+        users = User.objects.filter(
+            membership__project=project
+        ).filter(
+            Q(username__icontains=query) | 
+            Q(first_name__icontains=query) | 
+            Q(last_name__icontains=query)
+        ).select_related('profile')[:10]
+        
+    except Project.DoesNotExist:
+        return JsonResponse({'results': []})
     
     results = []
-    for user in users[:10]:  # Limit to 10 results
+    for user in users:
+        avatar_url = get_user_avatar_url(user, 'small')
         results.append({
             'id': user.id,
             'username': user.username,
             'full_name': f"{user.first_name} {user.last_name}".strip() or user.username,
-            'avatar_url': getattr(user.profile, 'avatar_small_url', '/static/icons/default-avatar.svg') if hasattr(user, 'profile') else '/static/icons/default-avatar.svg'
+            'avatar_url': avatar_url
         })
     
     return JsonResponse({'results': results})

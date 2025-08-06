@@ -5,6 +5,7 @@ from .api_views import (
     ProblemViewSet,
     filtered_problems_api,
     search_users_for_assignment,
+    get_project_members_for_assignment,
 )
 
 router = DefaultRouter()
@@ -18,5 +19,6 @@ urlpatterns = [
     
     # Custom API endpoints
     path('problems/filtered/', filtered_problems_api, name='filtered_problems'),
-    path('users/search/', search_users_for_assignment, name='search_users'),
+    path('problems/users/search/', search_users_for_assignment, name='search_users'),
+    path('problems/users/project-members/', get_project_members_for_assignment, name='project_members'),
 ]
