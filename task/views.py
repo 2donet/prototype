@@ -1,12 +1,13 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.db.models import Prefetch, Q, Count
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.contrib import messages
-from django.views.generic import CreateView, UpdateView
+from django.views.generic import CreateView, UpdateView, DeleteView
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.template.loader import render_to_string
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .models import Task
 from .forms import TaskForm
 from comment.models import Comment, CommentVote
@@ -333,8 +334,6 @@ def add_skill_to_task(request, task_id):
     return redirect('task:task_detail', task_id=task_id)
 
 
-
-
 @login_required
 def quick_task_update(request, task_id):
     """
@@ -383,6 +382,7 @@ def quick_task_update(request, task_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
 class CreateTaskView(CreateView):
     model = Task
     form_class = TaskForm
@@ -429,6 +429,7 @@ class CreateTaskView(CreateView):
 
     def get_success_url(self):
         return reverse('task:task_detail', kwargs={'task_id': self.object.id})
+
 
 class UpdateTaskView(UpdateView):
     model = Task
@@ -477,6 +478,71 @@ class UpdateTaskView(UpdateView):
     def get_success_url(self):
         return reverse('task:task_detail', kwargs={'task_id': self.object.id})
 
+
+class DeleteTaskView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """View for deleting tasks with proper permission checks"""
+    model = Task
+    pk_url_kwarg = 'task_id'
+    template_name = 'task_confirm_delete.html'
+    context_object_name = 'task'
+
+    def test_func(self):
+        """Only allow task creator and staff to delete tasks"""
+        task = self.get_object()
+        return (
+            self.request.user == task.created_by or 
+            self.request.user.is_staff or 
+            self.request.user.is_superuser
+        )
+
+    def get_success_url(self):
+        """Redirect to project page if task belongs to a project, otherwise to task list"""
+        if self.object.to_project:
+            return reverse('project:project', kwargs={'project_id': self.object.to_project.id})
+        return reverse('task:task_list')
+
+    def delete(self, request, *args, **kwargs):
+        """Override delete to add success message and handle child tasks"""
+        self.object = self.get_object()
+        task_name = self.object.name
+        
+        # Check if task has child tasks
+        child_tasks = Task.objects.filter(to_task=self.object)
+        if child_tasks.exists():
+            # You can either prevent deletion or handle child tasks
+            # For now, let's prevent deletion if there are child tasks
+            messages.error(
+                request, 
+                f"Cannot delete task '{task_name}' because it has {child_tasks.count()} child task(s). "
+                "Please delete or reassign child tasks first."
+            )
+            return redirect('task:task_detail', task_id=self.object.id)
+        
+        success_url = self.get_success_url()
+        self.object.delete()
+        
+        messages.success(
+            request, 
+            f"Task '{task_name}' has been successfully deleted."
+        )
+        
+        return redirect(success_url)
+
+    def get_context_data(self, **kwargs):
+        """Add additional context for the confirmation page"""
+        context = super().get_context_data(**kwargs)
+        
+        # Check for child tasks
+        child_tasks = Task.objects.filter(to_task=self.object)
+        context['child_tasks'] = child_tasks
+        context['child_tasks_count'] = child_tasks.count()
+        
+        # Add related info
+        context['comments_count'] = Comment.objects.filter(to_task=self.object).count()
+        
+        return context
+
+
 def api_skills_autocomplete(request):
     """
     AJAX endpoint for skills autocomplete in filters.
@@ -509,6 +575,7 @@ def api_skills_autocomplete(request):
     ]
     
     return JsonResponse({'skills': skills_data})
+
 
 def api_filter_options(request):
     """
@@ -544,6 +611,7 @@ def api_filter_options(request):
             {'value': 4, 'label': 'Critical'},
         ]
     })
+
 
 def debug_task_form(request, task_id):
     """Debug view to check task form and skills"""

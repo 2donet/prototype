@@ -3864,3 +3864,32 @@ nav ul li a {
     width: 32px;
     margin: 0 8px 0 -12px;
 }
+
+
+h5 > i, h6 > i {
+    color: var(--highlight)  !important;
+}
+small > i {
+    color: var(--text2ndary) !important;
+}
+
+.user-location > i{
+    color: #d1d1d5 !important;
+}
+
+.meta-item > i {
+    color: #d1d1d5 !important;
+}
+
+h4 > i {
+    color: #f1f1f5 !important;
+}
+
+.creator-meta {
+    & .creator-location, .creator-joined, .creator-website{
+& i{
+
+    color: #f1f1f5 !important;
+}
+    }
+}

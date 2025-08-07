@@ -92,15 +92,19 @@
                 
                 <!-- Task Actions -->
                 <div class="card-action">
-                    <a href="/t/{{task.id}}/edit/" class="waves-effect waves-light btn-small blue">
+                    {% if user == task.created_by %}
+                    <a href="{% url 'task:task_update' task.id %}" class="waves-effect waves-light btn-small blue">
                         <i class="material-icons left">edit</i>Edit
                     </a>
-                    <a href="#!" class="waves-effect waves-light btn-small green">
+                    <a href="#!" class="waves-effect waves-light btn-small green" onclick="markTaskComplete({{ task.id }})">
                         <i class="material-icons left">check</i>Complete
                     </a>
-                    <a href="#!" class="waves-effect waves-light btn-small red right">
+                    <a href="{% url 'task:task_delete' task.id %}" class="waves-effect waves-light btn-small red right">
                         <i class="material-icons left">delete</i>Delete
                     </a>
+                    {% else %}
+                    <span class="grey-text">Only task creator can edit or delete this task</span>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -149,16 +153,24 @@
 </div>
 
 <!-- Floating Action Button for Task Actions -->
+{% if user == task.created_by %}
 <div class="fixed-action-btn">
     <a class="btn-floating btn-large blue">
         <i class="large material-icons">menu</i>
     </a>
     <ul>
-        <li><a href="#!" class="btn-floating green"><i class="material-icons">check</i></a></li>
-        <li><a href="#!" class="btn-floating blue"><i class="material-icons">edit</i></a></li>
-        <li><a href="#!" class="btn-floating red"><i class="material-icons">delete</i></a></li>
+        <li><a href="#!" class="btn-floating green tooltipped" data-position="left" data-tooltip="Mark Complete" onclick="markTaskComplete({{ task.id }})">
+            <i class="material-icons">check</i>
+        </a></li>
+        <li><a href="{% url 'task:task_update' task.id %}" class="btn-floating blue tooltipped" data-position="left" data-tooltip="Edit Task">
+            <i class="material-icons">edit</i>
+        </a></li>
+        <li><a href="{% url 'task:task_delete' task.id %}" class="btn-floating red tooltipped" data-position="left" data-tooltip="Delete Task">
+            <i class="material-icons">delete</i>
+        </a></li>
     </ul>
 </div>
+{% endif %}
 
 <!-- Include the comments JavaScript AFTER the form -->
 <script src="{% static 'comment/comments.js' %}"></script>
@@ -183,6 +195,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Function to mark task as complete
+function markTaskComplete(taskId) {
+    if (confirm('Mark this task as completed?')) {
+        // Make AJAX request to update task status
+        fetch(`/task/api/quick-update/${taskId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                field: 'status',
+                value: 'completed'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                M.toast({html: data.message, classes: 'green'});
+                // Optionally reload the page to reflect changes
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                M.toast({html: data.error || 'Failed to update task', classes: 'red'});
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            M.toast({html: 'Failed to update task', classes: 'red'});
+        });
+    }
+}
 </script>
 
 <style>
@@ -207,6 +253,11 @@ document.addEventListener('DOMContentLoaded', function() {
     .chip i.material-icons {
         vertical-align: middle;
         margin-right: 5px;
+    }
+    
+    .chip > a {
+        color: #272b41;
+        font-weight: 800;
     }
 </style>
 {% endblock %}

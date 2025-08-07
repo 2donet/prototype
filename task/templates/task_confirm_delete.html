@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Delete Task: {{ task.name }} | 2do.net{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row">
+        <div class="col s12">
+            <div class="section">
+                <h4 class="red-text">
+                    <i class="material-icons left">warning</i>
+                    Delete Task
+                </h4>
+                <div class="divider"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Card -->
+    <div class="row">
+        <div class="col s12 m8 offset-m2 l6 offset-l3">
+            <div class="card hoverable">
+                <div class="card-content">
+                    <span class="card-title red-text">
+                        <i class="material-icons left">delete_forever</i>
+                        Confirm Deletion
+                    </span>
+                    
+                    <div class="divider" style="margin: 15px 0;"></div>
+                    
+                    <p class="flow-text">
+                        Are you sure you want to delete the following task?
+                    </p>
+                    
+                    <!-- Task Info -->
+                    <div class="card-panel" style="margin: 20px 0;">
+                        <h5 class="truncate">{{ task.name }}</h5>
+                        
+                        <div class="task-meta" style="margin: 10px 0;">
+                            <div class="chip">
+                                <i class="material-icons tiny">account_circle</i>
+                                {{ task.created_by.username }}
+                            </div>
+                            <div class="chip">
+                                <i class="material-icons tiny">access_time</i>
+                                Created {{ task.created_at|naturaltime }}
+                            </div>
+                            {% if task.due_date %}
+                            <div class="chip {% if task.is_overdue %}red lighten-3{% endif %}">
+                                <i class="material-icons tiny">event</i>
+                                Due: {{ task.due_date|naturalday }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {% if task.desc %}
+                        <div class="task-description">
+                            <strong>Description:</strong>
+                            <div style="margin-top: 5px; font-style: italic;">
+                                {{ task.desc|truncatewords:20|linebreaks }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if task.skills.all %}
+                        <div style="margin-top: 10px;">
+                            <strong>Skills:</strong>
+                            <div class="chips" style="border-bottom: none; margin-top: 5px;">
+                                {% for skill in task.skills.all %}
+                                <div class="chip">{{ skill.name }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Warning about child tasks -->
+                    {% if child_tasks_count > 0 %}
+                    <div class="card-panel red lighten-4">
+                        <i class="material-icons left red-text">warning</i>
+                        <strong>Warning:</strong> This task has {{ child_tasks_count }} child task{{ child_tasks_count|pluralize }} that depend on it. 
+                        You must delete or reassign these child tasks before you can delete this task.
+                        
+                        <div style="margin-top: 10px;">
+                            <strong>Child tasks:</strong>
+                            <ul style="margin-left: 20px;">
+                                {% for child in child_tasks %}
+                                <li>
+                                    <a href="{% url 'task:task_detail' child.id %}" target="_blank">
+                                        {{ child.name }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Warning about comments -->
+                    {% if comments_count > 0 %}
+                    <div class="card-panel orange lighten-4">
+                        <i class="material-icons left orange-text">info</i>
+                        <strong>Note:</strong> This task has {{ comments_count }} comment{{ comments_count|pluralize }} 
+                        that will also be deleted.
+                    </div>
+                    {% endif %}
+
+                    <div class="section">
+                        <p class="red-text">
+                            <i class="material-icons tiny">warning</i>
+                            <strong>This action cannot be undone!</strong>
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="card-action">
+                    {% if child_tasks_count == 0 %}
+                    <!-- Only show delete form if no child tasks -->
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn red waves-effect waves-light">
+                            <i class="material-icons left">delete_forever</i>
+                            Yes, Delete Task
+                        </button>
+                    </form>
+                    {% else %}
+                    <!-- Show disabled button if there are child tasks -->
+                    <button class="btn red lighten-2 disabled" disabled>
+                        <i class="material-icons left">block</i>
+                        Cannot Delete (Has Child Tasks)
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'task:task_detail' task.id %}" 
+                       class="btn grey waves-effect waves-light right">
+                        <i class="material-icons left">cancel</i>
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Navigation -->
+    <div class="row">
+        <div class="col s12">
+            <div class="center-align">
+                <a href="{% url 'task:task_detail' task.id %}" 
+                   class="btn-flat waves-effect">
+                    <i class="material-icons left">arrow_back</i>
+                    Back to Task
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation dialog for extra safety
+    const deleteForm = document.querySelector('form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            const confirmed = confirm(
+                'Are you absolutely sure you want to delete this task? ' +
+                'This action cannot be undone and will permanently remove the task and all its data.'
+            );
+            
+            if (!confirmed) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="material-icons left">hourglass_empty</i>Deleting...';
+                submitBtn.disabled = true;
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.task-meta .chip {
+    margin: 2px;
+}
+
+.task-meta .chip i.material-icons {
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.task-description {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.card-panel .material-icons.left {
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.chips {
+    margin: 5px 0;
+}
+
+.chips .chip {
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}

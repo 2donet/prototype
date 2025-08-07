@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import UpdateTaskView, CreateTaskView
+from .views import UpdateTaskView, CreateTaskView, DeleteTaskView
 
 app_name = "task"
 urlpatterns = [
@@ -10,6 +10,7 @@ urlpatterns = [
 
     path('create/', CreateTaskView.as_view(), name='task_create'),
     path('<int:task_id>/edit/', UpdateTaskView.as_view(), name='task_update'),
+    path('<int:task_id>/delete/', DeleteTaskView.as_view(), name='task_delete'),
     path('<int:task_id>/add-skill/', views.add_skill_to_task, name='task_add_skill'),
     
     # New enhanced routes

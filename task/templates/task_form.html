@@ -46,8 +46,8 @@
                             <!-- Priority and Status -->
                             <div class="col s12 m6">
                                 <div class="input-field">
+                                    <h6>{{ form.priority.label }}</h6>
                                     {{ form.priority }}
-                                    <label>{{ form.priority.label }}</label>
                                     {% if form.priority.help_text %}
                                         <span class="helper-text">{{ form.priority.help_text }}</span>
                                     {% endif %}
@@ -63,8 +63,8 @@
                             
                             <div class="col s12 m6">
                                 <div class="input-field">
+                                    <h6>{{ form.status.label }}</h6>
                                     {{ form.status }}
-                                    <label>{{ form.status.label }}</label>
                                     {% if form.status.help_text %}
                                         <span class="helper-text">{{ form.status.help_text }}</span>
                                     {% endif %}
@@ -160,8 +160,8 @@
                             <!-- Project Association -->
                             <div class="col s12 m6">
                                 <div class="input-field">
+                                    <h6>{{ form.to_project.label }}</h6>
                                     {{ form.to_project }}
-                                    <label>{{ form.to_project.label }}</label>
                                     {% if form.to_project.help_text %}
                                         <span class="helper-text">{{ form.to_project.help_text }}</span>
                                     {% endif %}
@@ -178,8 +178,8 @@
                             <!-- Parent Task -->
                             <div class="col s12 m6">
                                 <div class="input-field">
+                                    <h6>{{ form.to_task.label }}</h6>
                                     {{ form.to_task }}
-                                    <label>{{ form.to_task.label }}</label>
                                     {% if form.to_task.help_text %}
                                         <span class="helper-text">{{ form.to_task.help_text }}</span>
                                     {% endif %}
