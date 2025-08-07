@@ -2634,7 +2634,7 @@ details:not([open]) .user-group-summary {
 }
 
 .btn, .wave-effects{
-    color: var(--text) !important;
+    color: var(--text);
 }
 
 .sidenav#mobile-demo{
@@ -3855,4 +3855,12 @@ nav ul li a {
     background-color: var(--bg-color3);
     color: var(--text);
     border: solid 2px var(--bg-color2);
+}
+.btn.wave-effects{
+    color: var(--bg-color);
+}
+
+.chip > .avatar{
+    width: 32px;
+    margin: 0 8px 0 -12px;
 }

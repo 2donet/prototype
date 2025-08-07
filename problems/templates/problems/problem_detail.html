@@ -160,7 +160,7 @@
                             {% for user in problem.assigned_to.all %}
                             <div class="chip" style="display: flex; align-items: center;">
                                 {% if user.profile.avatar %}
-                                <img src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}" style="margin-right: 8px;">
+                                <img class="avatar" src="{{ user.profile.avatar_small.url }}" alt="{{ user.username }}" style="margin-right: 8px;">
                                 {% endif %}
                                 <a href="/u/{{ user.id }}">{{ user.username }}</a>
                                 {% if can_edit %}
@@ -483,6 +483,9 @@ function assignUser(userId) {
     vertical-align: middle;
     margin-right: 5px;
 }
+.chip a{
+    color: var(--bg-light);
+}
 
 .unassign-user:hover {
     color: var(--danger) !important;
@@ -497,5 +500,6 @@ function assignUser(userId) {
 #user-search-results .collection-item:hover {
     background-color: var(--bg-light);
 }
+
 </style>
 {% endblock %}

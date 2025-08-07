@@ -94,9 +94,9 @@
                         
                         <!-- Due Date -->
                         <div class="input-field">
+                            <h6>Due Date (Optional)</h6>
                             <input type="datetime-local" name="due_date" id="problem-due-date" 
                                    value="{% if problem.due_date %}{{ problem.due_date|date:'Y-m-d\TH:i' }}{% endif %}">
-                            <label for="problem-due-date">Due Date (Optional)</label>
                         </div>
                         
                         <!-- Resolution (only if solved) -->
@@ -614,6 +614,9 @@ select.browser-default:focus {
 .btn.green:hover {
     background-color: var(--confirm);
     opacity: 0.9;
+}
+.member-chip.assigned .member-name {
+    color: black;
 }
 </style>
 {% endblock %}
