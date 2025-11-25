@@ -3,6 +3,7 @@
     --text: #ffffff;
     --highlightdark: #3B4139;
     --bg-color:#141622;
+    --bg-main: #30344a;
     /* #191b2a; */
     /*  #1f2234 */
     --bg-light:#1d1e2d;
@@ -392,7 +393,7 @@ code
 .box {
     height: fit-content;
     padding: 10px 20px;
-    background-color: var(--bg-light);
+    background-color: var(--bg-main);
     border-radius: 10px;
     /*width: 100%;*/
     margin: 1rem;
@@ -2655,7 +2656,7 @@ details:not([open]) .user-group-summary {
     border-radius: 8px;
     padding: 20px;
     margin: 20px 0;
-    border-left: 4px solid var(--highlight);
+    border-left: 4px solid var(--bg-color3);
 }
 
 .creator-header {
@@ -2693,7 +2694,7 @@ details:not([open]) .user-group-summary {
 
 .creator-bio {
     background-color: var(--bg-color3);
-    border-left: 4px solid var(--highlight);
+    border-left: 4px solid var(--bg-color3);
     padding: 15px 20px;
     margin: 15px 0;
     border-radius: 0 4px 4px 0;
