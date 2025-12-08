@@ -108,7 +108,7 @@
                 <!-- Status badge -->
                 <span class="new badge right" data-badge-caption="{{ problem.get_status_display }}" 
                       style="background-color: {{ problem.get_status_color }};">
-                    {{ problem.status|title }}
+                    <!-- {{ problem.status|title }} -->
                 </span>
             </h5>
             
@@ -333,7 +333,7 @@ function attachProblemEventHandlers() {
     border-left: 4px solid var(--bg-color2);
     transition: all 0.3s ease;
     position: relative;
-    height: auto;
+    height: fit-content;
 }
 
 .problem-card:hover {
@@ -375,8 +375,9 @@ function attachProblemEventHandlers() {
 
 .problem-actions {
     border-top: 1px solid var(--bg-light);
-    padding-top: 10px;
+    padding-bottom: 10px;
     margin-top: 15px;
+    text-align: center;
 }
 
 .priority {
