@@ -396,7 +396,7 @@ code
     background-color: var(--bg-main);
     border-radius: 10px;
     /*width: 100%;*/
-    margin: 1rem;
+    /*margin: 1rem;*/ /*margin already covered by pcard element*/
 }
 
 
