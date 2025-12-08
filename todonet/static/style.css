@@ -1930,6 +1930,7 @@ input, textarea {
     "info details community";
         & .pcard{
             grid-area: card;
+            margin: 1.5rem;
 
         }
         & .ptab{
