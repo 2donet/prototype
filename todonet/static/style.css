@@ -114,7 +114,7 @@ nav{
 
     & .project-card2 {
         margin: 2rem;
-        padding:4px;
+        padding:20px;
         display: grid;
         width: 620px;
         border-radius: 12px;
@@ -396,7 +396,7 @@ code
     background-color: var(--bg-main);
     border-radius: 10px;
     /*width: 100%;*/
-    margin: 1rem;
+    /*margin: 1rem;*/ /*margin already covered by pcard element*/
 }
 
 
@@ -1868,7 +1868,7 @@ input, textarea {
 
   .child-card {
     margin: 0.4rem;
-    width: 190px;
+    width: 250px;
     height: 254px;
     border-radius: 20px 20px 60px 20px;
     background: var(--bgpopup);
@@ -1930,6 +1930,7 @@ input, textarea {
     "info details community";
         & .pcard{
             grid-area: card;
+            margin: 1.5rem;
 
         }
         & .ptab{

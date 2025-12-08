@@ -5987,7 +5987,7 @@ body.keyboard-focused .dropdown-content li:focus {
   border-bottom: 1px solid #9e9e9e;
   -webkit-box-shadow: none;
           box-shadow: none;
-  margin: 0 0 8px 0;
+  margin: 15px 0 8px 0;
   min-height: 45px;
   outline: none;
   -webkit-transition: all .3s;

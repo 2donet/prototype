@@ -3,9 +3,9 @@
 {% block problems %}
 
 <div class="row">
-    <div class="col s12">
+    <!--<div class="col s12">
         <h5>Problems:</h5>
-    </div>
+    </div>-->
     
     <div class="input-field col s12 m3">
         <select id="problems-sort">
@@ -108,7 +108,7 @@
                 <!-- Status badge -->
                 <span class="new badge right" data-badge-caption="{{ problem.get_status_display }}" 
                       style="background-color: {{ problem.get_status_color }};">
-                    {{ problem.status|title }}
+                    <!-- {{ problem.status|title }} -->
                 </span>
             </h5>
             
@@ -178,7 +178,7 @@
                 {% endfor %}
             </div>
             {% endif %}
-            <div class="problem-actions" style="margin-top: 10px; text-align: right;">
+            <div class="problem-actions">
                 <a href="{% url 'problems:detail' problem.id %}" class="btn-small blue waves-effect">
                     <i class="material-icons left">visibility</i>View
                 </a>
@@ -333,7 +333,7 @@ function attachProblemEventHandlers() {
     border-left: 4px solid var(--bg-color2);
     transition: all 0.3s ease;
     position: relative;
-    height: auto;
+    height: fit-content;
 }
 
 .problem-card:hover {
@@ -375,8 +375,8 @@ function attachProblemEventHandlers() {
 
 .problem-actions {
     border-top: 1px solid var(--bg-light);
-    padding-top: 10px;
-    margin-top: 15px;
+    padding-bottom: 20px;
+    text-align: center;
 }
 
 .priority {
