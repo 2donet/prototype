@@ -1868,7 +1868,7 @@ input, textarea {
 
   .child-card {
     margin: 0.4rem;
-    width: 190px;
+    width: 250px;
     height: 254px;
     border-radius: 20px 20px 60px 20px;
     background: var(--bgpopup);
