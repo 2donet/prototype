@@ -178,7 +178,7 @@
                 {% endfor %}
             </div>
             {% endif %}
-            <div class="problem-actions" style="margin-top: 10px; text-align: right;">
+            <div class="problem-actions">
                 <a href="{% url 'problems:detail' problem.id %}" class="btn-small blue waves-effect">
                     <i class="material-icons left">visibility</i>View
                 </a>
@@ -376,7 +376,7 @@ function attachProblemEventHandlers() {
 .problem-actions {
     border-top: 1px solid var(--bg-light);
     padding-bottom: 10px;
-    margin-top: 15px;
+    margin-top: 10px;
     text-align: center;
 }
 
