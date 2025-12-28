@@ -290,11 +290,11 @@ class Intro(models.Model):
         
         constraints = [
             models.CheckConstraint(
-                check=models.Q(order__gte=0),
+                condition=models.Q(order__gte=0),
                 name='intro_positive_order'
             ),
             models.CheckConstraint(
-                check=models.Q(view_count__gte=0),
+                condition=models.Q(view_count__gte=0),
                 name='intro_positive_view_count'
             ),
         ]
@@ -505,7 +505,7 @@ class IntroRelation(models.Model):
                 name='unique_intro_plan_relation'
             ),
             models.CheckConstraint(
-                check=models.Q(order__gte=0),
+                condition=models.Q(order__gte=0),
                 name='relation_positive_order'
             ),
         ]

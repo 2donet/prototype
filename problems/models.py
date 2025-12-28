@@ -293,7 +293,7 @@ class Problem(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(to_project__isnull=False) |
                     models.Q(to_task__isnull=False) |
                     models.Q(to_need__isnull=False)
